@@ -1,0 +1,44 @@
+app:
+  name: hubie
+  type: pwa
+  status: bootstrap
+
+environments:
+  - local
+  - preview
+  - production
+
+required_capabilities:
+  pwa:
+    - manifest
+    - service_worker
+    - offline_fallback
+    - install_icons
+    - update_strategy
+  delivery:
+    - ci
+    - preview_deploy
+    - production_deploy
+    - smoke_test
+    - release_snapshot
+  data:
+    - migrations
+    - rls
+    - backups
+    - restore_drill
+  operations:
+    - health_endpoint
+    - uptime_monitor
+    - error_tracking
+    - alert_routing
+  growth:
+    - analytics
+    - utm_attribution
+    - transactional_email
+
+human_gates:
+  - destructive_database_migration
+  - production_restore
+  - secret_rotation
+  - paid_campaign_budget_change
+  - mass_messaging
