@@ -1,0 +1,184 @@
+[
+  {
+    "id": "S001",
+    "nombre": "Hubie CRM",
+    "descripcion": "Gestión integral de clientes, pipeline de ventas y seguimiento comercial para empresas que necesitan organizar sus relaciones con clientes y prospectos.",
+    "precios": {
+      "setup": 14900,
+      "tools": {}
+    },
+    "tools": ["C001","C002","C003"],
+    "icono": "users",
+    "color": "#3B82F6",
+    "industria": "General"
+  },
+  {
+    "id": "S002",
+    "nombre": "Hubie Agenda & Citas",
+    "descripcion": "Calendario inteligente con citas automatizadas, recordatorios por WhatsApp y sincronización de agendas para consultorios, salones de belleza, academias y servicios por citas.",
+    "precios": {
+      "setup": 14900,
+      "tools": {}
+    },
+    "tools": ["C001","C004","C005"],
+    "icono": "calendar",
+    "color": "#8B5CF6",
+    "industria": "Servicios por citas"
+  },
+  {
+    "id": "S003",
+    "nombre": "Hubie Inventario",
+    "descripcion": "Control de stock en tiempo real con alertas de stock bajo, gestión de almacenes, trazabilidad de lotes, caducidades y transferencias entre sucursales.",
+    "precios": {
+      "setup": 14900,
+      "tools": {}
+    },
+    "tools": ["C001","C006","C007","C008","C009","C010"],
+    "icono": "package",
+    "color": "#F59E0B",
+    "industria": "Comercio / Retail"
+  },
+  {
+    "id": "S004",
+    "nombre": "Hubie Finanzas",
+    "descripcion": "Control financiero completo con cotizaciones, facturación con CFDI, cobros, cuentas por cobrar, suscripciones y reportes financieros.",
+    "precios": {
+      "setup": 19900,
+      "tools": {}
+    },
+    "tools": ["C002","C011","C012","C013","C014","C015","C016"],
+    "icono": "dollar-sign",
+    "color": "#10B981",
+    "industria": "General"
+  },
+  {
+    "id": "S005",
+    "nombre": "Hubie Food Suite",
+    "descripcion": "Solución integral para restaurantes y comedores: costeo de recetas por ingrediente, compras a proveedores, inventario de cocina y control de mermas.",
+    "precios": {
+      "setup": 24900,
+      "tools": {}
+    },
+    "tools": ["C001","C006","C007","C008","T013","T014","T015","T016","T017","T018","T019","T020"],
+    "icono": "utensils",
+    "color": "#F97316",
+    "industria": "Restaurante / Comedor"
+  },
+  {
+    "id": "S006",
+    "nombre": "Hubie Realty Suite",
+    "descripcion": "Portal inmobiliario completo: CRM con pipeline de ventas/arrendamientos, propiedades con galería y fichas, contratos, comisiones y gestión de propietarios.",
+    "precios": {
+      "setup": 29900,
+      "tools": {}
+    },
+    "tools": ["C001","C002","C003","T008","T009","T010","T011","T012"],
+    "icono": "home",
+    "color": "#6366F1",
+    "industria": "Bienes Raíces"
+  },
+  {
+    "id": "S007",
+    "nombre": "Hubie Health Suite",
+    "descripcion": "Expedientes clínicos digitales: historial del paciente, tratamientos, odontograma, radiografías, presupuestos, estudios, recordatorios de citas y teleconsulta.",
+    "precios": {
+      "setup": 34900,
+      "tools": {}
+    },
+    "tools": ["C001","C004","C005","T021","T022","T023","T024","T025","T026","T027","T028","T029","T030"],
+    "icono": "heart-pulse",
+    "color": "#EF4444",
+    "industria": "Salud / Clínica"
+  },
+  {
+    "id": "S008",
+    "nombre": "Hubie Industrial Suite",
+    "descripcion": "Gestión industrial: órdenes de trabajo, control de calidad, seguridad industrial, mantenimiento preventivo y reportes de producción.",
+    "precios": {
+      "setup": 29900,
+      "tools": {}
+    },
+    "tools": ["C001","C004","C005","C009","T017","T018","T019","T020","A001","A002","A003","A004"],
+    "icono": "factory",
+    "color": "#78716C",
+    "industria": "Manufactura / Industrial"
+  },
+  {
+    "id": "S009",
+    "nombre": "Hubie Comunicación Suite",
+    "descripcion": "Canales unificados de comunicación: WhatsApp business, correo electrónico, SMS y videollamadas, todo sincronizado y con historial de conversaciones.",
+    "precios": {
+      "setup": 9900,
+      "tools": {}
+    },
+    "tools": ["M001","M002","M003"],
+    "icono": "message-square",
+    "color": "#EC4899",
+    "industria": "General"
+  },
+  {
+    "id": "S010",
+    "nombre": "Hubie RH Suite",
+    "descripcion": "Recursos humanos integrados: asistencia y horas trabajadas, vacaciones y permisos, evaluaciones de desempeño y gestión de personal.",
+    "precios": {
+      "setup": 19900,
+      "tools": {}
+    },
+    "tools": ["C001","M004","M005","M006"],
+    "icono": "users",
+    "color": "#06B6D4",
+    "industria": "General"
+  },
+  {
+    "id": "S011",
+    "nombre": "Hubie Retail Suite",
+    "descripcion": "Ventas minoristas: punto de venta, control de inventario, facturación, loyalty program y analítica de ventas por producto/sucursal.",
+    "precios": {
+      "setup": 19900,
+      "tools": {}
+    },
+    "tools": ["C001","C006","C007","C008","C009","C010","C012","C013","C014","C015","C016"],
+    "icono": "shopping-cart",
+    "color": "#84CC16",
+    "industria": "Comercio / Retail"
+  },
+  {
+    "id": "S012",
+    "nombre": "Hubie Logistics Suite",
+    "descripcion": "Gestión de logística: pedidos, entregas, rutas, proveedores, almacenes, inventario en tránsito y seguimiento de cargamentos.",
+    "precios": {
+      "setup": 24900,
+      "tools": {}
+    },
+    "tools": ["C001","C006","C007","C008","C009","C010","T013","T014","T015"],
+    "icono": "truck",
+    "color": "#14B8A6",
+    "industria": "Logística / Transporte"
+  },
+  {
+    "id": "S013",
+    "nombre": "Hubie AI Suite",
+    "descripcion": "Herramientas impulsadas por IA: asistente virtual, generación de contenido, análisis predictivo, automatización de procesos y chatbots.",
+    "precios": {
+      "setup": 39900,
+      "tools": {}
+    },
+    "tools": ["C001","C002","A001","A002","A003","A004","A005","A006"],
+    "icono": "bot",
+    "color": "#A855F7",
+    "industria": "General"
+  },
+  {
+    "id": "S014",
+    "nombre": "Hubie Tutor Academy",
+    "descripcion": "Gestión educativa: alumnos, cursos, pagos, asistencia, proyectos, seguimiento académico y reportes de avance para academias y centros de estudio.",
+    "precios": {
+      "setup": 19900,
+      "tools": {}
+    },
+    "tools": ["C001","C002","C004","C005","E004"],
+    "icono": "graduation-cap",
+    "color": "#0EA5E9",
+    "industria": "Educación / Academia"
+  }
+]

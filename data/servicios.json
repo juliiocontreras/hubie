@@ -1,0 +1,12 @@
+[
+  { "id": "SV001", "nombre": "Branding e Identidad Visual", "descripcion": "Creación de identidad visual completa: logo, paleta de colores, tipografías, manual de marca y guía de estilo.", "precio_desde": 6900, "categoria": "branding" },
+  { "id": "SV002", "nombre": "Diseño Gráfico", "descripcion": "Diseño de material gráfico: tarjetas de presentación, flyers, folletos, posters, banners, infografías y material de redes sociales.", "precio_desde": 4449, "categoria": "diseno" },
+  { "id": "SV003", "nombre": "Marketing Digital", "descripcion": "Estrategia y ejecución de campañas de marketing digital: SEO, SEM, redes sociales, email marketing, contenido y analítica.", "precio_desde": 6900, "categoria": "marketing" },
+  { "id": "SV004", "nombre": "Landing Page", "descripcion": "Diseño y desarrollo de landing pages de conversión con formularios, seguimiento de visitas y optimización para conversiones.", "precio_desde": 8900, "categoria": "web" },
+  { "id": "SV005", "nombre": "Sitio Web Corporativo", "descripcion": "Sitio web corporativo completo con diseño a medida, secciones de servicios, equipo, portafolio, contacto y SEO básico.", "precio_desde": 14900, "categoria": "web" },
+  { "id": "SV006", "nombre": "Catálogo Digital", "descripcion": "Catálogo digital interactivo con productos/servicios, categorías, búsqueda, filtros y opción de descarga en PDF.", "precio_desde": 9900, "categoria": "web" },
+  { "id": "SV007", "nombre": "Video Publicitario", "descripcion": "Producción de videos publicitarios: guion, producción, edición, motion graphics y versión final para redes y televisión.", "precio_desde": 5900, "categoria": "video" },
+  { "id": "SV008", "nombre": "Fotografía Profesional", "descripcion": "Sesión fotográfica profesional para productos, equipo, instalaciones, eventos y material de marca.", "precio_desde": 3900, "categoria": "foto" },
+  { "id": "SV009", "nombre": "Papelería y Uniformes", "descripcion": "Diseño y provisión de papelería de empresa, uniformes, merchandising y materiales de identificación.", "precio_desde": 0, "categoria": "merch" },
+  { "id": "SV010", "nombre": "Merchandising y Promocionales", "descripcion": "Diseño y producción de artículos promocionales: camisetas, gorras, bolígrafos, thermos, canecas y otros regalos corporativos.", "precio_desde": 0, "categoria": "merch" }
+]

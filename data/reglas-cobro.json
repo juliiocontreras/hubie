@@ -1,0 +1,28 @@
+{
+  "anticipo_porcentaje": 50,
+  "pagos_maximos": 3,
+  "facturacion_cfdI": {
+    "activo": true,
+    "serie_predeterminada": "FAC",
+    "uso_cfdi": "G03",
+    "moneda": "MXN",
+    "zona_horaria": "America/Mexico_City"
+  },
+  "mensajeria": {
+    "whatsapp": true,
+    "sms": true,
+    "correo": true,
+    "plantillas": {
+      "bienvenida": true,
+      "recordatorio_cita": true,
+      "confirmacion_pago": true,
+      "notificacion_nueva": true
+    }
+  },
+  "exportaciones_contabilidad": {
+    "csv": true,
+    "xml_cfdi": true,
+    "excel": true,
+    "formatos_soporte": ["CFDI 4.0", "Contpaqi", "Systema Avanza", "Facturama"]
+  }
+}

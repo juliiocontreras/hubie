@@ -1,0 +1,8 @@
+[
+  { "id": "E001", "nombre": "Usuario Adicional", "descripcion": "Agregar un usuario adicional (admin o gerente) a la instancia de la empresa.", "precio_unico": 990, "tipo": "por_usuario" },
+  { "id": "E002", "nombre": "Sucursal Adicional", "descripcion": "Habilitar una sucursal adicional en la instancia de la empresa para gestión multi-sucursal.", "precio_unico": 4900, "tipo": "por_sucursal" },
+  { "id": "E003", "nombre": "Implementación General", "descripcion": "Implementación completa del sistema con configuración inicial, importación de datos, capacitación básica y soporte inicial.", "precio_unico": 6900, "tipo": "servicio" },
+  { "id": "E004", "nombre": "Implementación Integral", "descripcion": "Implementación integral con configuración avanzada, integraciones personalizadas, migración de datos, capacitación completa y soporte prioritario.", "precio_unico": 14900, "tipo": "servicio" },
+  { "id": "E005", "nombre": "Mantenimiento y Soporte Mensual", "descripcion": "Mantenimiento mensual incluye actualizaciones, soporte técnico, backups y monitoreo del sistema.", "precio_unico": 2900, "tipo": "mensual" },
+  { "id": "E006", "nombre": "Soporte Tecnico Premium", "descripcion": "Soporte técnico prioritario con tiempo de respuesta garantizado, asistencia personalizada y acceso a ingeniería.", "precio_unico": 4900, "tipo": "mensual" }
+]

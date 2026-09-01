@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hubie — Brand Book · El sistema operativo para empresas</title>
+<meta name="description" content="Brand Book de Hubie: propósito, misión, visión, personalidad, tono, manifiesto, arquitectura de productos, buyer personas, propuesta de valor, modelo de negocio, módulos y manual de identidad visual.">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<style>
+:root{
+  --white:#fff;--bg:#f6f7fb;--bg-2:#f1f2f9;--ink:#16123a;--ink-soft:#5b5872;--ink-faint:#8a87a3;
+  --purple:#7c5cfc;--purple-deep:#5b34f0;--blue:#2f6bff;--pink:#ec4899;--cyan:#22d3ee;--green:#22c55e;--orange:#f97316;
+  --grad-brand:linear-gradient(135deg,#7c5cfc 0%,#a855f7 45%,#ec4899 100%);
+  --radius:20px;--radius-sm:14px;--maxw:980px;--font:'Nunito',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.container{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:70px 0;border-bottom:1px solid #eceaf6}
+.hero{background:radial-gradient(1000px 440px at 80% -10%,#efeafe 0%,transparent 60%),radial-gradient(800px 380px at -5% 10%,#e9f0ff 0%,transparent 55%),var(--bg);padding:80px 0 60px}
+h1{font-size:clamp(34px,5vw,56px);font-weight:900;line-height:1.1;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:-.02em;margin-bottom:8px}
+h3{font-size:19px;font-weight:800;margin:22px 0 8px}
+p{color:var(--ink-soft);margin-bottom:12px}
+.lead{font-size:18px;color:var(--ink-soft);max-width:640px}
+.grad{background:var(--grad-brand);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tag{display:inline-block;font-size:12px;font-weight:900;letter-spacing:.08em;padding:7px 14px;border-radius:999px;background:#efeafe;color:var(--purple-deep);margin-bottom:14px}
+.kicker{font-size:13px;font-weight:900;letter-spacing:.12em;color:var(--purple);text-transform:uppercase}
+.card{background:#fff;border:1px solid #eceaf6;border-radius:var(--radius);padding:26px;margin-top:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #eceaf6;border-radius:999px;padding:9px 16px;font-weight:800;font-size:14px;margin:5px 5px 0 0}
+.chip .dot{width:10px;height:10px;border-radius:50%}
+.pill{background:#efeafe;color:var(--purple-deep);font-weight:800;padding:4px 12px;border-radius:999px;font-size:13px}
+.callout{background:linear-gradient(135deg,#f3eaff,#fdeaf4);border-left:5px solid var(--purple);border-radius:14px;padding:22px 24px;margin-top:16px;font-size:18px;font-weight:700;color:var(--ink)}
+.table{width:100%;border-collapse:collapse;margin-top:14px;background:#fff;border-radius:var(--radius);overflow:hidden;border:1px solid #eceaf6}
+.table th,.table td{text-align:left;padding:13px 16px;border-bottom:1px solid #f0eefa;font-size:14px;vertical-align:top}
+.table th{background:#f4f3fb;font-weight:800;color:var(--ink)}
+.table tr:last-child td{border-bottom:none}
+.table td:first-child{font-weight:800;color:var(--ink)}
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:16px}
+.swatch{border-radius:14px;overflow:hidden;border:1px solid #eceaf6}
+.swatch .c{height:74px}
+.swatch .meta{padding:8px 10px;font-size:12px;font-weight:800}
+.swatches2{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.logo-show{display:flex;flex-wrap:wrap;gap:24px;align-items:center;background:#fff;border:1px solid #eceaf6;border-radius:var(--radius);padding:30px;margin-top:16px}
+.logo-dark{background:var(--ink);border-radius:14px;padding:24px}
+.dont{color:#e11d48}
+.do{color:var(--green)}
+ul.clean{list-style:none}
+ul.clean li{padding:8px 0;border-bottom:1px solid #f0eefa;display:flex;gap:10px;align-items:flex-start}
+ul.clean li:before{content:"▹";color:var(--purple);font-weight:900}
+.toc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.toc a{display:block;background:#fff;border:1px solid #eceaf6;border-radius:12px;padding:12px 16px;font-weight:800;font-size:14px;color:var(--ink)}
+.toc a:hover{border-color:var(--purple);color:var(--purple)}
+.arch-tree{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--ink);color:#cfcbe6;border-radius:14px;padding:24px;font-size:14px;line-height:1.9;margin-top:16px;overflow-x:auto}
+.arch-tree .b{color:#a78bfa}.arch-tree .p{color:#f9a8d4}
+.nav{display:flex;gap:6px;align-items:center;height:64px}
+.nav a{font-weight:800;color:var(--ink-soft);padding:8px 12px;border-radius:999px}
+.footer{background:var(--ink);color:#cfcbe6;padding:40px 0;font-size:14px}
+@media(max-width:780px){.grid2,.grid3,.toc,.swatches,.swatches2{grid-template-columns:1fr 1fr}.table{font-size:13px}}
+</style>
+</head>
+<body>
+
+<header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid #eceaf6">
+  <div class="container nav">
+    <a href="index.html" style="display:flex;align-items:center;gap:8px;font-weight:900">
+      <img src="assets/hubie-logo.svg" alt="Hubie" width="92" height="22">
+    </a>
+    <a href="index.html">← Volver al sitio</a>
+  </div>
+</header>
+
+<section class="hero" style="border:none">
+  <div class="container">
+    <span class="tag">BRAND BOOK · v1.0</span>
+    <h1>Hubie. <span class="grad">El sistema operativo para empresas.</span></h1>
+    <p class="lead" style="margin-top:16px">No es un CRM. No es una agenda. No es un ERP. Es el <b>hub</b> de tu negocio: el centro donde los negocios organizan, automatizan y hacen crecer su operación.</p>
+    <div class="toc">
+      <a href="#proposito">1 · Propósito, misión y visión</a>
+      <a href="#personalidad">2 · Personalidad y tono de voz</a>
+      <a href="#manifiesto">3 · Manifiesto</a>
+      <a href="#arquitectura">4 · Arquitectura de productos</a>
+      <a href="#buyer">5 · Buyer personas</a>
+      <a href="#valor">6 · Propuesta de valor</a>
+      <a href="#modelo">7 · Modelo de negocio</a>
+      <a href="#modulos">8 · Módulos</a>
+      <a href="#comercial">9 · Estrategia comercial</a>
+      <a href="#identidad">10 · Manual de identidad visual</a>
+    </div>
+  </div>
+</section>
+
+<section id="proposito">
+  <div class="container">
+    <span class="kicker">01 — Propósito, misión y visión</span>
+    <h2>Por qué existe Hubie</h2>
+    <div class="grid3">
+      <div class="card"><h3>Propósito</h3><p>Que cualquier negocio —grande o pequeño— pueda organizarse y crecer sin depender de herramientas complicadas, caras o desconectadas.</p></div>
+      <div class="card"><h3>Misión</h3><p>Reunir en un solo lugar las herramientas que un negocio necesita para organizarse, vender más y automatizar su operación.</p></div>
+      <div class="card"><h3>Visión</h3><p>Ser el sistema operativo de los negocios de habla hispana: el ecosistema donde toda empresa, sin importar su giro, vive, opera y crece.</p></div>
+    </div>
+    <div class="callout">“Todo conectado. CRM, agenda, inventarios, ventas, IA, bots, catálogos y cobros. Todo vive en Hubie.”</div>
+  </div>
+</section>
+
+<section id="personalidad">
+  <div class="container">
+    <span class="kicker">02 — Personalidad y tono de voz</span>
+    <h2>Cómo se comporta Hubie</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Personalidad</h3>
+        <ul class="clean">
+          <li><b>Cercano</b> — habla como un compañero, no como un sistema.</li>
+          <li><b>Tecnológico sin ser frío</b> — moderno, pero humano.</li>
+          <li><b>Claro</b> — dice lo esencial, sin jerga.</li>
+          <li><b>Proactivo</b> — organiza, recuerda y cobra por ti.</li>
+          <li><b>Escalable</b> — crece contigo, de micro a industrial.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Tono de voz</h3>
+        <p><span class="pill">Haz</span> frases cortas, verbos de acción, segunda persona (tu negocio).</p>
+        <p><span class="pill">Haz</span> positivo y alentador: Agenda llena, clientes felices.</p>
+        <p><span class="do">✓</span> Hubie organiza. Hubie recuerda. Hubie agenda. Hubie cobra.</p>
+        <p><span class="dont">✗</span> Solución de gestión empresarial integral de alto rendimiento.</p>
+      </div>
+    </div>
+    <div class="callout">Taglines oficiales: <b>Tu mejor empleado digital.</b> · <b>El asistente que nunca descansa.</b> · <b>Tu negocio, organizado.</b></div>
+  </div>
+</section>
+
+<section id="manifiesto">
+  <div class="container">
+    <span class="kicker">03 — Manifiesto</span>
+    <h2>El asistente para negocios</h2>
+    <div class="card" style="font-size:18px;line-height:1.9">
+      <p>Aquí Hubie deja de ser un software.</p>
+      <p>Se convierte en un <b>compañero</b>.</p>
+      <p>Hubie organiza.</p>
+      <p>Hubie recuerda.</p>
+      <p>Hubie agenda.</p>
+      <p>Hubie cobra.</p>
+      <p>Hubie vende.</p>
+      <p>Hubie automatiza.</p>
+      <p style="margin-top:16px">Porque tu negocio no necesita otro sistema. Necesita un lugar donde todo por fin encaje.</p>
+    </div>
+  </div>
+</section>
+
+<section id="arquitectura">
+  <div class="container">
+    <span class="kicker">04 — Arquitectura de productos</span>
+    <h2>Una marca madre, muchas aplicaciones</h2>
+    <p>El usuario siente que todas pertenecen al mismo ecosistema. Mismo núcleo técnico, misma experiencia visual, distinto giro.</p>
+    <div class="arch-tree">
+<span class="p">HUBIE</span>  <span style="color:#8a87a3">· el sistema operativo para empresas</span>
+├── <span class="b">Salud</span>      (Hubie Health)
+├── <span class="b">Jobs</span>       (Hubie Jobs)
+├── <span class="b">Market</span>     (Hubie Market)
+├── <span class="b">Realtors</span>   (Hubie Realty)
+├── <span class="b">Barbershop</span> (Hubie Barber)
+├── <span class="b">Nails</span>      (Hubie Beauty)
+├── <span class="b">Industrial</span>  (Hubie Auto / Industry)
+├── <span class="b">Food</span>       (Hubie Food)
+├── <span class="b">Design</span>     (Hubie Design)
+├── <span class="b">Shop</span>       (Hubie Shop)
+└── <span class="b">Office</span>     (Hubie Office)
+    </div>
+    <div class="grid3" style="margin-top:18px">
+      <div class="card"><h3>Modelo de ramas</h3><p>Núcleo técnico compartido. Solo cambian colores, campos, textos y módulos. Vendes personalizado sin construir desde cero.</p></div>
+      <div class="card"><h3>Familia visual</h3><p>Misma tipografía, misma paleta, mismo logo. Coherencia total entre ramas.</p></div>
+      <div class="card"><h3>Expansión</h3><p>Nueva rama = nueva industria. El crecimiento es agregar un nodo al arbol, no un producto nuevo.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="buyer">
+  <div class="container">
+    <span class="kicker">05 — Buyer personas</span>
+    <h2>Para quién construimos</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Persona primaria — Dueño de PYME</h3>
+        <p><b>Edad:</b> 25–55 · <b>Giro:</b> barberías, estéticas, clínicas, dentistas, psicólogos, restaurantes, constructoras, agencias, inmobiliarias.</p>
+        <p><b>Herramientas actuales:</b> WhatsApp, Excel, libreta, Google Calendar.</p>
+        <p><b>Problema:</b> todo está separado; pierden clientes; olvidan citas; no saben cuánto vendieron; no conocen su inventario; no hay seguimiento.</p>
+      </div>
+      <div class="card">
+        <h3>Persona secundaria — Empresa con colaboradores</h3>
+        <p><b>Necesita:</b> permisos, usuarios, inventarios, expedientes y reportes multi-sucursal.</p>
+        <p><b>Contexto:</b> operación más grande, mayor ticket, ciclo de venta más largo (ej. proveedores industriales de Saltillo / Ramos Arizpe).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="valor">
+  <div class="container">
+    <span class="kicker">06 — Propuesta de valor</span>
+    <h2>Qué incluye (según la industria)</h2>
+    <div class="callout">Hubie es una <b>plataforma inteligente</b> que reúne todas las herramientas que un negocio necesita para organizarse, vender más y automatizar su operación desde un solo lugar.</div>
+    <div class="grid3" style="margin-top:18px">
+      <div class="card"><h3>Hubie Barbershop</h3><p>Agenda, clientes, recordatorios, caja, inventario, comisiones, estadísticas, WhatsApp, IA.</p></div>
+      <div class="card"><h3>Hubie Dent</h3><p>Agenda, expedientes, radiografías, tratamientos, pagos, recordatorios.</p></div>
+      <div class="card"><h3>Hubie Realtors</h3><p>Propiedades, clientes, leads, citas, documentos, seguimiento.</p></div>
+    </div>
+    <p style="margin-top:14px;font-weight:700">La ventaja competitiva: <b>WhatsApp como centro de la operación.</b> Muchos negocios no quieren un CRM tradicional, pero sí necesitan ordenar los mensajes que ya reciben.</p>
+  </div>
+</section>
+
+<section id="modelo">
+  <div class="container">
+    <span class="kicker">07 — Modelo de negocio</span>
+    <h2>Cómo genera ingresos Hubie</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th>Fuente</th><th>Descripción</th><th>Tipo de ingreso</th></tr></thead>
+        <tbody>
+          <tr><td>Implementación única</td><td>Configuración base, adaptación, carga de datos, capacitación.</td><td>Pago único (sin mensualidad en plan base).</td></tr>
+          <tr><td>Add-ons</td><td>Usuarios, módulos, sucursales, integraciones, personalizaciones.</td><td>Recurrente / por proyecto.</td></tr>
+          <tr><td>Servicios Hubie</td><td>Diseno y Marketing + Insumos para empresas.</td><td>Cotización por servicio (B2B).</td></tr>
+          <tr><td>Portal industrial</td><td>Web app especializada para proveedores manufactureros.</td><td>Contrato grande, ciclo lento, alto ticket.</td></tr>
+          <tr><td>Paquete completo</td><td>Web app + identidad visual + anuncios + generación de prospectos.</td><td>Diferenciador vs. desarrollador tradicional.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout" style="background:linear-gradient(135deg,#e9f0ff,#f3e8ff)">“Sin mensualidades en el plan base. Pagas una sola vez.”</div>
+  </div>
+</section>
+
+<section id="modulos">
+  <div class="container">
+    <span class="kicker">08 — Módulos</span>
+    <h2>El núcleo que comparte todo</h2>
+    <p>Partimos de una linea editorial simple, estilo Apple:</p>
+    <div style="margin-top:10px">
+      <span class="chip"><span class="dot" style="background:var(--blue)"></span>CRM</span>
+      <span class="chip"><span class="dot" style="background:var(--purple)"></span>Agenda</span>
+      <span class="chip"><span class="dot" style="background:var(--blue)"></span>Inventario</span>
+      <span class="chip"><span class="dot" style="background:var(--purple)"></span>Cobros</span>
+      <span class="chip"><span class="dot" style="background:var(--pink)"></span>IA</span>
+      <span class="chip"><span class="dot" style="background:var(--green)"></span>WhatsApp</span>
+      <span class="chip"><span class="dot" style="background:var(--orange)"></span>Ventas</span>
+      <span class="chip"><span class="dot" style="background:var(--purple)"></span>Clientes</span>
+      <span class="chip"><span class="dot" style="background:var(--blue)"></span>Bots</span>
+      <span class="chip"><span class="dot" style="background:var(--green)"></span>Reportes</span>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>Módulos por versión (primera entrega)</h3>
+      <div class="table">
+        <table>
+          <thead><tr><th>Versión</th><th>Módulos clave</th></tr></thead>
+          <tbody>
+            <tr><td>Citas y expedientes</td><td>Agenda, clientes, expedientes, WhatsApp, recordatorios.</td></tr>
+            <tr><td>Cotizaciones y órdenes</td><td>Cotización PDF, órdenes de servicio, seguimiento de estados, cobro de anticipo.</td></tr>
+            <tr><td>Portal industrial</td><td>Catálogo, solicitudes, certificaciones, alertas, firmas, evidencias, panel de indicadores.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="comercial">
+  <div class="container">
+    <span class="kicker">09 — Estrategia comercial</span>
+    <h2>Dónde y cómo vender</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th>Web app</th><th>Demanda</th><th>Facilidad de venta</th><th>Ticket</th></tr></thead>
+        <tbody>
+          <tr><td>Citas, anticipos y WhatsApp</td><td>Muy alta</td><td>Alta</td><td>Medio</td></tr>
+          <tr><td>Cotizaciones y órdenes de servicio</td><td>Muy alta</td><td>Alta</td><td>Medio</td></tr>
+          <tr><td>Portal de proveedores industriales</td><td>Alta</td><td>Media-baja</td><td>Alto</td></tr>
+          <tr><td>Pedidos directos para restaurantes</td><td>Alta</td><td>Media</td><td>Medio</td></tr>
+          <tr><td>CRM inmobiliario</td><td>Media-alta</td><td>Media</td><td>Medio</td></tr>
+          <tr><td>Reclutamiento y candidatos</td><td>Media</td><td>Media</td><td>Medio-alto</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout" style="margin-top:16px">Empezar por <b>Saltillo</b>: 92.8% de unidades económicas son micronegocios, solo 38.4% usa internet y 9.4% vende en línea —un mercado enorme para soluciones sencillas. La oportunidad industrial se apoya en <b>Impulsa PYMES Saltillo</b>.</div>
+  </div>
+</section>
+
+<section id="identidad">
+  <div class="container">
+    <span class="kicker">10 — Manual de identidad visual</span>
+    <h2>Cómo se ve Hubie</h2>
+    <h3>Logotipo</h3>
+    <div class="logo-show">
+      <img src="assets/hubie-logo.svg" alt="Hubie logo" width="200" height="48">
+      <div class="logo-dark"><img src="assets/hubie-logo.svg" alt="Hubie logo dark" width="200" height="48" style="filter:brightness(0) invert(1)"></div>
+      <div style="max-width:280px">
+        <p style="margin:0"><b>Mark:</b> flecha con degradado cian-morado-rosa.</p>
+        <p style="margin:6px 0 0"><b>Tipo:</b> Hubie en negrita; punto coral sobre la i.</p>
+        <p class="do" style="margin:6px 0 0">✓ Siempre con área de respiración.</p>
+        <p class="dont" style="margin:6px 0 0">✗ No cambiar colores ni estirar.</p>
+      </div>
+    </div>
+    <h3>Paleta de marca</h3>
+    <div class="swatches">
+      <div class="swatch"><div class="c" style="background:#16123a"></div><div class="meta">Ink #16123a</div></div>
+      <div class="swatch"><div class="c" style="background:#7c5cfc"></div><div class="meta">Purple #7c5cfc</div></div>
+      <div class="swatch"><div class="c" style="background:#2f6bff"></div><div class="meta">Blue #2f6bff</div></div>
+      <div class="swatch"><div class="c" style="background:#ec4899"></div><div class="meta">Pink #ec4899</div></div>
+      <div class="swatch"><div class="c" style="background:#22d3ee"></div><div class="meta">Cyan #22d3ee</div></div>
+      <div class="swatch"><div class="c" style="background:#f6f7fb"></div><div class="meta">Bg #f6f7fb</div></div>
+    </div>
+    <div class="swatches2">
+      <div class="swatch"><div class="c" style="background:#22c55e"></div><div class="meta">Green</div></div>
+      <div class="swatch"><div class="c" style="background:#f97316"></div><div class="meta">Orange</div></div>
+      <div class="swatch"><div class="c" style="background:#efeafe"></div><div class="meta">Purple soft</div></div>
+      <div class="swatch"><div class="c" style="background:#fdeaf4"></div><div class="meta">Pink soft</div></div>
+    </div>
+    <h3>Tipografía</h3>
+    <div class="card">
+      <p style="font-weight:900;font-size:30px;color:var(--ink);margin:0">Nunito — redonda, amigable, legible en móvil.</p>
+      <p style="margin-top:8px">Pesos 800/900 para titulares y 600/700 para texto. Estilo Apple: limpio, generoso en espacio en blanco.</p>
+    </div>
+    <h3>Estilo visual y tono gráfico</h3>
+    <ul class="clean">
+      <li><b>Familia de productos limpia:</b> cada rama comparte el mismo sistema, solo cambia el acento de color.</li>
+      <li><b>Gradientes suaves</b> morado-rosa como firma de marca.</li>
+      <li><b>Tarjetas redondeadas</b>, sombras suaves, mucho aire.</li>
+      <li><b>Iconografía</b> de trazo consistente en todo el ecosistema.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <img src="assets/hubie-logo.svg" alt="Hubie" width="92" height="22" style="filter:brightness(0) invert(1);margin-bottom:10px">
+    <p>Brand Book de Hubie · El sistema operativo para empresas.</p>
+    <p style="color:#8f8ab3;margin-top:8px">© 2024 Hubie. Desarrollado por Tap Marketing &amp; Creators. Creado por Julio Contreras.</p>
+  </div>
+</footer>
+</body>
+</html>
