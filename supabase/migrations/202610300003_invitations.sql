@@ -35,9 +35,9 @@ begin
   raise exception 'already a member' using errcode='23505';
  end if;
  -- Token returned once; caller must deliver it over a trusted private channel.
- v_token := encode(extensions.gen_random_bytes(32),'hex');
+ v_token := encode(public.gen_random_bytes(32),'hex');
  insert into public.organization_invitations(organization_id,email,role,token_hash,created_by,expires_at)
- values(p_org,v_email,p_role,digest(v_token,'sha256'),auth.uid(),now()+interval '7 days');
+ values(p_org,v_email,p_role,public.digest(v_token,'sha256'),auth.uid(),now()+interval '7 days');
  insert into public.audit_events(organization_id,actor_user_id,action,target_type)
  values(p_org,auth.uid(),'invitation.created','invitation');
  return v_token;
@@ -54,7 +54,7 @@ begin
  select lower(email),email_confirmed_at into v_email,v_confirmed from auth.users where id=auth.uid();
  if v_confirmed is null then raise exception 'verified email required' using errcode='42501'; end if;
  select * into v_inv from public.organization_invitations
- where token_hash=digest(p_token,'sha256') and consumed_at is null and expires_at > now() for update;
+ where token_hash=public.digest(p_token,'sha256') and consumed_at is null and expires_at > now() for update;
  if not found or lower(trim(v_inv.email)) <> v_email then
   raise exception 'invalid or expired invitation' using errcode='42501';
  end if;
