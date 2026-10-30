@@ -5,7 +5,8 @@ class InvitationContracts(unittest.TestCase):
  def test_invite_is_org_scoped(self):
   self.assertIn("public.hubie_has_org_role(p_org,array['owner','admin'])", SQL)
  def test_acceptance_requires_matching_authenticated_email(self):
-  self.assertIn("auth.jwt() ->> 'email'", SQL)
+  self.assertIn("from auth.users where id=auth.uid()", SQL)
+  self.assertIn("email_confirmed_at", SQL)
   self.assertIn("lower(trim(v_inv.email))", SQL)
  def test_token_is_hashed(self):
   self.assertIn("public.digest(p_token,'sha256')", SQL)
