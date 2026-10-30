@@ -1,7 +1,7 @@
 -- Hubie Sprint 1: baseline tenant authorization (Supabase PostgreSQL).
 -- Apply only to a NEW / reviewed database; never run blindly on production.
 begin;
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema public;
 create table if not exists public.organizations (
  id uuid primary key default gen_random_uuid(),
  slug text not null unique check (slug ~ '^[a-z0-9][a-z0-9-]{2,62}$'),
