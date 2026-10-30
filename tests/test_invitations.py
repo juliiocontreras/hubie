@@ -8,7 +8,7 @@ class InvitationContracts(unittest.TestCase):
   self.assertIn("auth.jwt() ->> 'email'", SQL)
   self.assertIn("lower(trim(v_inv.email))", SQL)
  def test_token_is_hashed(self):
-  self.assertIn("digest(p_token,'sha256')", SQL)
+  self.assertIn("public.digest(p_token,'sha256')", SQL)
   self.assertIn("token_hash bytea", SQL)
  def test_invite_expires_and_is_single_use(self):
   self.assertIn("expires_at > now()", SQL)
