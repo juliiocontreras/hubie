@@ -18,8 +18,8 @@ const navScript=`<script>(function(){const button=document.querySelector('.hubie
 function enhanceHtml(html){
  let updated=html.replace(/<nav class="hubie-navigation"[^>]*>[\s\S]*?<\/nav>/,nav);
  updated=updated.replace(/<nav class="nav__menu">[\s\S]*?<\/nav>/,nav);
- updated=updated.replace(/href=["'](?:\\.\\/)?productos\\.html(["'])/g,'href="/shop.html"');
- updated=updated.replace(/https:\\/\\/fonts.googleapis.com\\/css2\\?family=Nunito:[^"']+/g,'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+ updated=updated.replace(/href=["'](?:\.\/)?productos\.html(["'])/g,'href="/shop.html"');
+ updated=updated.replace(/https:\/\/fonts.googleapis.com\/css2\?family=Nunito:[^"']+/g,'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
  if(!updated.includes('fonts.googleapis.com/css2?family=Poppins'))updated=updated.replace('</head>','<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>');
  updated=updated.replace('</head>',navStyles+'</head>');
  return updated.replace('</body>',navScript+'</body>');
