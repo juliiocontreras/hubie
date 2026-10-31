@@ -16,11 +16,8 @@ const nav=`<button class="hubie-menu-toggle" type="button" aria-expanded="false"
 const navStyles='<link rel="stylesheet" href="/assets/navigation.css">';
 const navScript=`<script>(function(){const button=document.querySelector('.hubie-menu-toggle'),nav=document.getElementById('hubie-main-nav');if(!button||!nav)return;button.addEventListener('click',()=>{const open=nav.classList.toggle('is-open');button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');});nav.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)nav.querySelectorAll('details').forEach(other=>{if(other!==d)other.open=false;});}));})();</script>`;
 function enhanceHtml(html){
- let updated=html.replace(/<nav class="nav__menu">[\\s\\S]*?<\\/nav>/,nav);
- // Newer pages already include a nav, but must use the same shared component.
- updated=updated.replace(/<nav class="hubie-navigation"[^>]*>[\\s\\S]*?<\\/nav>/,nav);
- // Prevent double replacement of the button by normalizing duplicate toggles.
- updated=updated.replace(/(<button class="hubie-menu-toggle"[\\s\\S]*?<\\/button>)\\s*(?=<button class="hubie-menu-toggle")/g,'');
+ let updated=html.replace(/<nav class="hubie-navigation"[^>]*>[\s\S]*?<\/nav>/,nav);
+ updated=updated.replace(/<nav class="nav__menu">[\s\S]*?<\/nav>/,nav);
  updated=updated.replace(/href=["'](?:\\.\\/)?productos\\.html(["'])/g,'href="/shop.html"');
  updated=updated.replace(/https:\\/\\/fonts.googleapis.com\\/css2\\?family=Nunito:[^"']+/g,'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
  if(!updated.includes('fonts.googleapis.com/css2?family=Poppins'))updated=updated.replace('</head>','<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>');
