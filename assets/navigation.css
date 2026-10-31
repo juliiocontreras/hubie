@@ -27,3 +27,16 @@ img,video,svg{max-width:100%}
 }
 @media(max-width:540px){.site-header .nav{gap:8px}.site-header .nav>.btn{padding:9px 10px;font-size:11px}.hubie-menu-toggle{padding:9px 10px}.hubie-menu-toggle span{display:none}}
 @media(prefers-reduced-motion:reduce){.hubie-navigation *{scroll-behavior:auto}}
+
+/* Shared Hubie page shell and footer */
+.site-header .logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.site-header .logo__mark{width:32px;height:32px;flex:none}
+.site-header .logo__type{font-family:Poppins,sans-serif;font-weight:800;font-size:23px;letter-spacing:-.055em;color:#17243c}
+.hubie-site-footer{background:#fff;border-top:1px solid #e2e8f0;margin-top:24px}
+.hubie-footer-inner{padding:38px 20px;display:flex;flex-wrap:wrap;gap:22px;align-items:center;justify-content:space-between}
+.hubie-footer-brand{font:800 22px Poppins,sans-serif;color:#1e293b;text-decoration:none}
+.hubie-footer-inner nav{display:flex;flex-wrap:wrap;gap:14px}
+.hubie-footer-inner nav a{font:500 13px Poppins,sans-serif;color:#475569;text-decoration:none}
+.hubie-footer-inner nav a:hover{color:#2563eb}
+.hubie-footer-inner small{color:#64748b;font-size:12px}
+@media(max-width:600px){.hubie-footer-inner{align-items:flex-start;flex-direction:column;padding:28px 18px}.hubie-footer-inner nav{gap:12px 20px}}
