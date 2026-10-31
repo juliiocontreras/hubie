@@ -9,7 +9,7 @@ function endpoint(){
 }
 export async function executeSql(sql,args=[]){
  if(!databaseConfigured()) throw new Error('Turso credentials not configured');
- const response=await fetch(endpoint(),{method:'POST',headers:{'Authorization':'Bearer '+process.env.TURSO_AUTH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({requests:[{type:'execute',stmt:{sql,args}},{type:'close'}]}),signal:AbortSignal.timeout(8000)});
+ const response=await fetch(endpoint(),{method:'POST',headers:{'Authorization':'Bearer '+process.env.TURSO_AUTH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({requests:[{type:'execute',stmt:{sql,args:args.map(value=>({type:'text',value:String(value??'')}))}},{type:'close'}]}),signal:AbortSignal.timeout(8000)});
  if(!response.ok) { const error=new Error('Turso request failed'); error.code='HTTP_'+response.status; throw error; }
  const body=await response.json();
  const item=body.results?.[0];
