@@ -5,12 +5,27 @@ import { extname, resolve, sep } from 'node:path';
 const root=process.cwd();
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon'};
 const port=Number(process.env.PORT||10000);
-const nav="<nav class=\"hubie-navigation\" aria-label=\"Navegación principal\">\n<a href=\"/index.html\">Inicio</a>\n<details><summary>Suites</summary><div class=\"hubie-submenu\"><a href=\"/suite.html\">Explorar Suites</a><a href=\"/suite.html\">Office</a><a href=\"/suite.html\">Industrial</a><a href=\"/suite.html\">Commerce</a><a href=\"/suite.html\">Realty</a><a href=\"/suite.html\">Services</a><a href=\"/suite.html\">Health</a></div></details>\n<details><summary>Herramientas</summary><div class=\"hubie-submenu\"><a href=\"/tools.html\">Catálogo de Tools</a><a href=\"/tools.html#crm\">CRM y clientes</a><a href=\"/tools.html#inventario\">Inventario</a><a href=\"/tools.html#agenda\">Agenda</a></div></details>\n<details><summary>Soluciones</summary><div class=\"hubie-submenu\"><a href=\"/servicios.html\">Servicios profesionales</a><a href=\"/shop.html\">Hubie Shop</a><a href=\"/servicios.html\">Marketing y diseño</a></div></details>\n<a href=\"/precios.html\">Cotizador</a><a href=\"/contacto.html\">Contacto</a>\n</nav>";
+const nav=`<button class="hubie-menu-toggle" type="button" aria-expanded="false" aria-controls="hubie-main-nav" aria-label="Abrir menú">☰ <span>Menú</span></button>
+<nav id="hubie-main-nav" class="hubie-navigation" aria-label="Navegación principal">
+<a href="/index.html">Inicio</a>
+<details><summary>Suites</summary><div class="hubie-submenu"><a href="/suite.html">Explorar Suites</a><a href="/suite.html">Office · Industrial · Commerce · Realty · Services · Health</a></div></details>
+<details><summary>Tools</summary><div class="hubie-submenu"><a href="/tools.html">Explorar herramientas</a><a href="/tools.html#crm">CRM y clientes</a><a href="/tools.html#inventario">Inventario</a><a href="/tools.html#agenda">Agenda</a></div></details>
+<details><summary>Soluciones</summary><div class="hubie-submenu"><a href="/servicios.html">Servicios profesionales</a><a href="/shop.html">Hubie Shop</a></div></details>
+<a href="/precios.html">Cotizador</a><a href="/contacto.html">Contacto</a>
+</nav>`;
 const navStyles='<link rel="stylesheet" href="/assets/navigation.css">';
+const navScript=`<script>(function(){const button=document.querySelector('.hubie-menu-toggle'),nav=document.getElementById('hubie-main-nav');if(!button||!nav)return;button.addEventListener('click',()=>{const open=nav.classList.toggle('is-open');button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');});nav.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)nav.querySelectorAll('details').forEach(other=>{if(other!==d)other.open=false;});}));})();</script>`;
 function enhanceHtml(html){
-  // Replace the old flat navigation consistently across all existing pages.
-  const updated=html.replace(/<nav class="nav__menu">[\s\S]*?<\/nav>/,nav).replace(/href=["'](?:\.\/)?productos\.html(["'])/g,'href="/shop.html"').replace(/https:\/\/fonts.googleapis.com\/css2\?family=Nunito:[^"']+/g,'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-  return updated.replace('</head>',navStyles+'</head>');
+ let updated=html.replace(/<nav class="nav__menu">[\\s\\S]*?<\\/nav>/,nav);
+ // Newer pages already include a nav, but must use the same shared component.
+ updated=updated.replace(/<nav class="hubie-navigation"[^>]*>[\\s\\S]*?<\\/nav>/,nav);
+ // Prevent double replacement of the button by normalizing duplicate toggles.
+ updated=updated.replace(/(<button class="hubie-menu-toggle"[\\s\\S]*?<\\/button>)\\s*(?=<button class="hubie-menu-toggle")/g,'');
+ updated=updated.replace(/href=["'](?:\\.\\/)?productos\\.html(["'])/g,'href="/shop.html"');
+ updated=updated.replace(/https:\\/\\/fonts.googleapis.com\\/css2\\?family=Nunito:[^"']+/g,'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+ if(!updated.includes('fonts.googleapis.com/css2?family=Poppins'))updated=updated.replace('</head>','<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>');
+ updated=updated.replace('</head>',navStyles+'</head>');
+ return updated.replace('</body>',navScript+'</body>');
 }
 function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/tests\/|\/docs\/|\/database\.mjs$|\/server\.mjs$|\/package(?:-lock)?\.json$)/i.test(path);}
 async function applyCoreSchema(){
