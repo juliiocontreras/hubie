@@ -40,3 +40,37 @@ img,video,svg{max-width:100%}
 .hubie-footer-inner nav a:hover{color:#2563eb}
 .hubie-footer-inner small{color:#64748b;font-size:12px}
 @media(max-width:600px){.hubie-footer-inner{align-items:flex-start;flex-direction:column;padding:28px 18px}.hubie-footer-inner nav{gap:12px 20px}}
+
+/* Layout normalization: predictable spacing, responsive grids and consistent hierarchy */
+:root{--maxw:1200px;--header-h:76px;--font:'Poppins',sans-serif}
+html{scroll-padding-top:96px}
+body{overflow-wrap:break-word}
+main,.hero,.hero__grid,.feature-split,.contact-grid,.quote-layout,.tools-grid{min-width:0}
+.container{width:min(100% - 40px,1200px);max-width:1200px;padding-inline:0;margin-inline:auto}
+.site-header .container{width:min(100% - 40px,1200px)}
+.hubie-brand{display:flex;align-items:center;flex:0 0 auto;min-width:0;text-decoration:none}
+.hubie-brand img{display:block;width:176px;height:auto;max-height:52px;object-fit:contain}
+.site-header .nav{gap:12px;min-height:78px}
+.hubie-navigation{gap:0}
+.hubie-navigation>a,.hubie-navigation summary{padding-inline:9px}
+.hubie-header-cta{flex:0 0 auto;font-size:12px!important;padding:10px 13px!important;white-space:nowrap}
+h1,h2,h3,h4{overflow-wrap:break-word;text-wrap:balance}
+p{max-width:100%}
+.hero{overflow:hidden}
+.hero__grid>*{min-width:0}
+.hero__grid{align-items:center;gap:clamp(24px,4vw,64px)}
+.hero__cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{max-width:100%;white-space:normal;text-align:center;justify-content:center}
+img{height:auto}
+.mock,.laptop,.laptop__screen{max-width:100%}
+.quote-shell,.tools-wrap{width:min(100% - 40px,1200px);max-width:1200px;padding-left:0;padding-right:0;margin-inline:auto}
+.quote-shell section{padding:28px}
+.quote-panel{min-width:0}
+.suite-grid,.tools-grid,.quote-layout{min-width:0}
+.contact-grid>*{min-width:0}
+.form input,.form select,.form textarea{max-width:100%;min-width:0}
+.hubie-site-footer .container{max-width:1200px}
+@media(max-width:1180px){.hubie-header-cta{display:none}}
+@media(max-width:1050px){.site-header .nav{min-height:70px}.hubie-brand img{width:158px}.hubie-menu-toggle{margin-left:auto}}
+@media(max-width:760px){.container,.site-header .container,.quote-shell,.tools-wrap{width:calc(100% - 32px)}.hero__grid{gap:28px}.hero__cta .btn{width:100%}.h-hero{font-size:clamp(32px,9vw,48px)}.quote-shell section{padding:20px}.contact-grid{gap:24px}.form{padding:20px}}
+@media(max-width:440px){.hubie-brand img{width:138px}.site-header .nav{gap:8px}.hubie-menu-toggle{font-size:13px}.quote-panel{padding:18px!important}}
