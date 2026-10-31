@@ -10,15 +10,15 @@ function endpoint(){
 export async function executeSql(sql,args=[]){
  if(!databaseConfigured()) throw new Error('Turso credentials not configured');
  const response=await fetch(endpoint(),{method:'POST',headers:{'Authorization':'Bearer '+process.env.TURSO_AUTH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({requests:[{type:'execute',stmt:{sql,args}},{type:'close'}]}),signal:AbortSignal.timeout(8000)});
- if(!response.ok) throw new Error('Turso request failed: HTTP '+response.status);
+ if(!response.ok) { const error=new Error('Turso request failed'); error.code='HTTP_'+response.status; throw error; }
  const body=await response.json();
  const item=body.results?.[0];
- if(item?.type==='error') throw new Error('Turso SQL error');
+ if(item?.type==='error') {const error=new Error('Turso SQL error');error.code='SQL_ERROR';throw error;}
  if(item?.type!=='ok') throw new Error('Unexpected Turso response');
  return item.response?.result;
 }
 export async function databaseHealth(){
  if(!databaseConfigured())return {status:'not-configured'};
  try{await executeSql('SELECT 1 AS ok');return {status:'connected'};}
- catch{return {status:'unavailable'};}
+ catch(error){const code=error?.code || (error?.name==='TimeoutError'?'TIMEOUT':error instanceof TypeError?'NETWORK_ERROR':'UNKNOWN');return {status:'unavailable',reason:code};}
 }
