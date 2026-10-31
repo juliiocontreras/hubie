@@ -1,9 +1,9 @@
 // Server-only libSQL HTTP pipeline client; no browser exposure or npm build step.
 export function databaseConfigured(){return Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);}
 function endpoint(){
- const raw=process.env.TURSO_DATABASE_URL;
+ const raw=process.env.TURSO_DATABASE_URL?.trim().replace(/^[\"']|[\"']$/g,'').trim();
  if(!raw) throw new Error('Turso URL not configured');
- const u=new URL(raw.replace(/^libsql:/,'https:').replace(/^wss:/,'https:'));
+ const u=new URL(raw.replace(/^libsql:/i,'https:').replace(/^wss:/i,'https:'));
  if(u.protocol!=='https:') throw new Error('Turso requires HTTPS');
  return u.origin+'/v2/pipeline';
 }
