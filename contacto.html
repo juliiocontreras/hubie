@@ -110,14 +110,14 @@
 
 <section>
   <div class="container contact-grid">
-    <form class="form" onsubmit="event.preventDefault();document.getElementById('ok').style.display='block'">
+    <form class="form" id="hubie-lead-form">
       <h3 class="h-card">Solicita tu demo o cotización</h3>
       <label for="nombre">Nombre completo</label>
-      <input id="nombre" required placeholder="Tu nombre">
+      <input id="nombre" name="nombre" required placeholder="Tu nombre">
       <label for="negocio">Nombre del negocio</label>
-      <input id="negocio" placeholder="Ej. Salón María">
+      <input id="negocio" name="negocio" placeholder="Ej. Salón María">
       <label for="giro">Giro / Rama de interés</label>
-      <select id="giro">
+      <select id="giro" name="giro">
         <option>Barbershop</option><option>Nails Studio</option><option>Salud</option>
         <option>Dent</option><option>Jobs</option><option>Realtors</option>
         <option>Market</option><option>Food</option><option>Industrial</option>
@@ -125,14 +125,14 @@
         <option>Portal de proveedores industriales</option><option>Otro</option>
       </select>
       <label for="email">Correo electrónico</label>
-      <input id="email" type="email" required placeholder="tucorreo@ejemplo.com">
+      <input id="email" name="email" type="email" required placeholder="tucorreo@ejemplo.com">
       <label for="tel">WhatsApp</label>
-      <input id="tel" placeholder="844 123 4567">
+      <input id="tel" name="tel" placeholder="844 123 4567">
       <label for="mensaje">¿Qué necesitas?</label>
-      <textarea id="mensaje" placeholder="Cuéntanos sobre tu negocio y lo que buscas..."></textarea>
+      <textarea id="mensaje" name="mensaje" placeholder="Cuéntanos sobre tu negocio y lo que buscas..."></textarea>
       <button class="btn btn--primary btn--lg" type="submit">Enviar solicitud <svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-arrow-right"/></svg></button>
       <p class="form-note">Tus datos se usan solo para contactarte. Sin spam.</p>
-      <p id="ok" class="form-note" style="display:none;color:var(--green);font-weight:800">¡Gracias! Te contactaremos pronto por tu canal preferido. 🙌</p>
+      <p id="ok" class="form-note" style="display:none;color:var(--green);font-weight:800">Solicitud recibida y registrada. Te contactaremos pronto.</p>
     </form>
 
     <div class="contact-aside">
@@ -159,5 +159,23 @@
     </div>
   </div>
 </footer>
-</body>
+<script>
+(function(){
+const form=document.getElementById('hubie-lead-form');
+if(!form)return;
+const status=document.getElementById('ok');
+form.addEventListener('submit',async(event)=>{
+event.preventDefault();
+const button=form.querySelector('button[type="submit"]');
+button.disabled=true;status.style.display='block';status.style.color='#475569';status.textContent='Enviando solicitud…';
+try{
+const data=Object.fromEntries(new FormData(form).entries());
+const response=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+if(!response.ok)throw new Error('No se pudo registrar');
+status.style.color='#15803d';status.textContent='Solicitud recibida y registrada. Te contactaremos pronto.';form.reset();
+}catch{status.style.color='#b91c1c';status.textContent='No pudimos registrar tu solicitud. Inténtalo de nuevo o escríbenos directamente.';}
+finally{button.disabled=false;}
+});
+})();
+</script></body>
 </html>
