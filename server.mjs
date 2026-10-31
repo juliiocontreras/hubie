@@ -1,4 +1,4 @@
-import { databaseHealth } from './database.mjs';
+import { databaseHealth, executeSql } from './database.mjs';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
@@ -12,9 +12,21 @@ function enhanceHtml(html){
   const updated=html.replace(/<nav class="nav__menu">[\s\S]*?<\/nav>/,nav);
   return updated.replace('</head>',navStyles+'</head>');
 }
+function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/tests\/|\/docs\/|\/database\.mjs$|\/server\.mjs$|\/package(?:-lock)?\.json$)/i.test(path);}
+async function applyCoreSchema(){
+ const health=await databaseHealth();
+ if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
+ const sql=await readFile(resolve(root,'turso/migrations/001_core.sql'),'utf8');
+ for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
+ const result=await executeSql("SELECT COUNT(*) AS total FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','organization_invitations','audit_events')");
+ const count=Number(result?.rows?.[0]?.[0]?.value??0);
+ if(count!==5)throw new Error('Core schema verification failed');
+ console.log('Hubie core schema verified: 5 tables');
+}
 createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
   if(pathname==='/healthz'){const db=await databaseHealth();res.writeHead(db.status==='unavailable'?503:200,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({status:db.status==='unavailable'?'degraded':'ok',service:'hubie-dev',database:db.status,...(db.reason?{reason:db.reason}:{})}));return;}
+  if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
   let decoded;try{decoded=decodeURIComponent(pathname);}catch{res.writeHead(400);res.end();return;}
   const file=resolve(root,'.'+(decoded==='/'?'/index.html':decoded));
@@ -28,3 +40,4 @@ createServer(async(req,res)=>{
     res.end(req.method==='HEAD'?undefined:data);
   }catch{res.writeHead(404);res.end('Not found');}
 }).listen(port,'0.0.0.0',()=>console.log('Hubie listening on '+port));
+applyCoreSchema().catch(error=>console.error('Core migration failed:',error?.code||error?.name||'unknown'));
