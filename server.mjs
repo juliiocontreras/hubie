@@ -1,5 +1,6 @@
 import { databaseHealth, executeSql } from './database.mjs';
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 const root=process.cwd();
@@ -37,9 +38,21 @@ async function applyCoreSchema(){
  const count=Number(result?.rows?.[0]?.[0]?.value??0);
  if(count!==5)throw new Error('Core schema verification failed');
  console.log('Hubie core schema verified: 5 tables');
+ await executeSql('CREATE TABLE IF NOT EXISTS marketing_leads (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, negocio TEXT, giro TEXT, email TEXT NOT NULL, tel TEXT, mensaje TEXT, created_at TEXT NOT NULL)');
 }
 createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
+  if(pathname==='/api/leads'){
+    if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
+    let raw='';try{for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('too-large');}
+      const data=JSON.parse(raw);
+      const clean=(key,max=300)=>typeof data[key]==='string'?data[key].trim().slice(0,max):'';
+      const nombre=clean('nombre',120),email=clean('email',254),negocio=clean('negocio',160),giro=clean('giro',100),tel=clean('tel',40),mensaje=clean('mensaje',2000);
+      if(!nombre||!/^\S+@\S+\.\S+$/.test(email)){res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:'Datos incompletos'}));return;}
+      await executeSql('INSERT INTO marketing_leads (id,nombre,negocio,giro,email,tel,mensaje,created_at) VALUES (?,?,?,?,?,?,?,?)',[randomUUID(),nombre,negocio,giro,email,tel,mensaje,new Date().toISOString()]);
+      res.writeHead(201,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({ok:true}));return;
+    }catch(error){const bad=error instanceof SyntaxError||error.message==='too-large';res.writeHead(bad?400:503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:bad?'Solicitud inválida':'No se pudo guardar la solicitud'}));return;}
+  }
   if(pathname==='/healthz'){const db=await databaseHealth();res.writeHead(db.status==='unavailable'?503:200,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({status:db.status==='unavailable'?'degraded':'ok',service:'hubie-dev',database:db.status,...(db.reason?{reason:db.reason}:{})}));return;}
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
