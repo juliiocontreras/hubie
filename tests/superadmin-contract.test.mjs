@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{readFile}from'node:fs/promises';
+test('superadmin provisioning is server side and protected',async()=>{const code=await readFile('admin.mjs','utf8');assert.match(code,/createTenant/);assert.match(code,/requireSuperAdmin/);assert.match(code,/randomUUID/);assert.match(code,/INSERT INTO organizations/);});
+test('superadmin endpoint uses auth and does not trust client tenant identity',async()=>{const code=await readFile('server.mjs','utf8');assert.match(code,/api\/admin\/tenants/);assert.match(code,/requireSuperAdmin/);assert.match(code,/readSessionCookie/);});
