@@ -2,6 +2,7 @@
 const page=location.pathname;
 if(!['/suite.html','/tools.html','/precios.html'].includes(page))return;
 let catalog;try{const response=await fetch('/assets/catalog.json');if(!response.ok)throw Error('catalog');catalog=await response.json();}catch{return;}
+const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 if(page==='/tools.html'){
  const grid=document.querySelector('.hubie-card-grid');if(!grid)return;
@@ -15,10 +16,28 @@ if(page==='/suite.html'){
 if(page==='/precios.html'){
  const suiteGrid=document.getElementById('suites'),toolsList=document.getElementById('tools'),extrasList=document.getElementById('extras');
  if(!suiteGrid||!toolsList||!extrasList)return;
- suiteGrid.innerHTML=catalog.suites.map((s,i)=>'<label class="suite-option"><input type="radio" name="suite" value="'+escape(s.name)+'" '+(i===0?'checked':'')+'> '+escape(s.name)+'</label>').join('');
- toolsList.innerHTML=catalog.tools.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.name)+'"> '+escape(t.name)+'</label>').join('');
- extrasList.innerHTML=catalog.extras.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.name)+'"> '+escape(t.name)+'</label>').join('');
- suiteGrid.closest('.quote-layout')?.addEventListener('change',()=>{const name=document.querySelector('input[name="suite"]:checked')?.value||'';document.getElementById('selected-suite').textContent='Suite '+name;const ul=document.getElementById('selected-items');ul.replaceChildren();const selected=[...document.querySelectorAll('#tools input:checked,#extras input:checked')].map(x=>x.value);for(const label of selected){const li=document.createElement('li');li.textContent=label;ul.append(li);}if(!selected.length){const li=document.createElement('li');li.textContent='Sin herramientas adicionales';ul.append(li);}});
- document.querySelector('input[name="suite"]')?.dispatchEvent(new Event('change',{bubbles:true}));
+
+ const selectable=catalog.tools.filter(t=>!t.included);
+ suiteGrid.innerHTML=catalog.suites.map((s,i)=>'<label class="suite-option"><input type="radio" name="suite" value="'+escape(s.name)+'" '+(i===0?'checked':'')+'> <span>'+escape(s.name)+'<small style="display:block;color:#64748b">'+money(s.price)+'</small></span></label>').join('');
+ toolsList.innerHTML='<p class="quote-note">El Core (10 herramientas) está incluido en tu Suite sin costo adicional.</p>'+selectable.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+money(t.price)+'</span></label>').join('');
+ extrasList.innerHTML=catalog.extras.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+(t.price===null?'Cotización personalizada':(t.pricing==='from'?'Desde ':'')+money(t.price))+'</span></label>').join('');
+ const summary=document.querySelector('.quote-summary');
+ const calc=document.createElement('div');calc.id='hubie-cost-breakdown';calc.setAttribute('aria-live','polite');calc.style.cssText='padding:16px 0;border-top:1px solid #e2e8f0;line-height:1.8';
+ summary.insertBefore(calc,summary.querySelector('button'));
+ const note=summary.querySelector('.quote-note');if(note)note.textContent='Pago único por Setup + Tools + Extras. Anticipo 50%; saldo en 1 a 6 pagos. Los conceptos «desde» y las integraciones personalizadas requieren confirmación.';
+ const recalc=()=>{
+ const s=catalog.suites.find(x=>x.name===document.querySelector('input[name="suite"]:checked')?.value)||catalog.suites[0];
+ const checked=[...document.querySelectorAll('#tools input:checked,#extras input:checked')].map(x=>x.value);
+ const selected=[...catalog.tools,...catalog.extras].filter(x=>checked.includes(x.id));
+ const hasQuote=selected.some(x=>x.price===null),hasFrom=selected.some(x=>x.pricing==='from');
+ const total=s.price+selected.reduce((sum,x)=>sum+(x.price||0),0);
+ document.getElementById('selected-suite').textContent=s.name;
+ const ul=document.getElementById('selected-items');ul.replaceChildren();
+ selected.forEach(x=>{const li=document.createElement('li');li.textContent=x.name+(x.price===null?' · Por cotizar':' · '+money(x.price));ul.append(li);});
+ if(!selected.length){const li=document.createElement('li');li.textContent='Core incluido · Sin herramientas adicionales';ul.append(li);}
+ calc.innerHTML='<strong>'+(hasFrom?'Total desde: ':'Total: ')+money(total)+'</strong><div>Anticipo 50%: '+money(total*.5)+'</div><div>Saldo 50%: '+money(total*.5)+'</div><small>Saldo en hasta 6 pagos: '+money(total*.5/6)+' por pago</small>'+(hasQuote?'<p class="quote-note">Hay conceptos pendientes de cotización; el total no es definitivo.</p>':'');
+ };
+ suiteGrid.closest('.quote-layout')?.addEventListener('change',recalc);
+ recalc();
 }
 })();
