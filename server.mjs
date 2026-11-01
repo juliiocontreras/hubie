@@ -32,8 +32,10 @@ function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/test
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- const sql=await readFile(resolve(root,'turso/migrations/001_core.sql'),'utf8');
- for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
+ for(const migration of ['001_core.sql','002_multitenant.sql']){
+  const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
+  for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
+ }
  const result=await executeSql("SELECT COUNT(*) AS total FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','organization_invitations','audit_events')");
  const count=Number(result?.rows?.[0]?.[0]?.value??0);
  if(count!==5)throw new Error('Core schema verification failed');
