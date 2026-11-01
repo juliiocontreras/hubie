@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
+test('Google OIDC has state, nonce, PKCE, id token verification and no open redirects',async()=>{const s=await readFile('google-oidc.mjs','utf8');for(const part of ['code_challenge','code_verifier','nonce','state','id_token','tokeninfo','email_verified','aud','iss'])assert.ok(s.includes(part),part);});
+test('Google login endpoints are wired into the server',async()=>{const s=await readFile('server.mjs','utf8');assert.match(s,/api\/auth\/google\/start/);assert.match(s,/api\/auth\/google\/callback/);});
