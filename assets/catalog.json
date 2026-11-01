@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "source": "Current repository; pending reconciliation with official Hubie spreadsheet",
+  "complete": false,
+  "suites": [
+    {
+      "id": "office",
+      "name": "Office"
+    },
+    {
+      "id": "industrial",
+      "name": "Industrial"
+    },
+    {
+      "id": "commerce",
+      "name": "Commerce"
+    },
+    {
+      "id": "realty",
+      "name": "Realty"
+    },
+    {
+      "id": "services",
+      "name": "Services"
+    },
+    {
+      "id": "health",
+      "name": "Health"
+    }
+  ],
+  "specializations": [
+    {
+      "id": "dent",
+      "name": "Hubie Dent"
+    },
+    {
+      "id": "barbershop",
+      "name": "Hubie Barbershop"
+    },
+    {
+      "id": "nails",
+      "name": "Hubie Nails Studio"
+    },
+    {
+      "id": "realtors",
+      "name": "Hubie Realtors"
+    },
+    {
+      "id": "freelance",
+      "name": "Hubie para Freelance"
+    }
+  ],
+  "tools": [
+    {
+      "id": "crm",
+      "name": "CRM y clientes"
+    },
+    {
+      "id": "inventario",
+      "name": "Inventario"
+    },
+    {
+      "id": "agenda",
+      "name": "Agenda"
+    },
+    {
+      "id": "reportes",
+      "name": "Reportes"
+    },
+    {
+      "id": "cotizaciones",
+      "name": "Cotizaciones"
+    },
+    {
+      "id": "expedientes",
+      "name": "Expedientes de clientes"
+    },
+    {
+      "id": "recordatorios",
+      "name": "Recordatorios"
+    },
+    {
+      "id": "proyectos",
+      "name": "Seguimiento de proyectos"
+    }
+  ],
+  "extras": [
+    {
+      "id": "marketing",
+      "name": "Diseño y marketing"
+    },
+    {
+      "id": "capacitacion",
+      "name": "Capacitación y configuración"
+    }
+  ]
+}
