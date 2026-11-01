@@ -1,97 +1,323 @@
 {
-  "version": 1,
-  "source": "Current repository; pending reconciliation with official Hubie spreadsheet",
+  "version": 2,
+  "source": "Hubie_Tabla_Datos_Simple_v5.xlsx (project transcript)",
   "complete": false,
+  "currency": "MXN",
+  "rules": {
+    "depositRate": 0.5,
+    "maxBalanceInstallments": 6,
+    "monthlyPlatformFee": 0
+  },
   "suites": [
     {
-      "id": "office",
-      "name": "Office"
+      "id": "S001",
+      "name": "Hubie Beauty Suite",
+      "price": 9900,
+      "users": 2
     },
     {
-      "id": "industrial",
-      "name": "Industrial"
+      "id": "S002",
+      "name": "Hubie Health Suite",
+      "price": 29900,
+      "users": 2
     },
     {
-      "id": "commerce",
-      "name": "Commerce"
+      "id": "S003",
+      "name": "Hubie Realty Suite",
+      "price": 18900,
+      "users": 2
     },
     {
-      "id": "realty",
-      "name": "Realty"
+      "id": "S004",
+      "name": "Hubie Commerce Suite",
+      "price": 11900,
+      "users": 2
     },
     {
-      "id": "services",
-      "name": "Services"
+      "id": "S005",
+      "name": "Hubie Food Suite",
+      "price": 12900,
+      "users": 2
     },
     {
-      "id": "health",
-      "name": "Health"
-    }
-  ],
-  "specializations": [
-    {
-      "id": "dent",
-      "name": "Hubie Dent"
+      "id": "S006",
+      "name": "Hubie Office Suite",
+      "price": 14900,
+      "users": 2
     },
     {
-      "id": "barbershop",
-      "name": "Hubie Barbershop"
+      "id": "S007",
+      "name": "Hubie Jobs Suite",
+      "price": 24900,
+      "users": 2
     },
     {
-      "id": "nails",
-      "name": "Hubie Nails Studio"
+      "id": "S008",
+      "name": "Hubie Pet Suite",
+      "price": 16900,
+      "users": 2
     },
     {
-      "id": "realtors",
-      "name": "Hubie Realtors"
+      "id": "S009",
+      "name": "Hubie Academy Suite",
+      "price": 16900,
+      "users": 2
     },
     {
-      "id": "freelance",
-      "name": "Hubie para Freelance"
+      "id": "S010",
+      "name": "Hubie Events Suite",
+      "price": 14900,
+      "users": 2
     }
   ],
   "tools": [
     {
-      "id": "crm",
-      "name": "CRM y clientes"
+      "id": "C001",
+      "name": "Clientes",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "inventario",
-      "name": "Inventario"
+      "id": "C002",
+      "name": "CRM",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "agenda",
-      "name": "Agenda"
+      "id": "C003",
+      "name": "Expedientes",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "reportes",
-      "name": "Reportes"
+      "id": "C004",
+      "name": "Agenda",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "cotizaciones",
-      "name": "Cotizaciones"
+      "id": "C005",
+      "name": "Inventario",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "expedientes",
-      "name": "Expedientes de clientes"
+      "id": "C006",
+      "name": "Catálogo",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "recordatorios",
-      "name": "Recordatorios"
+      "id": "C007",
+      "name": "Control de gastos",
+      "group": "Core",
+      "price": 0,
+      "included": true
     },
     {
-      "id": "proyectos",
-      "name": "Seguimiento de proyectos"
+      "id": "C008",
+      "name": "Dashboard",
+      "group": "Core",
+      "price": 0,
+      "included": true
+    },
+    {
+      "id": "C009",
+      "name": "Usuarios",
+      "group": "Core",
+      "price": 0,
+      "included": true
+    },
+    {
+      "id": "C010",
+      "name": "Notificaciones",
+      "group": "Core",
+      "price": 0,
+      "included": true
+    },
+    {
+      "id": "T001",
+      "name": "Portal de clientes",
+      "price": 4900,
+      "group": "Clientes",
+      "included": false
+    },
+    {
+      "id": "T002",
+      "name": "Programa de lealtad",
+      "price": 2800,
+      "group": "Clientes",
+      "included": false
+    },
+    {
+      "id": "T003",
+      "name": "Checklists",
+      "price": 2100,
+      "group": "Operación",
+      "included": false
+    },
+    {
+      "id": "T004",
+      "name": "Tareas",
+      "price": 2100,
+      "group": "Operación",
+      "included": false
+    },
+    {
+      "id": "T005",
+      "name": "Kanban",
+      "price": 2800,
+      "group": "Operación",
+      "included": false
+    },
+    {
+      "id": "T006",
+      "name": "Firmas digitales",
+      "price": 3100,
+      "group": "Operación",
+      "included": false
+    },
+    {
+      "id": "T007",
+      "name": "Formularios personalizados",
+      "price": 2800,
+      "group": "Operación",
+      "included": false
+    },
+    {
+      "id": "T008",
+      "name": "Compras",
+      "price": 3900,
+      "group": "Inventario",
+      "included": false
+    },
+    {
+      "id": "T009",
+      "name": "Proveedores",
+      "price": 2800,
+      "group": "Inventario",
+      "included": false
+    },
+    {
+      "id": "T010",
+      "name": "Almacenes",
+      "price": 3900,
+      "group": "Inventario",
+      "included": false
+    },
+    {
+      "id": "T011",
+      "name": "Lotes y caducidades",
+      "price": 4300,
+      "group": "Inventario",
+      "included": false
+    },
+    {
+      "id": "T012",
+      "name": "Escáner QR/Barras",
+      "price": 3100,
+      "group": "Inventario",
+      "included": false
+    },
+    {
+      "id": "T013",
+      "name": "Cotizaciones",
+      "price": 4300,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T014",
+      "name": "Cobros",
+      "price": 4300,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T015",
+      "name": "Facturación",
+      "price": 6100,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T016",
+      "name": "Caja",
+      "price": 2800,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T017",
+      "name": "Cuentas por cobrar",
+      "price": 3500,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T018",
+      "name": "Cuentas por pagar",
+      "price": 3500,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T019",
+      "name": "Comisiones",
+      "price": 2800,
+      "group": "Finanzas",
+      "included": false
+    },
+    {
+      "id": "T020",
+      "name": "Reportes avanzados",
+      "price": 3500,
+      "group": "Analítica",
+      "included": false
     }
   ],
   "extras": [
     {
-      "id": "marketing",
-      "name": "Diseño y marketing"
+      "id": "E001",
+      "name": "Usuario adicional",
+      "price": 990,
+      "pricing": "fixed"
     },
     {
-      "id": "capacitacion",
-      "name": "Capacitación y configuración"
+      "id": "E002",
+      "name": "Nueva sucursal",
+      "price": 4900,
+      "pricing": "fixed"
+    },
+    {
+      "id": "E003",
+      "name": "Almacenamiento adicional",
+      "price": 1490,
+      "pricing": "from"
+    },
+    {
+      "id": "E004",
+      "name": "Migración de datos",
+      "price": 4900,
+      "pricing": "from"
+    },
+    {
+      "id": "E005",
+      "name": "Capacitación adicional",
+      "price": 2900,
+      "pricing": "fixed"
+    },
+    {
+      "id": "E006",
+      "name": "Integración personalizada",
+      "price": null,
+      "pricing": "quote"
     }
   ]
 }
