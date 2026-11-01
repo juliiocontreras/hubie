@@ -1,6 +1,7 @@
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants} from './admin.mjs';
+import {googleConfigured,startGoogleLogin,completeGoogleLogin} from './google-oidc.mjs';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
@@ -34,7 +35,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/test
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -46,6 +47,14 @@ async function applyCoreSchema(){
 }
 createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
+  if(pathname==='/api/auth/google/start'){
+    if(req.method!=='GET'){res.writeHead(405);res.end();return;}
+    try{const url=await startGoogleLogin();res.writeHead(302,{'location':url,'cache-control':'no-store'});res.end();}catch{res.writeHead(503,{'content-type':'text/plain'});res.end('El acceso con Google aún no está configurado.');}return;
+  }
+  if(pathname==='/api/auth/google/callback'){
+    if(req.method!=='GET'){res.writeHead(405);res.end();return;}
+    try{const query=new URL(req.url,'http://localhost').searchParams;const session=await completeGoogleLogin(query.get('state'),query.get('code'));res.writeHead(303,{'location':'/admin.html','set-cookie':'__Host-hubie_session='+encodeURIComponent(session.token)+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400','cache-control':'no-store'});res.end();}catch{res.writeHead(303,{'location':'/admin.html?login=failed','cache-control':'no-store'});res.end();}return;
+  }
   if(pathname==='/api/admin/tenants'){
     if(process.env.HUBIE_AUTH_ENABLED!=='true'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:'Administración no habilitada'}));return;}
     if(!['GET','POST'].includes(req.method)){res.writeHead(405,{'allow':'GET, POST'});res.end();return;}
