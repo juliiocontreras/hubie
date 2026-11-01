@@ -1,5 +1,6 @@
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
+import {requireSuperAdmin,createTenant,listTenants} from './admin.mjs';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
@@ -33,7 +34,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/test
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -45,6 +46,17 @@ async function applyCoreSchema(){
 }
 createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
+  if(pathname==='/api/admin/tenants'){
+    if(process.env.HUBIE_AUTH_ENABLED!=='true'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:'Administración no habilitada'}));return;}
+    if(!['GET','POST'].includes(req.method)){res.writeHead(405,{'allow':'GET, POST'});res.end();return;}
+    try{
+      const actorId=await requireSuperAdmin(readSessionCookie(req.headers.cookie));
+      if(req.method==='GET'){const tenants=await listTenants();res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({tenants}));return;}
+      if(req.headers['content-type']?.split(';')[0]!=='application/json'){res.writeHead(415);res.end();return;}
+      let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>8192)throw Error('Payload too large');}
+      const tenant=await createTenant(JSON.parse(raw),actorId);res.writeHead(201,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({tenant}));return;
+    }catch(error){const status=error.message==='Unauthorized'?401:error.message==='Forbidden'?403:error instanceof SyntaxError||error.message==='Invalid tenant data'||error.message==='Payload too large'?400:503;res.writeHead(status,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:status===503?'No se pudo completar la operación':error.message}));return;}
+  }
   if(pathname==='/api/auth/session'){
     if(process.env.HUBIE_AUTH_ENABLED!=='true'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:'Autenticación pendiente de configurar'}));return;}
     if(req.method!=='GET'){res.writeHead(405,{'allow':'GET'});res.end();return;}
