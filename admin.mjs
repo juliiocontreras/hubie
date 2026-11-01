@@ -1,0 +1,9 @@
+import{randomUUID}from'node:crypto';
+import{executeSql}from'./database.mjs';
+import{verifySession}from'./auth.mjs';
+const slugOk=s=>typeof s==='string'&&/^[a-z0-9](?:[a-z0-9-]{1,61})[a-z0-9]$/.test(s);
+const colorOk=s=>typeof s==='string'&&/^#[0-9a-fA-F]{6}$/.test(s);
+const rows=r=>r?.rows?.map(row=>row.map(x=>x?.value??null))??[];
+export async function requireSuperAdmin(token){const session=await verifySession(token);if(!session)throw Error('Unauthorized');const r=await executeSql('SELECT user_id FROM platform_admins WHERE user_id=?',[session.userId]);if(!rows(r).length)throw Error('Forbidden');return session.userId;}
+export async function createTenant(input,actorId){const slug=String(input?.slug||'').trim().toLowerCase();const name=String(input?.name||'').trim();const suiteId=String(input?.suiteId||'').trim();const primaryColor=input?.primaryColor||'#4768ee';if(!slugOk(slug)||name.length<2||name.length>160||!/^S\d{3}$/.test(suiteId)||!colorOk(primaryColor))throw Error('Invalid tenant data');const id=randomUUID();const logoUrl=null;await executeSql('INSERT INTO organizations(id,slug,name) VALUES(?,?,?)',[id,slug,name]);await executeSql('INSERT INTO tenant_settings(organization_id,suite_id,display_name,logo_url,primary_color) VALUES(?,?,?,?,?)',[id,suiteId,name,logoUrl,primaryColor]);await executeSql('INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,?,?,?)',[randomUUID(),id,actorId,'tenant.created','organization',id]);return{id,slug,name,suiteId};}
+export async function listTenants(){const r=await executeSql('SELECT o.id,o.slug,o.name,o.status,s.suite_id FROM organizations o LEFT JOIN tenant_settings s ON s.organization_id=o.id ORDER BY o.created_at DESC LIMIT 100');return rows(r).map(x=>({id:x[0],slug:x[1],name:x[2],status:x[3],suiteId:x[4]}));}
