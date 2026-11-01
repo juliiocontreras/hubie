@@ -3,6 +3,7 @@ const page=location.pathname;
 if(!['/suite.html','/tools.html','/precios.html'].includes(page))return;
 let catalog;try{const response=await fetch('/assets/catalog.json');if(!response.ok)throw Error('catalog');catalog=await response.json();}catch{return;}
 const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
+const palette=['#e64a93','#0ca58b','#8158e6','#ed8c28','#df6545','#477fe8','#6951d7','#2eae85','#bd6a35','#da559a'];
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 if(page==='/tools.html'){
  const grid=document.querySelector('.hubie-card-grid');if(!grid)return;
@@ -10,7 +11,7 @@ if(page==='/tools.html'){
 }
 if(page==='/suite.html'){
  const target=document.querySelector('.giro-split');if(!target)return;
- const section=document.createElement('section');section.className='hubie-page-section';section.innerHTML='<div class="container"><div class="hubie-section-heading"><div><span class="hubie-page-eyebrow">SUITES HUBIE</span><h2>Explora nuestras Suites</h2></div><p>Elige la familia que mejor se adapta a tu operación.</p></div><div class="hubie-card-grid">'+catalog.suites.map(s=>'<article class="hubie-product-card"><span class="hubie-card-icon" aria-hidden="true">◇</span><h3>'+escape(s.name)+'</h3><p>Setup '+money(s.price)+' MXN · '+s.users+' usuarios incluidos.</p><a href="/precios.html">Configurar Suite →</a></article>').join('')+'</div></div>';
+ const section=document.createElement('section');section.className='hubie-page-section';section.innerHTML='<div class="container"><div class="hubie-section-heading"><div><span class="hubie-page-eyebrow">SUITES HUBIE</span><h2>Explora nuestras Suites</h2></div><p>Elige la familia que mejor se adapta a tu operación.</p></div><div class="hubie-card-grid">'+catalog.suites.map((s,i)=>'<article class="hubie-product-card hubie-suite-card" style="--suite-accent:'+palette[i%palette.length]+'"><span class="hubie-card-icon" aria-hidden="true">'+['✿','✚','⌂','▣','♨','▤','◎','♧','✎','✧'][i%10]+'</span><h3>'+escape(s.name)+'</h3><p>Setup '+money(s.price)+' MXN · '+s.users+' usuarios incluidos.</p><a href="/precios.html">Configurar Suite →</a></article>').join('')+'</div></div>';
  target.closest('section')?.before(section);
 }
 if(page==='/precios.html'){
@@ -19,9 +20,10 @@ if(page==='/precios.html'){
 
  const selectable=catalog.tools.filter(t=>!t.included);
  suiteGrid.innerHTML=catalog.suites.map((s,i)=>'<label class="suite-option"><input type="radio" name="suite" value="'+escape(s.name)+'" '+(i===0?'checked':'')+'> <span>'+escape(s.name)+'<small style="display:block;color:#64748b">'+money(s.price)+'</small></span></label>').join('');
- toolsList.innerHTML='<p class="quote-note">El Core (10 herramientas) está incluido en tu Suite sin costo adicional.</p>'+selectable.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+money(t.price)+'</span></label>').join('');
+ toolsList.innerHTML='<details class="hubie-core-details" open><summary><strong>Core incluido en todas las Suites</strong><span>10 herramientas · $0 adicionales</span></summary><div id="hubie-core-list" class="hubie-core-list">'+catalog.tools.filter(t=>t.included).map(t=>'<span>✓ '+escape(t.name)+'</span>').join('')+'</div></details>'+selectable.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+money(t.price)+'</span></label>').join('');
  extrasList.innerHTML=catalog.extras.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+(t.price===null?'Cotización personalizada':(t.pricing==='from'?'Desde ':'')+money(t.price))+'</span></label>').join('');
  const summary=document.querySelector('.quote-summary');
+ if(!summary)return;
  const calc=document.createElement('div');calc.id='hubie-cost-breakdown';calc.setAttribute('aria-live','polite');calc.style.cssText='padding:16px 0;border-top:1px solid #e2e8f0;line-height:1.8';
  summary.insertBefore(calc,summary.querySelector('button'));
  const note=summary.querySelector('.quote-note');if(note)note.textContent='Pago único por Setup + Tools + Extras. Anticipo 50%; saldo en 1 a 6 pagos. Los conceptos «desde» y las integraciones personalizadas requieren confirmación.';
