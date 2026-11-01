@@ -1,4 +1,5 @@
 import { databaseHealth, executeSql } from './database.mjs';
+import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
@@ -32,7 +33,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/test
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -44,6 +45,16 @@ async function applyCoreSchema(){
 }
 createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
+  if(pathname==='/api/auth/session'){
+    if(process.env.HUBIE_AUTH_ENABLED!=='true'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:'Autenticación pendiente de configurar'}));return;}
+    if(req.method!=='GET'){res.writeHead(405,{'allow':'GET'});res.end();return;}
+    try{const token=readSessionCookie(req.headers.cookie);const session=token?await verifySession(token):null;res.writeHead(session?200:401,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(session?{authenticated:true}:{authenticated:false}));}catch{res.writeHead(503);res.end();}return;
+  }
+  if(pathname==='/api/auth/logout'){
+    if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
+    try{const token=readSessionCookie(req.headers.cookie);if(token)await revokeSession(token);}catch{}
+    res.writeHead(204,{'set-cookie':'__Host-hubie_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0','cache-control':'no-store'});res.end();return;
+  }
   if(pathname==='/api/leads'){
     if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
     let raw='';try{for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('too-large');}
