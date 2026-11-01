@@ -10,7 +10,7 @@ if(page==='/tools.html'){
 }
 if(page==='/suite.html'){
  const target=document.querySelector('.giro-split');if(!target)return;
- const section=document.createElement('section');section.className='hubie-page-section';section.innerHTML='<div class="container"><div class="hubie-section-heading"><div><span class="hubie-page-eyebrow">SUITES HUBIE</span><h2>Explora nuestras Suites</h2></div><p>Elige la familia que mejor se adapta a tu operación.</p></div><div class="hubie-card-grid">'+catalog.suites.map(s=>'<article class="hubie-product-card"><span class="hubie-card-icon" aria-hidden="true">◇</span><h3>'+escape(s.name)+'</h3><p>Configura esta Suite con las herramientas que necesita tu negocio.</p><a href="/precios.html">Configurar Suite →</a></article>').join('')+'</div></div>';
+ const section=document.createElement('section');section.className='hubie-page-section';section.innerHTML='<div class="container"><div class="hubie-section-heading"><div><span class="hubie-page-eyebrow">SUITES HUBIE</span><h2>Explora nuestras Suites</h2></div><p>Elige la familia que mejor se adapta a tu operación.</p></div><div class="hubie-card-grid">'+catalog.suites.map(s=>'<article class="hubie-product-card"><span class="hubie-card-icon" aria-hidden="true">◇</span><h3>'+escape(s.name)+'</h3><p>Setup '+money(s.price)+' MXN · '+s.users+' usuarios incluidos.</p><a href="/precios.html">Configurar Suite →</a></article>').join('')+'</div></div>';
  target.closest('section')?.before(section);
 }
 if(page==='/precios.html'){
