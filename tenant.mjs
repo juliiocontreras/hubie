@@ -1,0 +1,8 @@
+import {executeSql} from './database.mjs';
+const validSlug=/^[a-z0-9](?:[a-z0-9-]{1,61})[a-z0-9]$/;
+const rowValues=result=>result?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
+export async function resolveTenant(slug){if(!validSlug.test(slug))return null;const r=await executeSql("SELECT id,slug,name FROM organizations WHERE slug=? AND status='active'",[slug]);const row=rowValues(r)[0];return row?{id:row[0],slug:row[1],name:row[2]}:null;}
+export async function getTenantSettings(tenantId){if(!tenantId)throw Error('Tenant required');const r=await executeSql('SELECT suite_id,display_name,logo_url,primary_color,secondary_color,timezone FROM tenant_settings WHERE organization_id=?',[tenantId]);const row=rowValues(r)[0];return row?{suiteId:row[0],displayName:row[1],logoUrl:row[2],primaryColor:row[3],secondaryColor:row[4],timezone:row[5]}:null;}
+export async function getTenantTools(tenantId){if(!tenantId)throw Error('Tenant required');const r=await executeSql('SELECT tool_id FROM tenant_tools WHERE organization_id=? AND enabled=1',[tenantId]);return rowValues(r).map(row=>row[0]);}
+// Tenant context must come from verified membership, never an arbitrary client-provided organization ID.
+export async function requireMembership(tenantId,userId,roles=['owner','admin','member','viewer']){if(!tenantId||!userId)throw Error('Authentication required');const r=await executeSql("SELECT role FROM memberships WHERE organization_id=? AND user_id=? AND status='active'",[tenantId,userId]);const role=rowValues(r)[0]?.[0];if(!role||!roles.includes(role))throw Error('Forbidden');return role;}
