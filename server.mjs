@@ -26,7 +26,7 @@ function enhanceHtml(html){
  updated=updated.replace(/https:\/\/fonts.googleapis.com\/css2\?family=Nunito:[^"']+/g,'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
  if(!updated.includes('fonts.googleapis.com/css2?family=Poppins'))updated=updated.replace('</head>','<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>');
  updated=updated.replace('</head>',navStyles+'</head>');
- return updated.replace('</body>',navScript+'</body>');
+ return updated.replace('</body>',navScript+'<script src="/assets/catalog-ui.js" defer></script></body>');
 }
 function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/tests\/|\/docs\/|\/database\.mjs$|\/server\.mjs$|\/package(?:-lock)?\.json$)/i.test(path);}
 async function applyCoreSchema(){
