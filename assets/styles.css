@@ -276,3 +276,9 @@ body{background:radial-gradient(ellipse at 92% 10%,#d9f3ff 0,transparent 28%),li
 .tag{background:#e2f1ff;color:#1769c5;border:1px solid #c4e4fc}
 .site-footer{background:linear-gradient(150deg,#eaf5ff,#f9fcff)}
 @media(prefers-reduced-motion:reduce){.hero:after,.orbit__center,.orbit__item{animation:none!important}.btn,.nav__link,.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step{transition:none!important}}
+
+/* Compact brand: reduce symbol and wordmark by one third */
+.site-header .logo__mark{width:20px;height:20px}
+.site-header .logo__type{font-size:15.33px}
+.site-header .logo{gap:7px}
+@media(max-width:700px){.site-header .logo__mark{width:20px;height:20px}.site-header .logo__type{font-size:15.33px}}
