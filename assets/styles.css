@@ -251,3 +251,28 @@ h1,h2,h3,h4{line-height:1.15;font-weight:800;letter-spacing:-.02em}
   .footer-grid{grid-template-columns:1fr}
   section{padding:60px 0}
 }
+
+
+/* HUBIE 2026 — Technology Integral Business Hub visual upgrade */
+:root{--maxw:1200px;--header-h:78px;--ink:#12345f;--ink-soft:#5c7492;--ink-faint:#8395ac;--bg-soft:#edf6ff;--purple:#4368e9;--purple-deep:#2357cb;--blue:#247ff0;--green:#17bca6;--orange:#f78d45;--radius:22px;--radius-sm:14px;--radius-pill:999px;--shadow:0 18px 42px #145d9c18;--shadow-sm:0 8px 22px #145d9c16;--shadow-lg:0 30px 75px #1552a22a;--grad-brand:linear-gradient(115deg,#155ce6,#298df4 60%,#37d0e8);--grad-blue:linear-gradient(120deg,#0e5edb,#22b8e8)}
+body{background:radial-gradient(ellipse at 92% 10%,#d9f3ff 0,transparent 28%),linear-gradient(180deg,#f6faff,#fff 40%,#f2f8ff);color:var(--ink)}
+.site-header{background:#f8fbfff0;border-bottom:1px solid #dceafb;box-shadow:0 5px 24px #1b65a30d}
+.nav__link{transition:background .2s,color .2s,transform .2s}.nav__link:hover{transform:translateY(-2px);background:#e2f0ff}
+.hero{background:radial-gradient(ellipse at 80% 15%,#9edcff9e 0,transparent 44%),radial-gradient(ellipse at 3% 85%,#d7dcff 0,transparent 45%),linear-gradient(120deg,#f8fcff,#eaf5ff);isolation:isolate}
+.hero:before{opacity:.2;background-image:linear-gradient(#2788f417 1px,transparent 1px),linear-gradient(90deg,#2788f417 1px,transparent 1px);background-size:46px 46px}
+.hero:after{content:"";position:absolute;z-index:-1;right:-7%;top:10%;width:430px;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#52bdfc55,transparent 70%);filter:blur(15px);animation:hubie-glow 12s ease-in-out infinite alternate}
+@keyframes hubie-glow{to{transform:translate(-80px,80px) scale(1.2)}}
+.h-hero{color:#103465;letter-spacing:-.05em;line-height:1.06}
+.grad-text,.purple{background:linear-gradient(105deg,#1b64dc,#25c0df);background-clip:text;-webkit-background-clip:text;color:transparent}
+.btn,.btn--primary,.btn--blue,.btn--orange{position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s,background-position .4s;border-radius:14px}
+.btn--primary,.btn--blue{background:linear-gradient(110deg,#165ce4,#2c93f5,#35c7e5);background-size:180% 180%;box-shadow:0 12px 30px #176fe73d}
+.btn--primary:hover,.btn--blue:hover{background-position:100% 50%;box-shadow:0 18px 40px #176fe75a}
+.btn:focus-visible,.nav__link:focus-visible{outline:3px solid #35c7e5;outline-offset:3px}
+.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step,.giro-card,.form,.mock,.giro-list{border-color:#dceaf8;background:linear-gradient(155deg,#fff,#f5faff);box-shadow:0 10px 30px #175c9b0d;transition:transform .28s,box-shadow .28s,border-color .28s}
+.branch-card:hover,.rama:hover,.svc-card:hover,.why:hover,.tool:hover,.pillar:hover,.step:hover{transform:translateY(-5px);border-color:#9bcaf5;box-shadow:0 22px 45px #175c9b22}
+.orbit__center{box-shadow:0 20px 55px #237be84d;animation:hubie-float 6s ease-in-out infinite}
+.orbit__item{box-shadow:0 15px 35px #165ca727;animation:hubie-float 7s ease-in-out infinite alternate}
+@keyframes hubie-float{50%{translate:0 -9px}}
+.tag{background:#e2f1ff;color:#1769c5;border:1px solid #c4e4fc}
+.site-footer{background:linear-gradient(150deg,#eaf5ff,#f9fcff)}
+@media(prefers-reduced-motion:reduce){.hero:after,.orbit__center,.orbit__item{animation:none!important}.btn,.nav__link,.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step{transition:none!important}}
