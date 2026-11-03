@@ -282,3 +282,24 @@ body{background:radial-gradient(ellipse at 92% 10%,#d9f3ff 0,transparent 28%),li
 .site-header .logo__type{font-size:15.33px}
 .site-header .logo{gap:7px}
 @media(max-width:700px){.site-header .logo__mark{width:20px;height:20px}.site-header .logo__type{font-size:15.33px}}
+
+
+/* Reference-led direction: editorial product framing, expressive geometry, blue depth. */
+.hero{margin:18px clamp(12px,2.4vw,42px) 0;border:10px solid #fff;border-radius:42px 42px 72px 42px;box-shadow:0 28px 65px #125d9c24;min-height:610px}
+.hero .hero__grid{position:relative;z-index:1;min-height:570px}
+.hero .container{max-width:1320px}
+.hero .orbit{border-radius:32% 26% 29% 35%;background:radial-gradient(circle at 40% 35%,#70d2ff,#2878da 48%,#114a9c 90%);box-shadow:inset 0 15px 45px #ffffff40,0 32px 60px #1251a448;max-width:470px;overflow:visible}
+.hero .orbit:before{content:"HUBIE";position:absolute;inset:33% auto auto 50%;transform:translate(-50%,-50%);font:900 clamp(75px,10vw,158px)/1 'Poppins',sans-serif;letter-spacing:-.11em;color:#ffffff20;pointer-events:none;z-index:0}
+.hero .orbit:after{content:"SUITES  /  TOOLS  /  CORE";position:absolute;bottom:28px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#ffffffb5;letter-spacing:.2em;font-size:10px;font-weight:800;z-index:0}
+.hero .orbit__svg{opacity:.5}
+.hero .orbit__item{border:1px solid #ffffffa6;background:#ffffffeb;backdrop-filter:blur(16px)}
+.hero .orbit__center{background:#fff;border:6px solid #ffffff75}
+.hero h1{font-size:clamp(39px,5.6vw,76px);letter-spacing:-.06em;max-width:690px}
+.hero .tag{letter-spacing:.09em}
+.hero .lead{font-size:clamp(16px,1.35vw,19px)}
+.site-header .logo__mark{width:20px;height:20px;flex-basis:20px}
+.site-header .logo__type{font-size:15.33px}
+.site-header .logo{gap:7px}
+@media(max-width:980px){.hero{min-height:0}.hero .hero__grid{min-height:0}.hero .orbit{max-width:420px;margin:36px auto}}
+@media(max-width:560px){.hero{margin:10px 9px 0;border-width:5px;border-radius:24px 24px 38px 24px}.hero .orbit{max-width:280px;aspect-ratio:1}.hero .orbit:before{font-size:75px}.hero .orbit:after{font-size:8px;bottom:12px}.hero .orbit__item{width:68px;height:68px}.hero .orbit__center{width:105px;height:105px}.hero h1{font-size:clamp(35px,10vw,52px)}}
+@media(prefers-reduced-motion:reduce){.hero .orbit__item,.hero .orbit__center{animation:none}}
