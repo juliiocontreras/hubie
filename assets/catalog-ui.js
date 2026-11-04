@@ -14,7 +14,7 @@ if(page==='/tools.html'){
 }
 if(page==='/suite.html'){
  const target=document.querySelector('.giro-split');if(!target)return;
- const section=document.createElement('section');section.className='hubie-page-section';section.innerHTML='<div class="container"><div class="hubie-section-heading"><div><span class="hubie-page-eyebrow">SUITES HUBIE</span><h2>Explora nuestras Suites</h2></div><p>Elige la familia que mejor se adapta a tu operación.</p></div><div class="hubie-card-grid">'+catalog.suites.map((s,i)=>'<article class="hubie-product-card hubie-suite-card" style="--suite-accent:'+palette[i%palette.length]+'"><span class="hubie-card-icon" aria-hidden="true">'+suiteIcon(i)+'</span><h3>'+escape(s.name)+'</h3><p>Setup '+money(s.price)+' MXN · '+s.users+' usuarios incluidos.</p><a href="/precios.html">Configurar Suite →</a></article>').join('')+'</div></div>';
+ const section=document.createElement('section');section.className='hubie-page-section';section.innerHTML='<div class="container"><div class="hubie-section-heading"><div><span class="hubie-page-eyebrow">SUITES HUBIE</span><h2>Explora nuestras Suites</h2></div><p>Elige la familia que mejor se adapta a tu operación.</p></div><div class="hubie-card-grid">'+catalog.suites.map((s,i)=>'<article class="hubie-product-card hubie-suite-card" style="--suite-accent:'+palette[i%palette.length]+'"><span class="hubie-metal-badge" aria-hidden="true"><span class="hubie-metal-inner">'+suiteIcon(i)+'</span></span><h3>'+escape(s.name)+'</h3><p>Setup '+money(s.price)+' MXN · '+s.users+' usuarios incluidos.</p><a href="/precios.html">Configurar Suite →</a></article>').join('')+'</div></div>';
  target.closest('section')?.before(section);
 }
 if(page==='/precios.html'){
@@ -22,7 +22,7 @@ if(page==='/precios.html'){
  if(!suiteGrid||!toolsList||!extrasList)return;
 
  const selectable=catalog.tools.filter(t=>!t.included);
- suiteGrid.innerHTML=catalog.suites.map((s,i)=>'<label class="suite-option"><input type="radio" name="suite" value="'+escape(s.name)+'" '+(i===0?'checked':'')+'> <span>'+escape(s.name)+'<small style="display:block;color:#64748b">'+money(s.price)+'</small></span></label>').join('');
+ suiteGrid.innerHTML=catalog.suites.map((s,i)=>'<label class="suite-option hubie-suite-choice" style="--suite-accent:'+palette[i%palette.length]+'"><input type="radio" name="suite" value="'+escape(s.name)+'" '+(i===0?'checked':'')+'><span class="hubie-metal-badge hubie-metal-badge-sm" aria-hidden="true"><span class="hubie-metal-inner">'+suiteIcon(i)+'</span></span> <span>'+escape(s.name)+'<small style="display:block;color:#64748b">'+money(s.price)+'</small></span></label>').join('');
  toolsList.innerHTML='<details class="hubie-core-details" open><summary><strong>Core incluido en todas las Suites</strong><span>10 herramientas · $0 adicionales</span></summary><div id="hubie-core-list" class="hubie-core-list">'+catalog.tools.filter(t=>t.included).map(t=>'<span>✓ '+escape(t.name)+'</span>').join('')+'</div></details>'+selectable.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+money(t.price)+'</span></label>').join('');
  extrasList.innerHTML=catalog.extras.map(t=>'<label class="tool-option"><input type="checkbox" value="'+escape(t.id)+'"> <span>'+escape(t.name)+' · '+(t.price===null?'Cotización personalizada':(t.pricing==='from'?'Desde ':'')+money(t.price))+'</span></label>').join('');
  const summary=document.querySelector('.quote-summary');
