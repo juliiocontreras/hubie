@@ -303,3 +303,22 @@ body{background:radial-gradient(ellipse at 92% 10%,#d9f3ff 0,transparent 28%),li
 @media(max-width:980px){.hero{min-height:0}.hero .hero__grid{min-height:0}.hero .orbit{max-width:420px;margin:36px auto}}
 @media(max-width:560px){.hero{margin:10px 9px 0;border-width:5px;border-radius:24px 24px 38px 24px}.hero .orbit{max-width:280px;aspect-ratio:1}.hero .orbit:before{font-size:75px}.hero .orbit:after{font-size:8px;bottom:12px}.hero .orbit__item{width:68px;height:68px}.hero .orbit__center{width:105px;height:105px}.hero h1{font-size:clamp(35px,10vw,52px)}}
 @media(prefers-reduced-motion:reduce){.hero .orbit__item,.hero .orbit__center{animation:none}}
+
+
+/* Unified conversion-focused navigation */
+.site-header{z-index:100;background:#f6fafff2}
+.hubie-nav{display:flex;align-items:center;gap:18px;min-height:76px}
+.hubie-nav__brand{display:inline-flex;align-items:center;gap:8px;flex:none;color:#123765;text-decoration:none;font:800 17px 'Poppins',sans-serif;letter-spacing:-.045em}
+.hubie-nav__symbol{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:linear-gradient(135deg,#1766e8,#37c4e6);color:#fff;font:800 26px/1 sans-serif;box-shadow:0 8px 20px #1878e83b}
+.hubie-nav__brand-dot{color:#26b8e4}
+.hubie-nav__links{display:flex;align-items:center;justify-content:center;gap:2px;flex:1;min-width:0}
+.hubie-nav__link{padding:10px 11px;border-radius:12px;font-size:13px;font-weight:700;white-space:nowrap;color:#4d6686;text-decoration:none;transition:background .2s,color .2s}
+.hubie-nav__link:hover,.hubie-nav__link.is-current{background:#e2f1ff;color:#145fc4}
+.hubie-nav__cta{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:13px;background:linear-gradient(110deg,#165de4,#2f9cf2);color:white!important;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap;box-shadow:0 10px 24px #216ee73d;transition:transform .2s,box-shadow .2s}
+.hubie-nav__cta:hover{transform:translateY(-2px);box-shadow:0 15px 28px #216ee75a}
+.hubie-nav__toggle{display:none;width:43px;height:43px;flex:none;border:1px solid #cfe4f9;border-radius:12px;background:white;cursor:pointer;padding:11px}
+.hubie-nav__toggle span{display:block;height:2px;margin:4px 0;border-radius:3px;background:#1558a6}
+.hubie-nav__toggle:focus-visible,.hubie-nav__link:focus-visible,.hubie-nav__cta:focus-visible{outline:3px solid #2ab7ec;outline-offset:3px}
+@media(max-width:980px){.hubie-nav{min-height:67px}.hubie-nav__links{display:none;position:absolute;top:calc(100% - 1px);left:12px;right:12px;flex-direction:column;align-items:stretch;gap:3px;background:#fffffffa;border:1px solid #d7e9fb;border-radius:0 0 20px 20px;padding:14px;box-shadow:0 24px 35px #123e7b25;max-height:calc(100vh - 88px);overflow:auto}.hubie-nav--open .hubie-nav__links{display:flex}.hubie-nav__link{padding:13px 16px;font-size:15px}.hubie-nav__toggle{display:block;margin-left:auto}.hubie-nav__cta{margin-left:auto}}
+@media(max-width:560px){.hubie-nav__cta{display:none}.hubie-nav__brand{font-size:16px}.hubie-nav__symbol{width:24px;height:24px}}
+@media(prefers-reduced-motion:reduce){.hubie-nav__link,.hubie-nav__cta{transition:none}}
