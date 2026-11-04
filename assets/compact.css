@@ -78,3 +78,17 @@
 .hc-suite-explorer .hc-suite:hover .hc-suite__icon::after,.hc-suite-explorer .hc-suite.is-selected .hc-suite__icon::after{transform:translateX(42%) rotate(-8deg)}
 .hc-sector-preview__icon{--suite-accent:var(--sector-color);width:62px;height:62px;border-radius:19px;font-size:32px}
 @media(prefers-reduced-motion:reduce){.hc-suite-explorer .hc-suite__icon,.hc-sector-preview__icon,.hc-suite-explorer .hc-suite__icon::after{transition:none!important;transform:none!important}}
+
+/* OPTION B — pearl silver / champagne metallic, light anodized finish */
+.hc-suite-explorer .hc-suite__icon,.hc-sector-preview__icon{
+ color:var(--suite-accent,var(--sector-color,#3678aa));
+ text-shadow:0 1px 0 #fff,0 -1px 1px #ffffffb0;
+ border:1px solid #ffffff;
+ background:
+ linear-gradient(112deg,transparent 0%,#ffffff26 23%,#ffffffdf 39%,#ffffff32 47%,transparent 59%),
+ repeating-linear-gradient(0deg,#ffffff28 0px,#ffffff28 1px,transparent 1px,transparent 3px),
+ linear-gradient(145deg,#ffffff 0%,#edf4f9 16%,#c8d6e1 35%,#fafcff 52%,#d7e3eb 72%,#ffffff 100%);
+ box-shadow:inset 0 2px 3px #fff,inset 0 -3px 6px #8ba3b54d,inset 2px 0 4px #fff,0 2px 1px #ffffff,0 9px 18px #3c68802b;
+}
+.hc-suite-explorer .hc-suite__icon::before,.hc-sector-preview__icon::before{border-color:#ffffffc9;box-shadow:inset 0 1px 2px #fff,inset 0 -1px 2px #7c9db54d}
+.hc-suite-explorer .hc-suite:hover .hc-suite__icon,.hc-suite-explorer .hc-suite.is-selected .hc-suite__icon{box-shadow:inset 0 2px 4px #fff,inset 0 -4px 7px #7897aa55,0 13px 22px #3c68803d}
