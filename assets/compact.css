@@ -9,3 +9,9 @@
 .hc-device__chart-label{position:absolute;bottom:9px;left:12px;font:700 10px Inter;color:#347ab3;z-index:1}
 @media(max-width:800px){.hc-quote__summary{order:0}.hc-quote__main{order:0}}
 @media(max-width:530px){.hc-device__stats b{font-size:10px}.hc-device__stats small{font-size:8px}.hc-device__body{grid-template-columns:42px 1fr}.hc-device__content{padding:12px}.hc-device__side{padding:14px 8px}.hc-device__stats{gap:5px}.hc-device__stats span{padding:6px}}
+
+/* Rich product visual with graceful motion and responsive framing */
+.hc-product-image{display:block;width:min(100%,570px);height:auto;border-radius:27px;border:7px solid #ffffffb5;box-shadow:0 30px 65px #041c4970;transform:perspective(1000px) rotateY(-7deg) rotateX(3deg);animation:hc-product-levitate 9s ease-in-out infinite alternate}
+@keyframes hc-product-levitate{to{transform:perspective(1000px) rotateY(-2deg) rotateX(0deg) translateY(-10px)}}
+@media(max-width:530px){.hc-product-image{border-width:4px;border-radius:16px;transform:none;animation:none}.hc-float{font-size:10px;padding:9px 11px}}
+@media(prefers-reduced-motion:reduce){.hc-product-image{animation:none;transform:none}}
