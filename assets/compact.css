@@ -15,3 +15,33 @@
 @keyframes hc-product-levitate{to{transform:perspective(1000px) rotateY(-2deg) rotateX(0deg) translateY(-10px)}}
 @media(max-width:530px){.hc-product-image{border-width:4px;border-radius:16px;transform:none;animation:none}.hc-float{font-size:10px;padding:9px 11px}}
 @media(prefers-reduced-motion:reduce){.hc-product-image{animation:none;transform:none}}
+
+/* Suite sector explorer: selection + contextual product visual */
+.hc-suite-explorer{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:start}
+.hc-suite-explorer .hc-suite-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hc-suite-explorer .hc-suite{font:inherit;text-align:left;cursor:pointer;min-height:134px;appearance:none}
+.hc-suite-explorer .hc-suite.is-selected{border-color:var(--suite-accent,#1674dc);box-shadow:0 0 0 2px var(--suite-accent,#1674dc),0 15px 30px #155c9b1b}
+.hc-suite-explorer .hc-suite__icon{background:linear-gradient(140deg,var(--suite-bg,#e7f4ff),#fff 70%);color:var(--suite-accent,#1674dc);border:1px solid #ffffffba;box-shadow:inset 0 2px 5px #ffffff,0 4px 10px #123e6b15}
+.hc-suite-explorer .hc-suite:focus-visible{outline:3px solid #40b5f0;outline-offset:4px}
+.hc-sector-preview{--sector-color:#1766c7;position:sticky;top:95px;border-radius:29px;padding:22px;background:linear-gradient(145deg,#f3f9ff,#d9eafa);border:1px solid #d4e6f8;overflow:hidden;box-shadow:0 22px 40px #164f871a}
+.hc-sector-preview__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.hc-sector-preview__dot{width:9px;height:9px;border-radius:50%;background:var(--sector-color);box-shadow:0 0 0 5px #ffffff}
+.hc-sector-preview__device{border-radius:22px;overflow:hidden;background:white;box-shadow:0 18px 35px #174b7c2a;border:5px solid #ffffff}
+.hc-sector-preview__bar{background:#0e376c;color:white;display:flex;justify-content:space-between;align-items:center;padding:12px 17px;font:800 17px Outfit}
+.hc-sector-preview__bar small{font:600 11px Inter;color:#b9d7f5}
+.hc-sector-preview__content{padding:24px;background:radial-gradient(circle at 92% 6%,color-mix(in srgb,var(--sector-color),transparent 84%),transparent 40%),#fff}
+.hc-sector-preview__icon{width:54px;height:54px;display:grid;place-items:center;border-radius:17px;background:var(--sector-color);color:white;font-size:30px;box-shadow:0 9px 22px color-mix(in srgb,var(--sector-color),transparent 67%)}
+.hc-sector-preview__content h3{font:800 30px Outfit;margin:15px 0 5px}
+.hc-sector-preview__content p{font-size:13px;line-height:1.6;color:#65809d;min-height:42px;margin:0 0 16px}
+.hc-sector-preview__metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hc-sector-preview__metrics span{border:1px solid #dceaf8;background:#f3f8ff;padding:12px 5px;border-radius:12px;text-align:center;font:700 11px Inter;color:#225d96}
+.hc-sector-preview__lines{height:80px;display:flex;gap:11px;align-items:end;padding:16px 9px 0;border-bottom:1px solid #e0eaf4}
+.hc-sector-preview__lines i{display:block;flex:1;border-radius:7px 7px 0 0;background:linear-gradient(0deg,var(--sector-color),#8adcf3);opacity:.8;animation:hc-bars 1s ease both}
+.hc-sector-preview__lines i:nth-child(1){height:42%}.hc-sector-preview__lines i:nth-child(2){height:62%}.hc-sector-preview__lines i:nth-child(3){height:51%}.hc-sector-preview__lines i:nth-child(4){height:83%}.hc-sector-preview__lines i:nth-child(5){height:66%}.hc-sector-preview__lines i:nth-child(6){height:90%}.hc-sector-preview__lines i:nth-child(7){height:72%}
+@keyframes hc-bars{from{transform:scaleY(.1);transform-origin:bottom;opacity:0}to{transform:scaleY(1);opacity:.8}}
+.hc-sector-preview__bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:17px}
+.hc-sector-preview__bottom>span{font:800 16px Outfit}
+.hc-sector-preview__bottom .hc-cta{padding:11px 14px;font-size:12px}
+@media(max-width:1000px){.hc-suite-explorer{grid-template-columns:1fr}.hc-suite-explorer .hc-suite-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.hc-sector-preview{position:static}}
+@media(max-width:680px){.hc-suite-explorer .hc-suite-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hc-sector-preview{padding:15px;border-radius:22px}.hc-sector-preview__content{padding:17px}.hc-sector-preview__content h3{font-size:25px}.hc-sector-preview__bottom{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.hc-sector-preview__lines i{animation:none}}
