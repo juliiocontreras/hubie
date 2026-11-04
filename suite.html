@@ -118,7 +118,7 @@
 <section><div class="container">
 <div class="cta-banner--soft cta-banner">
 <span class="cta-banner__ic" style="background:var(--purple);color:#fff"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><use href="#i-gift"/></svg></span>
-<div><h3 style="margin-bottom:6px">No importa a qué te dediques</h3><p>Hubie te ayuda a trabajar mejor y hacer crecer tu negocio.</p></div>
+<div><h3 style="margin-bottom:6px">Una Suite diseñada para la forma en que trabajas</h3><p>Hubie te ayuda a trabajar mejor y hacer crecer tu negocio.</p></div>
 <a href="productos.html" class="btn" style="margin-left:auto">Ver todas las soluciones</a>
 </div></div></section>
 
@@ -170,4 +170,4 @@ const items=document.querySelectorAll('.giro-item');const card=document.querySel
 const icons={dent:'#i-tooth',barber:'#i-scissors',nails:'#i-nail',realty:'#i-home',freelance:'#i-gear'};
 items.forEach(it=>it.addEventListener('click',()=>{items.forEach(x=>x.classList.remove('is-active'));it.classList.add('is-active');const k=it.dataset.giro,d=data[k];card.querySelector('h3').textContent=d.t;card.querySelector('p').textContent=d.d;card.querySelector('.giro-card__photo img').src='https://images.unsplash.com/photo-'+{dent:'1503951914875-452162b0f3f1',barber:'1503951914875-452162b0f3f1',nails:'1604654894610-df63bc536371',realty:'1560518883-c92609f0c1b',freelance:'1556761175-5973dc0f32e7'}[k]+'?w=700&q=70&auto=format&fit=crop';card.querySelector('ul').innerHTML=d.items.map(i=>`<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>${i}</li>`).join('');}));
 </script>
-</body></html>
+<script defer src="/assets/navigation.js"></script></body></html>
