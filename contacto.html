@@ -112,7 +112,7 @@
 </footer>
 <script>
 (function(){
-const interest=new URLSearchParams(location.search).get('interes');if(interest){const select=document.getElementById('giro');const match=[...select.options].find(o=>o.value.toLowerCase()===interest.toLowerCase());if(match)select.value=match.value;else if(interest.toLowerCase().includes('tienda')||interest.toLowerCase().includes('etiqueta')||interest.toLowerCase().includes('empaque')||interest.toLowerCase().includes('papeleria')||interest.toLowerCase().includes('equipamiento')||interest.toLowerCase().includes('personalizado'))select.value='Tienda';else select.value='Servicios';const msg=document.getElementById('mensaje');msg.value='Me interesa: '+interest+'. ';}const form=document.getElementById('hubie-lead-form');
+const params=new URLSearchParams(location.search);const interest=params.get('interes');const prefilledMessage=params.get('mensaje');if(prefilledMessage){document.getElementById('mensaje').value=prefilledMessage;}if(interest){const select=document.getElementById('giro');const match=[...select.options].find(o=>o.value.toLowerCase()===interest.toLowerCase());if(match)select.value=match.value;else if(interest.toLowerCase().includes('tienda')||interest.toLowerCase().includes('etiqueta')||interest.toLowerCase().includes('empaque')||interest.toLowerCase().includes('papeleria')||interest.toLowerCase().includes('equipamiento')||interest.toLowerCase().includes('personalizado'))select.value='Tienda';else select.value='Servicios';const msg=document.getElementById('mensaje');if(!prefilledMessage)msg.value='Me interesa: '+interest+'. ';}const form=document.getElementById('hubie-lead-form');
 if(!form)return;
 const status=document.getElementById('ok');
 form.addEventListener('submit',async(event)=>{
