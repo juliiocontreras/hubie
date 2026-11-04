@@ -98,3 +98,9 @@
 .hc-sector-glyph{display:block;width:29px;height:29px;position:relative;z-index:1;filter:drop-shadow(0 1px 0 #fff9)}
 .hc-sector-preview__icon .hc-sector-glyph{width:36px;height:36px}
 @media(max-width:530px){.hc-sector-glyph{width:26px;height:26px}}
+
+/* Pearl-silver miniatures in the quote selector */
+.hc-select-grid .hc-choice{display:flex;align-items:center;gap:10px}
+.hc-choice__icon{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:13px;color:#307ab1;border:1px solid #fff;background:linear-gradient(130deg,#fff,#cddbe6 35%,#fff 58%,#d9e5ed 80%,#fff);box-shadow:inset 0 2px 2px #fff,inset 0 -2px 4px #8da4b94d,0 4px 9px #255c8726}
+.hc-choice__icon .hc-sector-glyph{width:23px;height:23px}
+.hc-select-grid .hc-choice>span:last-child{min-width:0}
