@@ -92,3 +92,9 @@
 }
 .hc-suite-explorer .hc-suite__icon::before,.hc-sector-preview__icon::before{border-color:#ffffffc9;box-shadow:inset 0 1px 2px #fff,inset 0 -1px 2px #7c9db54d}
 .hc-suite-explorer .hc-suite:hover .hc-suite__icon,.hc-suite-explorer .hc-suite.is-selected .hc-suite__icon{box-shadow:inset 0 2px 4px #fff,inset 0 -4px 7px #7897aa55,0 13px 22px #3c68803d}
+
+/* Consistent sector pictograms on light brushed metal */
+.hc-suite-explorer .hc-suite__icon,.hc-sector-preview__icon{display:grid;place-items:center}
+.hc-sector-glyph{display:block;width:29px;height:29px;position:relative;z-index:1;filter:drop-shadow(0 1px 0 #fff9)}
+.hc-sector-preview__icon .hc-sector-glyph{width:36px;height:36px}
+@media(max-width:530px){.hc-sector-glyph{width:26px;height:26px}}
