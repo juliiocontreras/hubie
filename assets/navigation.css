@@ -188,3 +188,12 @@ img{height:auto}
 .hubie-suite-choice:has(input:checked){background:color-mix(in srgb,var(--suite-accent) 8%,white)!important;border-color:var(--suite-accent)!important}
 @media(max-width:620px){.hubie-suite-card{min-height:260px;padding:24px!important}.hubie-metal-badge{width:76px;height:76px}.hubie-metal-inner{width:58px;height:58px}.hubie-metal-inner svg{width:35px;height:35px}.hubie-metal-badge-sm{width:46px;height:46px}.hubie-metal-badge-sm .hubie-metal-inner{width:36px;height:36px}.hubie-metal-badge-sm .hubie-metal-inner svg{width:22px;height:22px}}
 @media(prefers-reduced-motion:reduce){.hubie-metal-badge{transition:none!important}.hubie-suite-card:hover .hubie-metal-badge{transform:rotate(-5deg)!important}}
+
+/* Layered parallax: metallic insignias move independently of their cards */
+.hubie-suite-card{perspective:900px;transform-style:preserve-3d}
+.hubie-suite-card .hubie-metal-badge{transform:translate3d(0,var(--hubie-scroll-y,0px),24px) rotate(calc(-5deg + var(--hubie-parallax-depth,0deg))) rotateX(var(--hubie-pointer-y,0deg)) rotateY(var(--hubie-pointer-x,0deg));will-change:transform}
+.hubie-suite-card:hover .hubie-metal-badge{transform:translate3d(0,calc(var(--hubie-scroll-y,0px) - 5px),32px) rotate(var(--hubie-parallax-depth,0deg)) rotateX(var(--hubie-pointer-y,0deg)) rotateY(var(--hubie-pointer-x,0deg))}
+.hubie-suite-choice .hubie-metal-badge{transform:translate3d(0,var(--hubie-scroll-y,0px),0) rotate(calc(-4deg + var(--hubie-parallax-depth,0deg)))}
+.hubie-page-hero:before,.quote-shell:before{transform:translate3d(0,var(--hubie-scroll-y,0px),0)}
+.hero:before{transform:translate3d(0,var(--hubie-scroll-y,0px),0)}
+@media(prefers-reduced-motion:reduce){.hubie-suite-card .hubie-metal-badge,.hubie-suite-card:hover .hubie-metal-badge,.hubie-suite-choice .hubie-metal-badge{transform:rotate(-4deg)!important;will-change:auto}.hubie-page-hero:before,.quote-shell:before,.hero:before{transform:none!important}}
