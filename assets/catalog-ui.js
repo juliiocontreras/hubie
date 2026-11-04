@@ -10,7 +10,7 @@ const suiteIcon=i=>'<svg viewBox="0 0 24 24" width="30" height="30" fill="none" 
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 if(page==='/tools.html'){
  const grid=document.querySelector('.hubie-card-grid');if(!grid)return;
- grid.innerHTML=catalog.tools.map(t=>'<article class="hubie-product-card" id="'+escape(t.id)+'"><span class="hubie-card-icon" aria-hidden="true">◇</span><h2>'+escape(t.name)+'</h2><p>Herramienta modular disponible para configurar tu Hubie.</p><a href="/precios.html">Añadir a mi configuración →</a></article>').join('');
+ grid.innerHTML=catalog.tools.map(t=>'<article class="hubie-product-card" id="'+escape(t.id)+'"><span class="hubie-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg></span><h2>'+escape(t.name)+'</h2><p>'+(t.included?'Incluida en el Core':'Tool opcional · '+money(t.price)+' MXN')+'</p><a href="/precios.html">Añadir a mi configuración →</a></article>').join('');
 }
 if(page==='/suite.html'){
  const target=document.querySelector('.giro-split');if(!target)return;
