@@ -1,3 +1,4 @@
+import {createClient} from '@libsql/client';
 // Server-only libSQL HTTP pipeline client; no browser exposure or npm build step.
 export function databaseConfigured(){return Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);}
 function endpoint(){
@@ -21,4 +22,14 @@ export async function databaseHealth(){
  if(!databaseConfigured())return {status:'not-configured'};
  try{await executeSql('SELECT 1 AS ok');return {status:'connected'};}
  catch(error){const code=error?.code || (error?.name==='TimeoutError'?'TIMEOUT':error instanceof TypeError?'NETWORK_ERROR':'UNKNOWN');return {status:'unavailable',reason:code};}
+}
+
+
+// Atomic provisioning of organizations, settings, ownership and tool entitlements.
+export async function executeBatch(statements){
+ if(!databaseConfigured())throw Error('Turso credentials not configured');
+ const url=process.env.TURSO_DATABASE_URL.trim().replace(/^libsql:/i,'https:');
+ const client=createClient({url,authToken:process.env.TURSO_AUTH_TOKEN});
+ try{return await client.batch(statements.map(({sql,args=[]})=>({sql,args})), 'write');}
+ finally{client.close();}
 }
