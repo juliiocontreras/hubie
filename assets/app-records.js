@@ -1,3 +1,4 @@
+import {openOperationalModule,closeOperationalModule} from './app-workflows.js';
 import {fieldsFor,hintFor} from './tool-forms.js';
 const $=id=>document.getElementById(id);
 let ctx=null,records=[],editing=null,initialized=false;
@@ -5,6 +6,7 @@ function notify(msg,error=false){ctx.notice(msg,error);}
 const root=()=>'/api/app/'+encodeURIComponent(ctx.config.tenant.slug)+'/tools/'+ctx.tool.id+'/records';
 const writable=()=>ctx.config.tenant.role!=='viewer'&&!['C008','C009'].includes(ctx.tool.id);
 function render(){
+ if(!ctx||['C002','C004','C005'].includes(ctx.tool.id))return;
  const host=$('record-list');host.replaceChildren();
  const q=$('record-search').value.toLowerCase().trim();
  const shown=records.filter(r=>(r.title+' '+Object.values(r.fields).join(' ')).toLowerCase().includes(q));
@@ -76,7 +78,11 @@ function wire(){
  $('record-form').addEventListener('submit',save);
 }
 export async function openRecords(context){
- ctx=context;wire();editing=null;records=[];
+ closeOperationalModule();
+ ctx=context;
+ if($('record-dialog').open)$('record-dialog').close();
+ if(['C002','C004','C005'].includes(ctx.tool.id))return openOperationalModule(ctx);
+ wire();editing=null;records=[];
  $('record-search').value='';
  $('add-record').hidden=!writable();
  $('module-message').textContent=hintFor(ctx.tool.id);
