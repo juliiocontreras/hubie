@@ -27,13 +27,13 @@ export async function tenantConfig(token,slug){
  const session=await requireTenantSession(token,tenant.id);
  const settings=await getTenantSettings(tenant.id);
  const enabled=await getTenantTools(tenant.id);
- const members=unpack(await executeSql("SELECT u.email,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.status='active' ORDER BY u.email LIMIT 100",[tenant.id]));
+ const members=enabled.includes('C009')?unpack(await executeSql("SELECT u.email,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.status='active' ORDER BY u.email LIMIT 100",[tenant.id])):[];
  return {tenant:{id:tenant.id,slug:tenant.slug,name:tenant.name,role:session.role,displayName:settings?.displayName||tenant.name,logoUrl:settings?.logoUrl,primaryColor:settings?.primaryColor,secondaryColor:settings?.secondaryColor,timezone:settings?.timezone,suiteId:settings?.suiteId,suiteName:getSuite(settings?.suiteId)?.name||settings?.suiteId},tools:catalog.tools.filter(t=>enabled.includes(t.id)),members:members.map(x=>({email:x[0],role:x[1]}))};
 }
 export async function toolRecords(token,slug,toolId,{limit=80}={}){
  const {tenant}=await authorizeTool(token,slug,toolId);
  if(toolId==='C008'){
-  const r=await executeSql("SELECT tool_id,count(*) FROM tenant_tool_records WHERE organization_id=? AND archived_at IS NULL GROUP BY tool_id",[tenant.id]);
+  const r=await executeSql("SELECT tr.tool_id,count(*) FROM tenant_tool_records tr JOIN tenant_tools tt ON tt.organization_id=tr.organization_id AND tt.tool_id=tr.tool_id AND tt.enabled=1 WHERE tr.organization_id=? AND tr.archived_at IS NULL GROUP BY tr.tool_id",[tenant.id]);
   return {dashboard:true,counts:Object.fromEntries(unpack(r).map(x=>[x[0],Number(x[1])]))};
  }
  if(toolId==='C009')throw Error('Read members in tenant config');
