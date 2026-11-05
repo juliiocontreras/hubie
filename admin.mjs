@@ -84,3 +84,17 @@ export async function addTenantMember(id,input,actorId){
  ]);
  return listTenantMembers(id);
 }
+
+export async function setTenantMemberStatus(id,userId,status,actorId){
+ await getTenantAdmin(id);
+ if(!['active','suspended'].includes(status)||typeof userId!=='string'||!/^[0-9a-f-]{36}$/.test(userId))throw Error('Invalid tenant data');
+ const result=await executeBatch([
+  {sql:"UPDATE memberships SET status=? WHERE organization_id=? AND user_id=? AND role!='owner'",args:[status,id,userId]},
+  {sql:"INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) SELECT ?,?,?,?,?,? FROM memberships WHERE organization_id=? AND user_id=? AND role!='owner' AND status=?",args:[randomUUID(),id,actorId,status==='active'?'tenant.member_activated':'tenant.member_suspended','membership',userId,id,userId,status]}
+ ]);
+ if(!Number(result?.[0]?.rowsAffected??result?.[0]?.affected_row_count??0)){
+  const existing=rows(await executeSql('SELECT role FROM memberships WHERE organization_id=? AND user_id=?',[id,userId]))[0];
+  throw Error(existing?.[0]==='owner'?'Forbidden':'Not found');
+ }
+ return listTenantMembers(id);
+}
