@@ -116,3 +116,14 @@
 @media(max-width:760px){.hc-editorial-gallery{grid-template-columns:1fr 1fr}.hc-editorial-card:last-child{grid-column:1/-1}.hc-editorial-card:last-child img{max-height:220px;object-fit:cover}}
 @media(max-width:520px){.hc-editorial-gallery{grid-template-columns:1fr}.hc-editorial-card:last-child{grid-column:auto}.hc-editorial-card:last-child img{max-height:none}}
 @media(prefers-reduced-motion:reduce){.hc-editorial-card{transition:none}}
+
+/* Complete ten-Suite visual gallery: five columns, horizontal mobile discovery */
+.hc-gallery-section .hc-editorial-gallery{grid-template-columns:repeat(5,minmax(0,1fr));gap:13px}
+.hc-gallery-section .hc-editorial-card{min-width:0;border-radius:19px}
+.hc-gallery-section .hc-editorial-card img{aspect-ratio:560/470;max-height:none;object-fit:cover}
+.hc-gallery-section .hc-editorial-card span{display:block;padding:12px}
+.hc-gallery-section .hc-editorial-card strong{display:block;font-size:16px}
+.hc-gallery-section .hc-editorial-card small{display:block;text-align:left;font-size:10px;line-height:1.45;margin-top:4px}
+.hc-gallery-section .hc-editorial-card:last-child{grid-column:auto}
+@media(max-width:900px){.hc-gallery-section .hc-editorial-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.hc-gallery-section .hc-editorial-gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:3px 2px 16px;scrollbar-width:thin}.hc-gallery-section .hc-editorial-card{flex:0 0 min(72vw,265px);scroll-snap-align:start}.hc-gallery-section .hc-editorial-card:last-child img{max-height:none}}
