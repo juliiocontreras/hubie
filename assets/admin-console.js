@@ -74,7 +74,28 @@ function filterCompanies(){
 async function loadTenants(){state.tenants=(await api('/api/admin/tenants')).tenants;renderTenants();}
 function renderMembers(items){
  const host=$('members');host.replaceChildren();
- for(const m of items){const line=node('div',undefined,'line');line.append(node('strong',m.email),node('small',m.role));host.append(line);}
+ for(const m of items){
+  const line=node('div',undefined,'line'),detail=node('div');
+  detail.append(node('strong',m.email),node('small',m.role+' · '+(m.status==='active'?'Acceso activo':'Acceso suspendido')));
+  line.append(detail);
+  if(m.role!=='owner'){
+   const btn=node('button',m.status==='active'?'Suspender acceso':'Reactivar','btn'+(m.status==='active'?' btn-danger':''));
+   btn.type='button';
+   btn.addEventListener('click',async()=>{
+    const tenantId=state.selected;
+    if(m.status==='active'&&!confirm('¿Suspender el acceso de este usuario a la empresa?'))return;
+    btn.disabled=true;
+    try{
+     const changed=await write('/api/admin/tenants/'+tenantId+'/members/'+m.id,'PATCH',{status:m.status==='active'?'suspended':'active'});
+     if(state.selected===tenantId)renderMembers(changed.members);
+     notice('Acceso actualizado exclusivamente para esta empresa.');
+    }catch(e){notice('No se pudo cambiar el acceso: '+e.message,true);}
+    finally{btn.disabled=false;}
+   });
+   line.append(btn);
+  }else line.append(node('span','Propietario protegido','status'));
+  host.append(line);
+ }
  if(!items.length)host.append(node('p','Sin miembros asignados.','help'));
 }
 async function loadMembers(id){renderMembers((await api('/api/admin/tenants/'+id+'/members')).members);}
