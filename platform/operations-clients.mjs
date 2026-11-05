@@ -10,7 +10,7 @@ const recordAudit=(org,user,action,id)=>({sql:'INSERT INTO audit_events(id,organ
 
 export async function listClients(token,slug){
  const {tenant}=await authorizeTool(token,slug,'C001');
- const result=await executeSql('SELECT id,name,company,email,phone,status,notes,created_at,updated_at FROM tenant_clients WHERE organization_id=? AND archived_at IS NULL ORDER BY updated_at DESC LIMIT 250',[tenant.id]);
+ const result=await executeSql('SELECT id,name,company,email,phone,status,notes,created_at,updated_at FROM tenant_client_profiles WHERE organization_id=? AND archived_at IS NULL ORDER BY updated_at DESC LIMIT 250',[tenant.id]);
  return {clients:rows(result).map(toClient),statuses:clientStatuses};
 }
 export async function createClient(token,slug,input){
@@ -18,9 +18,9 @@ export async function createClient(token,slug,input){
  const data=normalizeClient(input),id=randomUUID();
  const a=recordAudit(tenant.id,session.userId,'clients.created',id);
  const results=await executeBatch([
-  {sql:'INSERT INTO tenant_clients(organization_id,id,name,company,email,phone,status,notes,created_by) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING',args:[tenant.id,id,data.name,data.company,data.email,data.phone,data.status,data.notes,session.userId]},
+  {sql:'INSERT INTO tenant_client_profiles(organization_id,id,name,company,email,phone,status,notes,created_by) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING',args:[tenant.id,id,data.name,data.company,data.email,data.phone,data.status,data.notes,session.userId]},
   {sql:`INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id)
-  SELECT ?,?,?,?,?,? FROM tenant_clients WHERE organization_id=? AND id=?`,
+  SELECT ?,?,?,?,?,? FROM tenant_client_profiles WHERE organization_id=? AND id=?`,
   args:[...a.args,tenant.id,id]}
  ]);
  if(!changed(results?.[0]))throw Error('Duplicate client email');
@@ -29,14 +29,14 @@ export async function createClient(token,slug,input){
 export async function updateClient(token,slug,id,input){
  const {tenant,session}=await authorizeTool(token,slug,'C001',true);
  const data=normalizeClient(input);
- const update=await executeSql(`UPDATE tenant_clients SET name=?,company=?,email=?,phone=?,status=?,notes=?,updated_at=CURRENT_TIMESTAMP
+ const update=await executeSql(`UPDATE tenant_client_profiles SET name=?,company=?,email=?,phone=?,status=?,notes=?,updated_at=CURRENT_TIMESTAMP
   WHERE organization_id=? AND id=? AND archived_at IS NULL
   AND (?='' OR NOT EXISTS(
-   SELECT 1 FROM tenant_clients another WHERE another.organization_id=? AND another.id!=? AND another.email=? AND another.archived_at IS NULL
+   SELECT 1 FROM tenant_client_profiles another WHERE another.organization_id=? AND another.id!=? AND another.email=? AND another.archived_at IS NULL
   ))`,
  [data.name,data.company,data.email,data.phone,data.status,data.notes,tenant.id,id,data.email,tenant.id,id,data.email]);
  if(!changed(update)){
-  const found=await executeSql('SELECT id FROM tenant_clients WHERE organization_id=? AND id=? AND archived_at IS NULL',[tenant.id,id]);
+  const found=await executeSql('SELECT id FROM tenant_client_profiles WHERE organization_id=? AND id=? AND archived_at IS NULL',[tenant.id,id]);
   throw Error(rows(found).length?'Duplicate client email':'Not found');
  }
  const a=recordAudit(tenant.id,session.userId,'clients.updated',id);
@@ -45,7 +45,7 @@ export async function updateClient(token,slug,id,input){
 }
 export async function archiveClient(token,slug,id){
  const {tenant,session}=await authorizeTool(token,slug,'C001',true);
- const result=await executeSql('UPDATE tenant_clients SET archived_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND id=? AND archived_at IS NULL',[tenant.id,id]);
+ const result=await executeSql('UPDATE tenant_client_profiles SET archived_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND id=? AND archived_at IS NULL',[tenant.id,id]);
  if(!changed(result))throw Error('Not found');
  const a=recordAudit(tenant.id,session.userId,'clients.archived',id);
  await executeSql(a.sql,a.args);
