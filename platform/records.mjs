@@ -27,8 +27,9 @@ export async function tenantConfig(token,slug){
  const session=await requireTenantSession(token,tenant.id);
  const settings=await getTenantSettings(tenant.id);
  const enabled=await getTenantTools(tenant.id);
- const members=enabled.includes('C009')?unpack(await executeSql("SELECT u.email,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.status='active' ORDER BY u.email LIMIT 100",[tenant.id])):[];
- return {tenant:{id:tenant.id,slug:tenant.slug,name:tenant.name,role:session.role,displayName:settings?.displayName||tenant.name,logoUrl:settings?.logoUrl,primaryColor:settings?.primaryColor,secondaryColor:settings?.secondaryColor,timezone:settings?.timezone,suiteId:settings?.suiteId,suiteName:getSuite(settings?.suiteId)?.name||settings?.suiteId},tools:catalog.tools.filter(t=>enabled.includes(t.id)),members:members.map(x=>({email:x[0],role:x[1]}))};
+ const canManageMembers=['owner','admin'].includes(session.role);
+ const members=canManageMembers&&enabled.includes('C009')?unpack(await executeSql("SELECT u.email,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.status='active' ORDER BY u.email LIMIT 100",[tenant.id])):[];
+ return {tenant:{id:tenant.id,slug:tenant.slug,name:tenant.name,role:session.role,displayName:settings?.displayName||tenant.name,logoUrl:settings?.logoUrl,primaryColor:settings?.primaryColor,secondaryColor:settings?.secondaryColor,timezone:settings?.timezone,suiteId:settings?.suiteId,suiteName:getSuite(settings?.suiteId)?.name||settings?.suiteId},tools:catalog.tools.filter(t=>enabled.includes(t.id)&&(t.id!=='C009'||canManageMembers)),members:members.map(x=>({email:x[0],role:x[1]}))};
 }
 export async function toolRecords(token,slug,toolId,{limit=80}={}){
  const {tenant}=await authorizeTool(token,slug,toolId);
