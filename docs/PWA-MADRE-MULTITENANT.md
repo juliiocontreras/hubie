@@ -91,3 +91,40 @@ En la rama, `.github/workflows/pwa-core-tests.yml` ejecuta:
 ## Conexión y despliegue
 
 El código de esta rama es de desarrollo, **no está montado aún en el entorno Render conectado anteriormente**, ni necesariamente dispone de las credenciales Turso. Las rutas `/app/` y `/madre/app.html` solo serán accesibles en una URL de staging que despliegue esta rama con su base y OAuth configurados. No exponer el token Turso al navegador.
+
+## Etapa 2 — Workflows operativos (rama, sin desplegar)
+
+### CRM (Tool `C002`)
+- `GET /api/app/:slug/workflows/crm`: listar oportunidades de la empresa.
+- `POST /api/app/:slug/workflows/crm`: crear oportunidad con cliente, etapa, valor en centavos y seguimiento.
+- `PATCH /api/app/:slug/workflows/crm/:id`: modificar o avanzar etapa.
+- `DELETE /api/app/:slug/workflows/crm/:id`: archivado lógico con historial preservado.
+- Etapas: lead, calificado, propuesta, negociación, ganado, perdido. No se envían correos o WhatsApp automáticos aún.
+
+### Agenda (Tool `C004`)
+- `GET /api/app/:slug/workflows/agenda`: citas del cliente.
+- `POST /api/app/:slug/workflows/agenda`: reservar un intervalo, comprobación SQL de colisiones por `organization_id` + `resource`.
+- `PATCH /api/app/:slug/workflows/agenda/:id`: reprogramar o cambiar estado. Intervalos consecutivos no se consideran conflicto.
+- Fechas se almacenan como UTC ISO-8601, el navegador muestra la hora local; zonas horarias configurables del tenant aún requieren UX.
+- No son invitaciones de Calendar ni notificaciones externas.
+
+### Inventario (Tool `C005`)
+- `GET /api/app/:slug/workflows/inventory`: artículos y último historial de movimientos.
+- `POST /api/app/:slug/workflows/inventory`: alta de SKU única por empresa, stock inicial `0`.
+- `PATCH /api/app/:slug/workflows/inventory/:id`: nombre, ubicación y stock mínimo; no permite cambiar cantidad directamente.
+- `POST /api/app/:slug/workflows/inventory/:id/movements`: entrada o salida; un batch transaccional inserta el movimiento y actualiza stock solo cuando la nueva cantidad es válida.
+- No se permite stock negativo ni SKU duplicada dentro de una empresa. La misma SKU puede existir en otra organización.
+- Esta primera versión es monoubicación por artículo; almacenes múltiples, lotes y transferencias reales requieren posteriores migraciones.
+
+### Acceso de colaboradores
+- `PATCH /api/admin/tenants/:id/members/:userId` acepta estado `active`/`suspended`.
+- Solo Super Admin lo puede hacer; la sentencia no permite suspender la membresía `owner`.
+- La suspensión opera por organización. Si el usuario trabaja en otra empresa, conserva esa otra membresía.
+- El directorio de usuarios de la PWA cliente se muestra únicamente para roles owner/admin.
+
+### Calidad, límites y control de despliegue
+- Agregada migración `007_operational_workflows.sql` sin eliminar tablas anteriores.
+- Tests de validaciones de negocio y SQLite de aislamiento entre organizaciones, conflictos de citas y kardex.
+- El health check debe comprobar tanto conexión Turso como las tablas mínimas.
+- En staging faltan todavía pruebas E2E con OAuth, Turso real, varios usuarios y recorridos móviles. La aprobación de CI no equivale a disponibilidad productiva.
+- Los tres módulos usan tablas operativas normalizadas distintas de los registros genéricos históricos; las migraciones de datos antiguos no se han realizado.
