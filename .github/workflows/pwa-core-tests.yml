@@ -43,7 +43,7 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/healthz)" = 503
       - name: Validate JavaScript syntax
         run: |
-          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js; do
+          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js assets/app-workflows.js assets/operational-*.js; do
             node --check "$file"
           done
       - name: Run unit and contract tests
