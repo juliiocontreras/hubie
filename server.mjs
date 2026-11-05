@@ -1,6 +1,6 @@
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
-import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember} from './admin.mjs';
+import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
 import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
@@ -116,6 +116,10 @@ createServer(async(req,res)=>{
   }
   if(pathname==='/api/admin/catalog'){
     return processApi(req,res,async()=>({catalog:getAdminCatalog()}),{admin:true,methods:['GET']});
+  }
+  const memberStatusPath=pathname.match(/^\/api\/admin\/tenants\/([0-9a-f-]{36})\/members\/([0-9a-f-]{36})$/);
+  if(memberStatusPath){
+    return processApi(req,res,async({actor,body})=>({members:await setTenantMemberStatus(memberStatusPath[1],memberStatusPath[2],body?.status,actor)}),{admin:true,methods:['PATCH']});
   }
   const adminDetail=pathname.match(/^\/api\/admin\/tenants\/([0-9a-f-]{36})(?:\/(tools\/([A-Z][0-9]{3})|members))?$/);
   if(adminDetail){
