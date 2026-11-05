@@ -127,3 +127,19 @@
 .hc-gallery-section .hc-editorial-card:last-child{grid-column:auto}
 @media(max-width:900px){.hc-gallery-section .hc-editorial-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.hc-gallery-section .hc-editorial-gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:3px 2px 16px;scrollbar-width:thin}.hc-gallery-section .hc-editorial-card{flex:0 0 min(72vw,265px);scroll-snap-align:start}.hc-gallery-section .hc-editorial-card:last-child img{max-height:none}}
+
+/* Supporting visual storytelling — Tools, Services and homepage */
+.hc-image-story{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;margin-top:8px;margin-bottom:35px;padding:20px;background:#fff;border:1px solid #e0edf7;border-radius:28px}
+.hc-image-story__copy{padding:24px}.hc-image-story__copy h2{font-size:clamp(27px,3vw,42px);line-height:1.13;margin:12px 0}.hc-image-story__copy p{color:#65809b;line-height:1.7}.hc-image-story img{display:block;width:100%;height:auto;border-radius:20px}
+.hc-service-images{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px}
+.hc-service-image{display:block;background:#fff;border-radius:22px;overflow:hidden;text-decoration:none;color:#17436d;border:1px solid #e0edf7;box-shadow:0 10px 30px #1c558b12}
+.hc-service-image img{width:100%;height:auto;max-height:280px;object-fit:cover;display:block}
+.hc-service-image span{display:block;padding:15px 20px;font-weight:750}
+.hc-home-visual{padding:24px 20px 40px;background:#f6faff;color:#12375e}
+.hc-home-visual__inner{max-width:1170px;margin:auto;display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;align-items:center}
+.hc-home-visual__eyebrow{color:#1674ca;font-size:11px;letter-spacing:.15em;font-weight:800}
+.hc-home-visual h2{font-size:clamp(26px,3vw,42px);line-height:1.13;letter-spacing:-.035em;margin:10px 0}
+.hc-home-visual p{color:#63809b;line-height:1.6}.hc-home-visual a{font-weight:800;color:#1769d6}
+.hc-home-visual__images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hc-home-visual__images img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;border-radius:16px;box-shadow:0 12px 25px #21598a18}
+@media(max-width:700px){.hc-image-story,.hc-home-visual__inner{grid-template-columns:1fr}.hc-image-story__copy{padding:10px}.hc-service-images{grid-template-columns:1fr}.hc-home-visual__images{gap:7px}}
