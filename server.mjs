@@ -1,3 +1,4 @@
+import { isSameOrigin } from './platform/public-origin.mjs';
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
@@ -51,12 +52,7 @@ async function applyCoreSchema(){
  await executeSql('CREATE TABLE IF NOT EXISTS marketing_leads (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, negocio TEXT, giro TEXT, email TEXT NOT NULL, tel TEXT, mensaje TEXT, created_at TEXT NOT NULL)');
 }
 // All mutable cookie-authenticated API requests require a same-origin browser context.
-function sameOrigin(req){
- const value=req.headers.origin;
- if(typeof value!=='string')return false;
- try{return new URL(value).host===req.headers.host && ['https:','http:'].includes(new URL(value).protocol);}
- catch{return false;}
-}
+function sameOrigin(req){return isSameOrigin(req.headers.origin,process.env.HUBIE_PUBLIC_ORIGIN);}
 function sendApi(res,status,data){
  res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
  res.end(JSON.stringify(data));
