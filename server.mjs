@@ -2,6 +2,9 @@ import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
+import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
+import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
+import {listInventory,createStockItem,updateStockItem,moveStock} from './platform/operations-inventory.mjs';
 import {googleConfigured,startGoogleLogin,completeGoogleLogin} from './google-oidc.mjs';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -36,7 +39,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -75,7 +78,7 @@ async function processApi(req,res,fn,{admin=false,methods=['GET']}={}){
   return sendApi(res,req.method==='POST'?201:200,result);
  }catch(error){
   const message=error?.message||'';
-  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:message==='Unsupported media type'?415:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
+  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:['Schedule conflict','Duplicate SKU','Insufficient stock'].includes(message)?409:message==='Unsupported media type'?415:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
   return sendApi(res,status,{error:status===503?'Operación temporalmente no disponible':message});
  }
 }
@@ -135,6 +138,30 @@ createServer(async(req,res)=>{
       if(req.method==='DELETE')return await archiveToolRecord(token,slug,toolId,recordId);
       return {record:await saveToolRecord(token,slug,toolId,body,recordId||null)};
     },{methods:appPath[2]==='config'?['GET']:recordId?['PATCH','DELETE']:['GET','POST']});
+  }
+  const workflowPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/(crm|agenda|inventory)(?:\/([0-9a-f-]{36}))?(?:\/(movements))?$/);
+  if(workflowPath){
+    const slug=workflowPath[1],module=workflowPath[2],id=workflowPath[3],action=workflowPath[4];
+    const methods=module==='crm'?(id?['PATCH','DELETE']:['GET','POST']):
+      module==='agenda'?(id?['PATCH']:['GET','POST']):
+      action==='movements'?['POST']:id?['PATCH']:['GET','POST'];
+    return processApi(req,res,async({token,body})=>{
+      if(module==='crm'){
+        if(req.method==='GET')return listDeals(token,slug);
+        if(req.method==='POST')return createDeal(token,slug,body);
+        if(req.method==='DELETE')return archiveDeal(token,slug,id);
+        return updateDeal(token,slug,id,body);
+      }
+      if(module==='agenda'){
+        if(req.method==='GET')return listAppointments(token,slug);
+        if(req.method==='POST')return createAppointment(token,slug,body);
+        return updateAppointment(token,slug,id,body);
+      }
+      if(req.method==='GET')return listInventory(token,slug);
+      if(action==='movements')return moveStock(token,slug,id,body);
+      if(id)return updateStockItem(token,slug,id,body);
+      return createStockItem(token,slug,body);
+    },{methods});
   }
   if(pathname==='/api/leads'){
     if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
