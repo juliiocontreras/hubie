@@ -24,6 +24,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate JavaScript syntax
+        run: |
+          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js; do
+            node --check "$file"
+          done
       - name: Run unit and contract tests
         run: npm test
       - name: Validate Turso schema
