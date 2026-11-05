@@ -1,13 +1,14 @@
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
-import {requireSuperAdmin,createTenant,listTenants} from './admin.mjs';
+import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember} from './admin.mjs';
+import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
 import {googleConfigured,startGoogleLogin,completeGoogleLogin} from './google-oidc.mjs';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 const root=process.cwd();
-const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon'};
+const types={'.webmanifest':'application/manifest+json','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon'};
 const port=Number(process.env.PORT||10000);
 const nav=`<button class="hubie-menu-toggle" type="button" aria-expanded="false" aria-controls="hubie-main-nav" aria-label="Abrir menú">☰ <span>Menú</span></button>
 <nav id="hubie-main-nav" class="hubie-navigation" aria-label="Navegación principal">
@@ -31,11 +32,11 @@ function enhanceHtml(html){
  updated=updated.replace('</head>',navStyles+'</head>');
  return updated.replace('</body>',navScript+'<script src="/assets/catalog-ui.js" defer></script><script src="/assets/ambient-motion.js" defer></script></body>');
 }
-function decodedProtected(path){return /^(?:\/\.git|\/turso\/|\/scripts\/|\/tests\/|\/docs\/|\/database\.mjs$|\/server\.mjs$|\/package(?:-lock)?\.json$)/i.test(path);}
+function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scripts\/|\/tests\/|\/docs\/|\/data\/backup\/|\/package(?:-lock)?\.json$)/i.test(path)||/\.(?:mjs|sql|map)$/i.test(path);}
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -44,6 +45,39 @@ async function applyCoreSchema(){
  if(count!==5)throw new Error('Core schema verification failed');
  console.log('Hubie core schema verified: 5 tables');
  await executeSql('CREATE TABLE IF NOT EXISTS marketing_leads (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, negocio TEXT, giro TEXT, email TEXT NOT NULL, tel TEXT, mensaje TEXT, created_at TEXT NOT NULL)');
+}
+// All mutable cookie-authenticated API requests require a same-origin browser context.
+function sameOrigin(req){
+ const value=req.headers.origin;
+ if(typeof value!=='string')return false;
+ try{return new URL(value).host===req.headers.host && ['https:','http:'].includes(new URL(value).protocol);}
+ catch{return false;}
+}
+function sendApi(res,status,data){
+ res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
+ res.end(JSON.stringify(data));
+}
+async function readApiBody(req){
+ if(req.headers['content-type']?.split(';')[0]!=='application/json')throw Error('Unsupported media type');
+ let raw='';
+ for await(const chunk of req){raw+=chunk;if(Buffer.byteLength(raw,'utf8')>16000)throw Error('Payload too large');}
+ try{return JSON.parse(raw);}catch{throw Error('Invalid JSON');}
+}
+async function processApi(req,res,fn,{admin=false,methods=['GET']}={}){
+ if(process.env.HUBIE_AUTH_ENABLED!=='true')return sendApi(res,503,{error:'Autenticación no configurada'});
+ if(!methods.includes(req.method)){res.writeHead(405,{'allow':methods.join(', ')});res.end();return;}
+ if(!['GET','HEAD'].includes(req.method)&&!sameOrigin(req))return sendApi(res,403,{error:'Origin forbidden'});
+ try{
+  const token=readSessionCookie(req.headers.cookie);
+  const actor=admin?await requireSuperAdmin(token):null;
+  const body=['GET','HEAD'].includes(req.method)?null:await readApiBody(req);
+  const result=await fn({actor,token,body});
+  return sendApi(res,req.method==='POST'?201:200,result);
+ }catch(error){
+  const message=error?.message||'';
+  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:message==='Unsupported media type'?415:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
+  return sendApi(res,status,{error:status===503?'Operación temporalmente no disponible':message});
+ }
 }
 createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
@@ -76,6 +110,31 @@ createServer(async(req,res)=>{
     try{const token=readSessionCookie(req.headers.cookie);if(token)await revokeSession(token);}catch{}
     res.writeHead(204,{'set-cookie':'__Host-hubie_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0','cache-control':'no-store'});res.end();return;
   }
+  if(pathname==='/api/admin/catalog'){
+    return processApi(req,res,async()=>({catalog:getAdminCatalog()}),{admin:true,methods:['GET']});
+  }
+  const adminDetail=pathname.match(/^\/api\/admin\/tenants\/([0-9a-f-]{36})(?:\/(tools\/([A-Z][0-9]{3})|members))?$/);
+  if(adminDetail){
+    const id=adminDetail[1],toolId=adminDetail[3],members=adminDetail[2]==='members';
+    return processApi(req,res,async({actor,body})=>{
+      if(toolId)return {tool:await setTenantTool(id,toolId,body?.enabled,actor)};
+      if(members)return req.method==='GET'?{members:await listTenantMembers(id)}:{members:await addTenantMember(id,body,actor)};
+      return {tenant:req.method==='GET'?await getTenantAdmin(id):await updateTenant(id,body,actor)};
+    },{admin:true,methods:toolId?['PUT']:members?['GET','POST']:['GET','PATCH']});
+  }
+  if(pathname==='/api/app/organizations'){
+    return processApi(req,res,async({token})=>({organizations:await userOrganizations(token)}),{methods:['GET']});
+  }
+  const appPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/(config|tools\/([A-Z][0-9]{3})\/records(?:\/([a-zA-Z0-9-]{1,100}))?)$/);
+  if(appPath){
+    const slug=appPath[1],toolId=appPath[3],recordId=appPath[4];
+    return processApi(req,res,async({token,body})=>{
+      if(appPath[2]==='config')return await tenantConfig(token,slug);
+      if(req.method==='GET')return await toolRecords(token,slug,toolId);
+      if(req.method==='DELETE')return await archiveToolRecord(token,slug,toolId,recordId);
+      return {record:await saveToolRecord(token,slug,toolId,body,recordId||null)};
+    },{methods:appPath[2]==='config'?['GET']:recordId?['PATCH','DELETE']:['GET','POST']});
+  }
   if(pathname==='/api/leads'){
     if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
     let raw='';try{for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('too-large');}
@@ -91,13 +150,14 @@ createServer(async(req,res)=>{
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
   let decoded;try{decoded=decodeURIComponent(pathname);}catch{res.writeHead(400);res.end();return;}
-  const file=resolve(root,'.'+(decoded==='/'?'/index.html':decoded));
+  const file=resolve(root,'.'+(decoded==='/'?'/index.html':decoded==='/app/'?'/app/index.html':decoded));
   if(!(file===root||file.startsWith(root+sep))||decoded.split('/').some(p=>p.startsWith('.'))){res.writeHead(403);res.end();return;}
   try{
     const s=await stat(file);if(!s.isFile())throw Error('not file');
     const isHtml=extname(file).toLowerCase()==='.html';
     const raw=await readFile(file);
-    const data=isHtml?Buffer.from(enhanceHtml(raw.toString('utf8'))):raw;
+    const appShell=decoded==='/admin.html'||decoded.startsWith('/app/');
+    const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
     res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream','x-content-type-options':'nosniff'});
     res.end(req.method==='HEAD'?undefined:data);
   }catch{res.writeHead(404);res.end('Not found');}
