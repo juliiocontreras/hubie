@@ -1,5 +1,5 @@
--- 008: Cliente / contacto normalizado por tenant. No toca los registros históricos C001.
-CREATE TABLE IF NOT EXISTS tenant_clients (
+-- 008: Directorio de clientes C001 normalizado, sin modificar tenant_clients (tabla legado existente).
+CREATE TABLE IF NOT EXISTS tenant_client_profiles (
  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
  id TEXT NOT NULL,
  name TEXT NOT NULL,
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS tenant_clients (
  archived_at TEXT,
  PRIMARY KEY(organization_id,id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_unique_active_email
- ON tenant_clients(organization_id,email)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_client_profiles_unique_active_email
+ ON tenant_client_profiles(organization_id,email)
  WHERE archived_at IS NULL AND email <> '';
-CREATE INDEX IF NOT EXISTS idx_clients_tenant_status
- ON tenant_clients(organization_id,status,archived_at);
+CREATE INDEX IF NOT EXISTS idx_client_profiles_tenant_status
+ ON tenant_client_profiles(organization_id,status,archived_at);
