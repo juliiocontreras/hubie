@@ -1,9 +1,11 @@
 import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {executeSql} from '../database.mjs';
 import {verifySession,requireTenantSession} from '../auth.mjs';
 import {resolveTenant,getTenantSettings,getTenantTools} from '../tenant.mjs';
 import {catalog,getSuite,getTool,validateRecord} from './catalog.mjs';
 const unpack=r=>r?.rows?.map(row=>row.map(c=>c?.value??null))??[];
+const dashboardCountsSql=readFileSync(new URL('./dashboard-counts.sql',import.meta.url),'utf8');
 const readRoles=['owner','admin','member','viewer'];
 const writeRoles=['owner','admin','member'];
 export async function userOrganizations(token){
@@ -34,7 +36,7 @@ export async function tenantConfig(token,slug){
 export async function toolRecords(token,slug,toolId,{limit=80}={}){
  const {tenant}=await authorizeTool(token,slug,toolId);
  if(toolId==='C008'){
-  const r=await executeSql("SELECT tr.tool_id,count(*) FROM tenant_tool_records tr JOIN tenant_tools tt ON tt.organization_id=tr.organization_id AND tt.tool_id=tr.tool_id AND tt.enabled=1 WHERE tr.organization_id=? AND tr.archived_at IS NULL GROUP BY tr.tool_id",[tenant.id]);
+  const r=await executeSql(dashboardCountsSql,Array(6).fill(tenant.id));
   return {dashboard:true,counts:Object.fromEntries(unpack(r).map(x=>[x[0],Number(x[1])]))};
  }
  if(toolId==='C009')throw Error('Read members in tenant config');
