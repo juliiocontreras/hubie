@@ -128,3 +128,26 @@ El código de esta rama es de desarrollo, **no está montado aún en el entorno 
 - El health check debe comprobar tanto conexión Turso como las tablas mínimas.
 - En staging faltan todavía pruebas E2E con OAuth, Turso real, varios usuarios y recorridos móviles. La aprobación de CI no equivale a disponibilidad productiva.
 - Los tres módulos usan tablas operativas normalizadas distintas de los registros genéricos históricos; las migraciones de datos antiguos no se han realizado.
+
+## Etapa 3 — Clientes, dashboard y preparación de Render
+
+### Clientes (C001)
+- `GET /api/app/:slug/workflows/clients`: contactos y prospectos de la organización, sin datos de otras empresas.
+- `POST /api/app/:slug/workflows/clients`: crea contacto con nombre, empresa, correo, teléfono, estado y notas.
+- `PATCH /api/app/:slug/workflows/clients/:id`: edita la ficha, validando el correo único activo por organización.
+- `DELETE /api/app/:slug/workflows/clients/:id`: archivo lógico; no se borran datos ni se renuncia al historial.
+- Los registros normalizados se guardan en `tenant_client_profiles`, **no** en la tabla histórica `tenant_clients` ya presente en `002_multitenant.sql`. La migración 008 es aditiva y no sobrescribe los contactos antiguos.
+- La importación/mapeo de contactos históricos al nuevo registro sigue pendiente hasta revisar datos reales.
+
+### Dashboard (C008)
+- Consulta `platform/dashboard-counts.sql` para sumar datos efectivos de C001, C002, C004, C005 y registros genéricos del resto de las Tools.
+- El conteo se filtra por `organization_id` y las Tools habilitadas. No cuenta dos veces los registros genéricos de los cuatro Core con esquemas normalizados.
+- Prueba SQL contra SQLite verifica que la empresa A nunca reciba cantidades de la B y que una Tool desactivada no se muestre.
+
+### Seguridad y despliegue
+- `HUBIE_PUBLIC_ORIGIN` es obligatorio para OAuth y escrituras autenticadas. No hay URL por defecto que redirija a otro servicio.
+- La validación exige igualdad exacta de origen y rechaza esquemas distintos, subdominios falsos y credenciales en la URL.
+- Hospedaje de desarrollo comprobado en la cuenta Render: `hubie-dev.onrender.com`, rama antigua `feat/turso-core`, despliegue automático deshabilitado.
+- Nuevo código sigue solo en PR #6 de GitHub; la PWA operativa **todavía no se ha desplegado en Render**.
+- Consultar `docs/RENDER-PWA-DEPLOY.md` para los valores de entorno y los pasos de staging seguro.
+- Los nuevos scripts de frontend se agregaron a la caché de shell PWA, no a la caché de respuestas de la API.
