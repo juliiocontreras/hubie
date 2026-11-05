@@ -45,6 +45,7 @@ export async function saveToolRecord(token,slug,toolId,body,id=null){
  if(['C008','C009'].includes(toolId))throw Error('Read only tool');
  const {tenant,session}=await authorizeTool(token,slug,toolId,true);
  const record=validateRecord(body);
+ const updating=Boolean(id);
  if(id){
   const r=await executeSql('UPDATE tenant_tool_records SET title=?,status=?,fields_json=?,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND tool_id=? AND id=? AND archived_at IS NULL',[record.title,record.status,JSON.stringify(record.fields),tenant.id,toolId,id]);
   if(!Number(r?.affected_row_count))throw Error('Not found');
@@ -52,7 +53,7 @@ export async function saveToolRecord(token,slug,toolId,body,id=null){
   id=randomUUID();
   await executeSql('INSERT INTO tenant_tool_records(organization_id,id,tool_id,title,status,fields_json,created_by) VALUES(?,?,?,?,?,?,?)',[tenant.id,id,toolId,record.title,record.status,JSON.stringify(record.fields),session.userId]);
  }
- await executeSql('INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,?,?,?)',[randomUUID(),tenant.id,session.userId,id?'tenant.record_saved':'tenant.record_created','tool_record',id]);
+ await executeSql('INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,?,?,?)',[randomUUID(),tenant.id,session.userId,updating?'tenant.record_updated':'tenant.record_created','tool_record',id]);
  return {id,...record};
 }
 export async function archiveToolRecord(token,slug,toolId,id){
