@@ -46,7 +46,7 @@ async function applyCoreSchema(){
  const result=await executeSql("SELECT COUNT(*) AS total FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','organization_invitations','audit_events')");
  const count=Number(result?.rows?.[0]?.[0]?.value??0);
  if(count!==5)throw new Error('Core schema verification failed');
- console.log('Hubie core schema verified: 5 tables');
+ console.log('Hubie core schema verified; operational migrations applied');
  await executeSql('CREATE TABLE IF NOT EXISTS marketing_leads (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, negocio TEXT, giro TEXT, email TEXT NOT NULL, tel TEXT, mensaje TEXT, created_at TEXT NOT NULL)');
 }
 // All mutable cookie-authenticated API requests require a same-origin browser context.
@@ -178,7 +178,20 @@ createServer(async(req,res)=>{
       res.writeHead(201,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({ok:true}));return;
     }catch(error){const bad=error instanceof SyntaxError||error.message==='too-large';res.writeHead(bad?400:503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:bad?'Solicitud inválida':'No se pudo guardar la solicitud'}));return;}
   }
-  if(pathname==='/healthz'){const db=await databaseHealth();const healthy=db.status==='connected';res.writeHead(healthy?200:503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,...(db.reason?{reason:db.reason}:{})}));return;}
+  if(pathname==='/healthz'){
+    const db=await databaseHealth();
+    let schemaReady=false;
+    if(db.status==='connected'){
+      try{
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===10;
+      }catch{schemaReady=false;}
+    }
+    const healthy=db.status==='connected'&&schemaReady;
+    res.writeHead(healthy?200:503,{'content-type':'application/json','cache-control':'no-store'});
+    res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,schema:schemaReady?'ready':'not-ready',...(db.reason?{reason:db.reason}:{})}));
+    return;
+  }
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
   let decoded;try{decoded=decodeURIComponent(pathname);}catch{res.writeHead(400);res.end();return;}
