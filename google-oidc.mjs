@@ -1,9 +1,10 @@
 import{randomBytes,createHash,randomUUID}from'node:crypto';
+import {publicOrigin} from './platform/public-origin.mjs';
 import{executeSql}from'./database.mjs';
 import{createSession}from'./auth.mjs';
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const first=r=>r?.rows?.[0]?.map(c=>c?.value??null);
-const origin=()=>process.env.HUBIE_PUBLIC_ORIGIN||'https://hubie-dev.onrender.com';
+const origin=()=>publicOrigin(process.env.HUBIE_PUBLIC_ORIGIN);
 const redirectUri=()=>origin()+'/api/auth/google/callback';
 export function googleConfigured(){return Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.HUBIE_AUTH_ENABLED==='true');}
 export async function startGoogleLogin(){if(!googleConfigured())throw Error('Google login not configured');const state=randomBytes(32).toString('base64url'),nonce=randomBytes(32).toString('base64url'),code_verifier=randomBytes(32).toString('base64url');const code_challenge=hashBuffer(code_verifier);await executeSql('INSERT INTO oauth_login_attempts(state_hash,nonce,verifier,expires_at) VALUES(?,?,?,?)',[hash(state),nonce,code_verifier,new Date(Date.now()+600000).toISOString()]);const u=new URL('https://accounts.google.com/o/oauth2/v2/auth');for(const[k,v]of Object.entries({client_id:process.env.GOOGLE_CLIENT_ID,redirect_uri:redirectUri(),response_type:'code',scope:'openid email profile',state,nonce,code_challenge,code_challenge_method:'S256',prompt:'select_account'}))u.searchParams.set(k,v);return u.toString();}
