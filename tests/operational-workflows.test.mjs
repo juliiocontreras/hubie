@@ -15,6 +15,7 @@ test('agenda checks UTC dates, intervals and normalized resource',()=>{
  assert.throws(()=>normalizeEvent({title:'Visita',startsAt:'2026-11-12T15:00:00.000Z',endsAt:'2026-11-12T14:00:00.000Z'}),/Invalid appointment/);
  assert.throws(()=>normalizeEvent({title:'Visita',startsAt:'2026-11-12T15:00:00',endsAt:'2026-11-12T17:00:00'}),/Invalid appointment/);
  assert.throws(()=>normalizeEvent({title:'Visita',startsAt:'2026-11-12T15:00:00.000Z',endsAt:'2026-12-20T15:30:00.000Z'}),/Invalid appointment/);
+ assert.throws(()=>normalizeEvent({title:'Visita',startsAt:'2026-11-31T15:00:00.000Z',endsAt:'2026-12-01T15:30:00.000Z'}),/Invalid appointment/);
 });
 test('inventory requires stock movements rather than editing quantity directly',()=>{
  const item=normalizeStockItem({sku:' a-120 ',title:'Producto A',lowStock:3,location:'Bodega'});
