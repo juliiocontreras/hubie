@@ -6,7 +6,7 @@ function notify(msg,error=false){ctx.notice(msg,error);}
 const root=()=>'/api/app/'+encodeURIComponent(ctx.config.tenant.slug)+'/tools/'+ctx.tool.id+'/records';
 const writable=()=>ctx.config.tenant.role!=='viewer'&&!['C008','C009'].includes(ctx.tool.id);
 function render(){
- if(!ctx||['C002','C004','C005'].includes(ctx.tool.id))return;
+ if(!ctx||['C001','C002','C004','C005'].includes(ctx.tool.id))return;
  const host=$('record-list');host.replaceChildren();
  const q=$('record-search').value.toLowerCase().trim();
  const shown=records.filter(r=>(r.title+' '+Object.values(r.fields).join(' ')).toLowerCase().includes(q));
@@ -81,7 +81,7 @@ export async function openRecords(context){
  closeOperationalModule();
  ctx=context;
  if($('record-dialog').open)$('record-dialog').close();
- if(['C002','C004','C005'].includes(ctx.tool.id))return openOperationalModule(ctx);
+ if(['C001','C002','C004','C005'].includes(ctx.tool.id))return openOperationalModule(ctx);
  wire();editing=null;records=[];
  $('record-search').value='';
  $('add-record').hidden=!writable();
