@@ -1,0 +1,30 @@
+name: Hubie PWA Madre Tests
+on:
+  push:
+    branches: [feat/pwa-madre-multitenant]
+  pull_request:
+    paths:
+      - 'platform/**'
+      - 'admin.mjs'
+      - 'server.mjs'
+      - 'database.mjs'
+      - 'tenant.mjs'
+      - 'google-oidc.mjs'
+      - 'app/**'
+      - 'tests/**'
+      - 'turso/**'
+      - '.github/workflows/pwa-core-tests.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run unit and contract tests
+        run: npm test
+      - name: Validate Turso schema
+        run: python -m unittest discover -s tests -p 'test_*.py'
