@@ -2,7 +2,7 @@
 // All currency is stored as integer centavos; never floating point MXN.
 const trimmed=(v,max=180)=>typeof v==='string'&&v.trim().length<=max?v.trim():null;
 const positiveInt=(x,max=1_000_000_000)=>Number.isSafeInteger(x)&&x>=0&&x<=max;
-const dateTime=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===new Date(Date.parse(v)).toISOString();
+const dateTime=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(v)&&Number.isFinite(Date.parse(v))&&(new Date(v).toISOString()===v||new Date(v).toISOString().replace(/\.000Z$/,'Z')===v);
 export const dealStages=Object.freeze(['lead','qualified','proposal','negotiation','won','lost']);
 export function normalizeDeal(input){
  const title=trimmed(input?.title);
