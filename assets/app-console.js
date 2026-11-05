@@ -1,4 +1,5 @@
 import {openRecords} from './app-records.js';
+import {closeOperationalModule} from './app-workflows.js';
 const $=id=>document.getElementById(id);
 const elt=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
 let organizations=[],config=null,activeTool=null;
@@ -13,6 +14,7 @@ function notice(s,error=false){$('feedback').textContent=s;$('feedback').classLi
 const roles={owner:'Propietario',admin:'Administrador',member:'Colaborador',viewer:'Solo lectura'};
 function head(title,desc){$('page-heading').textContent=title;$('page-description').textContent=desc;}
 function home(){
+ closeOperationalModule();
  activeTool=null;$('home').hidden=false;$('module').hidden=true;$('add-record').hidden=true;
  $('suite-name').textContent=config.tenant.suiteName;
  head('Bienvenido a '+config.tenant.displayName,'Tu organización tiene '+config.tools.length+' herramientas habilitadas.');
