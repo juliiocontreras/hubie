@@ -24,6 +24,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install runtime dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Smoke test private shells and protected source
+        run: |
+          PORT=4017 HUBIE_AUTH_ENABLED=false node server.mjs > /tmp/hubie.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost:4017/app/ -o /tmp/hubie-client.html; then break; fi
+            sleep 1
+          done
+          grep -q 'Espacio privado' /tmp/hubie-client.html
+          curl -fsS http://localhost:4017/madre/app.html -o /tmp/hubie-madre.html
+          grep -q 'Control de Suites' /tmp/hubie-madre.html
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/platform/catalog.mjs)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/api/admin/catalog)" = 503
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/healthz)" = 503
       - name: Validate JavaScript syntax
         run: |
           for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js; do
