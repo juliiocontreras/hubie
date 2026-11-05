@@ -2,6 +2,7 @@ import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
+import {listClients,createClient,updateClient,archiveClient} from './platform/operations-clients.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
 import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
 import {listInventory,createStockItem,updateStockItem,moveStock} from './platform/operations-inventory.mjs';
@@ -39,7 +40,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -78,7 +79,7 @@ async function processApi(req,res,fn,{admin=false,methods=['GET']}={}){
   return sendApi(res,req.method==='POST'?201:200,result);
  }catch(error){
   const message=error?.message||'';
-  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:['Schedule conflict','Duplicate SKU','Insufficient stock'].includes(message)?409:message==='Unsupported media type'?415:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
+  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:['Schedule conflict','Duplicate SKU','Insufficient stock','Duplicate client email'].includes(message)?409:message==='Unsupported media type'?415:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
   return sendApi(res,status,{error:status===503?'Operación temporalmente no disponible':message});
  }
 }
@@ -143,13 +144,20 @@ createServer(async(req,res)=>{
       return {record:await saveToolRecord(token,slug,toolId,body,recordId||null)};
     },{methods:appPath[2]==='config'?['GET']:recordId?['PATCH','DELETE']:['GET','POST']});
   }
-  const workflowPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/(crm|agenda|inventory)(?:\/([0-9a-f-]{36}))?(?:\/(movements))?$/);
+  const workflowPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/(clients|crm|agenda|inventory)(?:\/([0-9a-f-]{36}))?(?:\/(movements))?$/);
   if(workflowPath){
     const slug=workflowPath[1],module=workflowPath[2],id=workflowPath[3],action=workflowPath[4];
-    const methods=module==='crm'?(id?['PATCH','DELETE']:['GET','POST']):
+    const methods=module==='clients'?(id?['PATCH','DELETE']:['GET','POST']):
+      module==='crm'?(id?['PATCH','DELETE']:['GET','POST']):
       module==='agenda'?(id?['PATCH']:['GET','POST']):
       action==='movements'?['POST']:id?['PATCH']:['GET','POST'];
     return processApi(req,res,async({token,body})=>{
+      if(module==='clients'){
+        if(req.method==='GET')return listClients(token,slug);
+        if(req.method==='POST')return createClient(token,slug,body);
+        if(req.method==='DELETE')return archiveClient(token,slug,id);
+        return updateClient(token,slug,id,body);
+      }
       if(module==='crm'){
         if(req.method==='GET')return listDeals(token,slug);
         if(req.method==='POST')return createDeal(token,slug,body);
@@ -183,8 +191,8 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===10;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_clients')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===11;
       }catch{schemaReady=false;}
     }
     const healthy=db.status==='connected'&&schemaReady;
