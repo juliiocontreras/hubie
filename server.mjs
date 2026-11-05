@@ -147,7 +147,7 @@ createServer(async(req,res)=>{
       res.writeHead(201,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({ok:true}));return;
     }catch(error){const bad=error instanceof SyntaxError||error.message==='too-large';res.writeHead(bad?400:503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:bad?'Solicitud inválida':'No se pudo guardar la solicitud'}));return;}
   }
-  if(pathname==='/healthz'){const db=await databaseHealth();res.writeHead(db.status==='unavailable'?503:200,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({status:db.status==='unavailable'?'degraded':'ok',service:'hubie-dev',database:db.status,...(db.reason?{reason:db.reason}:{})}));return;}
+  if(pathname==='/healthz'){const db=await databaseHealth();const healthy=db.status==='connected';res.writeHead(healthy?200:503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,...(db.reason?{reason:db.reason}:{})}));return;}
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
   let decoded;try{decoded=decodeURIComponent(pathname);}catch{res.writeHead(400);res.end();return;}
