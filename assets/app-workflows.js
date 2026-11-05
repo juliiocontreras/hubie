@@ -1,3 +1,4 @@
+import {renderClients} from './operational-clients.js';
 import {renderCrm} from './operational-crm.js';
 import {renderAgenda} from './operational-agenda.js';
 import {renderStock} from './operational-stock.js';
@@ -40,6 +41,6 @@ export async function openOperationalModule(ctx){
  search.value='';
  document.getElementById('add-record').hidden=true;
  const key=ctx.tool.id;
- const runner=key==='C002'?renderCrm:key==='C004'?renderAgenda:renderStock;
+ const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C004'?renderAgenda:renderStock;
  await runner({...ctx,signal,search});
 }
