@@ -70,7 +70,7 @@ async function processApi(req,res,fn,{admin=false,methods=['GET']}={}){
  try{
   const token=readSessionCookie(req.headers.cookie);
   const actor=admin?await requireSuperAdmin(token):null;
-  const body=['GET','HEAD'].includes(req.method)?null:await readApiBody(req);
+  const body=['GET','HEAD','DELETE'].includes(req.method)?null:await readApiBody(req);
   const result=await fn({actor,token,body});
   return sendApi(res,req.method==='POST'?201:200,result);
  }catch(error){
@@ -87,9 +87,10 @@ createServer(async(req,res)=>{
   }
   if(pathname==='/api/auth/google/callback'){
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}
-    try{const query=new URL(req.url,'http://localhost').searchParams;const session=await completeGoogleLogin(query.get('state'),query.get('code'));res.writeHead(303,{'location':session.isSuperAdmin?'/admin.html':'/app/','set-cookie':'__Host-hubie_session='+encodeURIComponent(session.token)+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400','cache-control':'no-store'});res.end();}catch{res.writeHead(303,{'location':'/admin.html?login=failed','cache-control':'no-store'});res.end();}return;
+    try{const query=new URL(req.url,'http://localhost').searchParams;const session=await completeGoogleLogin(query.get('state'),query.get('code'));res.writeHead(303,{'location':session.isSuperAdmin?'/madre/app.html':'/app/','set-cookie':'__Host-hubie_session='+encodeURIComponent(session.token)+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400','cache-control':'no-store'});res.end();}catch{res.writeHead(303,{'location':'/admin.html?login=failed','cache-control':'no-store'});res.end();}return;
   }
   if(pathname==='/api/admin/tenants'){
+    if(req.method==='POST'&&!sameOrigin(req)){sendApi(res,403,{error:'Origin forbidden'});return;}
     if(process.env.HUBIE_AUTH_ENABLED!=='true'){res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:'Administración no habilitada'}));return;}
     if(!['GET','POST'].includes(req.method)){res.writeHead(405,{'allow':'GET, POST'});res.end();return;}
     try{
@@ -156,7 +157,7 @@ createServer(async(req,res)=>{
     const s=await stat(file);if(!s.isFile())throw Error('not file');
     const isHtml=extname(file).toLowerCase()==='.html';
     const raw=await readFile(file);
-    const appShell=decoded==='/admin.html'||decoded.startsWith('/app/');
+    const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded.startsWith('/app/');
     const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
     res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream','x-content-type-options':'nosniff'});
     res.end(req.method==='HEAD'?undefined:data);
