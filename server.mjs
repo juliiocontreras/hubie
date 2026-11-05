@@ -191,7 +191,7 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_clients')");
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles')");
         schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===11;
       }catch{schemaReady=false;}
     }
