@@ -1,0 +1,19 @@
+{
+  "id": "/madre/app.html",
+  "name": "Hubie Madre · Control Center",
+  "short_name": "Hubie Madre",
+  "description": "Administración central de empresas y suites personalizadas",
+  "start_url": "/madre/app.html",
+  "scope": "/madre/",
+  "display": "standalone",
+  "background_color": "#f2f6fb",
+  "theme_color": "#10244c",
+  "icons": [
+    {
+      "src": "/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
