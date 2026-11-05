@@ -1,3 +1,17 @@
+
+## Servicio de pruebas realmente creado (5 de noviembre de 2026)
+
+- Servicio `hubie-pwa-staging` en Julio's workspace, ID `srv-dbmgp361egvs73fanbtg`.
+- URL base: `https://hubie-pwa-staging.onrender.com`.
+- PWA Madre: `https://hubie-pwa-staging.onrender.com/madre/app.html`.
+- PWA cliente: `https://hubie-pwa-staging.onrender.com/app/`.
+- Desplegado desde rama `feat/pwa-madre-multitenant` commit `422ca5a8b8f3ff2571e0496aa4d44ea4fabb92b7`.
+- Render informa `live` para el despliegue `dep-dbmgp3m1egvs73fanco0`.
+- Runtime Node, build `npm install --ignore-scripts --no-audit --no-fund`, inicio `node server.mjs`, plan Free, Ohio, autoDeploy desactivado.
+- `HUBIE_PUBLIC_ORIGIN=https://hubie-pwa-staging.onrender.com`; `HUBIE_AUTH_ENABLED=false`. **No hay Turso ni Google OAuth configurados en este staging**. Las pantallas pueden abrirse, pero login y endpoints privados devuelven un estado de configuración pendiente. El endpoint `/healthz` debe informar `degraded` mientras no exista una base staging.
+- `hubie-dev` continúa sin cambios en la rama anterior, sirviendo la landing y código previo.
+- Para completar puesta en marcha funcional, vincular credenciales exclusivas de Turso staging, OAuth redireccionando a `https://hubie-pwa-staging.onrender.com/api/auth/google/callback`, activar `HUBIE_AUTH_ENABLED=true`, redeploy manual y verificar las rutas con cuentas de prueba. No reutilizar credenciales de producción sin revisión.
+
 # Despliegue seguro de Hubie PWA en Render
 
 ## Hospedaje ya conectado
