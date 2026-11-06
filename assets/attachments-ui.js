@@ -27,11 +27,12 @@ export function setupAttachments(ctx){
  const input=el('input');input.type='file';input.accept=docMime.join(',');input.setAttribute('aria-label','Archivo a adjuntar');input.className='search';
  const upload=el('button','Adjuntar archivo','btn btn-primary');upload.type='button';
  const list=el('div',undefined,'attachment-list');const message=el('p','','help');
+ const filter=el('input');filter.type='search';filter.className='search';filter.placeholder='Buscar documento por nombre…';filter.setAttribute('aria-label','Buscar documentos');
  const canWrite=config.tenant.role!=='viewer';
  const hint=el('p',demoMode?'Demo: máximo 650 KB por archivo, almacenamiento local temporal.':'Hasta 2 MB por archivo, máximo 12 por registro. Archivos privados.','help');
  fields.append(chooser);
  if(canWrite)fields.append(input,upload);
- card.append(head,help,fields,hint,list,message);host.replaceChildren(card);
+ card.append(head,help,fields,hint,filter,list,message);host.replaceChildren(card);
  let records=[],generation=0;
  const path=()=>'/api/app/'+encodeURIComponent(config.tenant.slug)+'/tools/'+tool.id+'/records/'+encodeURIComponent(chooser.value)+'/attachments';
  async function reload(){
@@ -43,7 +44,9 @@ export function setupAttachments(ctx){
    const items=response.attachments||[];
    list.replaceChildren();counter.textContent=items.length+' archivos';
    if(!items.length)list.append(el('p','Este registro todavía no tiene archivos.','help'));
-   for(const file of items){
+   const filtered=items.filter(f=>f.filename.toLowerCase().includes(filter.value.trim().toLowerCase()));
+   if(items.length&&!filtered.length)list.append(el('p','No se encontraron archivos con ese nombre.','help'));
+   for(const file of filtered){
     const item=el('div',undefined,'attachment-row'),meta=el('div',undefined,'attachment-info');
     const name=el('strong',file.filename),size=el('small',displayBytes(file.bytes));meta.append(name,size);
     const download=el('button','Descargar','btn');download.type='button';
@@ -71,7 +74,7 @@ export function setupAttachments(ctx){
      remove.addEventListener('click',async()=>{
       if(!confirm('¿Eliminar este archivo adjunto?'))return;
       remove.disabled=true;
-      try{await ctx.api(file.downloadUrl,{method:'DELETE'});message.textContent='Archivo eliminado.';await reload();}
+      try{await ctx.api(file.downloadUrl,{method:'DELETE'});message.textContent='Archivo eliminado.';await reload();await current?.onChange?.();}
       catch(e){message.textContent=e.message;}finally{remove.disabled=false;}
      },{signal});
      item.append(remove);
@@ -81,6 +84,7 @@ export function setupAttachments(ctx){
   }catch(e){if(!signal.aborted)message.textContent='No fue posible consultar archivos: '+e.message;}
  }
  chooser.addEventListener('change',()=>{message.textContent='';void reload();},{signal});
+ filter.addEventListener('input',()=>void reload(),{signal});
  upload.addEventListener('click',async()=>{
   const file=input.files?.[0];
   if(!file||!chooser.value){message.textContent='Selecciona un registro y un archivo.';return;}
@@ -88,12 +92,12 @@ export function setupAttachments(ctx){
   try{
    const data=await encodeSelectedFile(file,{maxBytes:demoMode?650000:2000000,types:docMime});
    await ctx.write(path(),'POST',data);
-   input.value='';message.textContent='Archivo adjuntado correctamente.';await reload();
+   input.value='';message.textContent='Archivo adjuntado correctamente.';await reload();await current?.onChange?.();
   }catch(e){message.textContent='No se pudo adjuntar: '+e.message;}
   finally{upload.disabled=false;}
  },{signal});
  const component={
-  controller,
+  controller,onChange:null,
   select(recordId){
    if(signal.aborted||!records.some(x=>x.id===recordId))return;
    chooser.value=recordId;message.textContent='';void reload();
