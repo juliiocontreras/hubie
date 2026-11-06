@@ -73,3 +73,14 @@ El plan Free de Render es adecuado para demos, no para una PWA comercial con dis
 ## Dominio futuro
 
 Usar el subdominio gratuito mientras se desarrolla. Cuando exista un dominio oficial para Hubie, proponer un dominio exclusivo de PWA (por ejemplo `app.<dominio-real-de-Hubie>`) y configurar `HUBIE_PUBLIC_ORIGIN`/OAuth con el nombre exacto; **no se ha comprado ni asignado un dominio aquí**.
+
+## Vista previa de la PWA sin credenciales (solo demostración)
+
+Mientras Turso y Google OAuth staging no están configurados, existen dos enlaces de demostración **explícitos y sin acceso a datos reales**:
+
+- Madre: `https://hubie-pwa-staging.onrender.com/madre/app.html?demo=1`.
+- Cliente: `https://hubie-pwa-staging.onrender.com/app/?demo=1`.
+
+El navegador simula las APIs mediante `assets/demo-backend.js` y usa exclusivamente `sessionStorage` de la pestaña para recordar los cambios ficticios (sin llamadas de escritura a `/api`). No es autenticación, registro ni provisión real: la activación productiva requiere Google OAuth con `HUBIE_AUTH_ENABLED=true` y una base Turso staging separada. No pedir al usuario que introduzca datos personales o empresariales reales en el demo.
+
+La ruta `/api/auth/google/start` redirige a `/auth/configuracion.html` cuando OAuth no está configurado, con explicación y enlaces de demostración, en vez de mostrar un error de texto plano.
