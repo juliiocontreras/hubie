@@ -38,7 +38,7 @@ export async function tenantConfig(token,slug){
 export async function toolRecords(token,slug,toolId,{limit=80}={}){
  const {tenant}=await authorizeTool(token,slug,toolId);
  if(toolId==='C008'){
-  const r=await executeSql(dashboardCountsSql,Array(6).fill(tenant.id));
+  const r=await executeSql(dashboardCountsSql,Array(7).fill(tenant.id));
   return {dashboard:true,counts:Object.fromEntries(unpack(r).map(x=>[x[0],Number(x[1])]))};
  }
  if(toolId==='C009')throw Error('Read members in tenant config');
