@@ -400,7 +400,13 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
       amountCents:input.amountCents??0,stage:input.stage||'lead',followUpAt:input.followUpAt||null,notes:String(input.notes||'')};
     if(deal.title.length<2||!stages.includes(deal.stage)||!Number.isSafeInteger(deal.amountCents)||deal.amountCents<0)throw error('Invalid deal');
     if(method==='POST'){const d={id:uuid(),...deal};list.unshift(d);return send({deal:d});}
-    if(method==='PATCH'){Object.assign(getRecord(deals,id),deal);return send({ok:true});}
+    if(method==='PATCH'){
+     const current=getRecord(deals,id);
+     if(deal.clientId&&t.events.some(e=>e.dealId===id&&e.clientId&&e.clientId!==deal.clientId))throw error('Relation mismatch',409);
+     Object.assign(current,deal);
+     if(deal.clientId)for(const event of t.events)if(event.dealId===id&&!event.clientId)event.clientId=deal.clientId;
+     return send({ok:true});
+    }
    }
    if(module==='agenda'){
     if(method==='PATCH'&&Object.keys(input).length===1&&['completed','cancelled'].includes(input.status)){getRecord(list,id).status=input.status;return send({ok:true});}
