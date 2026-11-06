@@ -52,7 +52,7 @@ async function showTool(id,options={}){
  document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-current',b.dataset.tool===id?'page':'false'));
  $('suite-name').textContent=config.tenant.suiteName+' / '+tool.group;
  head(tool.name,'Información exclusiva de '+config.tenant.displayName);
- await openRecords({tool,config,api,write,elt,notice,initialClientId:options.clientId||null,navigateToTool:(id,options)=>showTool(id,options)});
+ await openRecords({tool,config,api,write,elt,notice,initialClientId:options.clientId||null,initialRecordId:options.recordId||null,initialDealId:options.dealId||null,navigateToTool:(id,options)=>showTool(id,options)});
 }
 function showAppearance(){
  closeMobileNav();
