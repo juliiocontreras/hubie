@@ -36,7 +36,9 @@ export async function seedQaCompanyIfRequested(){
  const result=await executeSql(QA_VERIFY_SQL,Array(10).fill(orgId));
  const counts=rows(result)[0]?.map(Number)||[];
  if(!checkQaCounts(counts))throw Error('QA fixture integrity check failed');
+ const surveyCount=rows(await executeSql('SELECT COUNT(*) FROM tenant_surveys WHERE organization_id=? AND title=?',[orgId,'[DEMO] Encuesta de satisfacción posventa']))[0]?.[0];
+ if(Number(surveyCount||0)<1)throw Error('QA satisfaction survey was not created');
  // No IDs, emails, token values or confidential data in logs.
- console.log('Hubie QA fixture verified: hubie-qa-piloto; 1 client, 1 CRM, 1 case, 1 appointment, 1 item, 2 optional records');
+ console.log('Hubie QA fixture verified: hubie-qa-piloto; 1 client, 1 CRM, 1 case, 1 appointment, 1 item, 2 optional records and 1 satisfaction survey');
  return {slug:QA_COMPANY.slug,verified:true};
 }
