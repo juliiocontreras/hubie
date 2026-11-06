@@ -1,5 +1,16 @@
 import {createClient} from '@libsql/client';
 // Server-only libSQL HTTP pipeline client; no browser exposure or npm build step.
+/** Hrana v2 bind types: preserve NULL, INTEGER and FLOAT (do not coerce null to ''). */
+export function encodeSqlArg(value){
+ if(value===null||value===undefined)return {type:'null'};
+ if(typeof value==='string')return {type:'text',value};
+ if(typeof value==='boolean')return {type:'integer',value:value?'1':'0'};
+ if(typeof value==='bigint')return {type:'integer',value:String(value)};
+ if(typeof value==='number'&&Number.isFinite(value))return Number.isSafeInteger(value)?
+  {type:'integer',value:String(value)}:{type:'float',value};
+ throw Error('Unsupported SQL value');
+}
+
 export function databaseConfigured(){return Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);}
 function endpoint(){
  const raw=process.env.TURSO_DATABASE_URL?.trim().replace(/^[\"']|[\"']$/g,'').trim();
@@ -10,7 +21,7 @@ function endpoint(){
 }
 export async function executeSql(sql,args=[]){
  if(!databaseConfigured()) throw new Error('Turso credentials not configured');
- const response=await fetch(endpoint(),{method:'POST',headers:{'Authorization':'Bearer '+process.env.TURSO_AUTH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({requests:[{type:'execute',stmt:{sql,args:args.map(value=>({type:'text',value:String(value??'')}))}},{type:'close'}]}),signal:AbortSignal.timeout(8000)});
+ const response=await fetch(endpoint(),{method:'POST',headers:{'Authorization':'Bearer '+process.env.TURSO_AUTH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({requests:[{type:'execute',stmt:{sql,args:args.map(encodeSqlArg)}},{type:'close'}]}),signal:AbortSignal.timeout(8000)});
  if(!response.ok) { const error=new Error('Turso request failed'); error.code='HTTP_'+response.status; throw error; }
  const body=await response.json();
  const item=body.results?.[0];
