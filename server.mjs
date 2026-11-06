@@ -5,7 +5,7 @@ import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
 import {getPlatformAppearance,setPlatformAppearance,setTenantAppearance,setOwnTenantAppearance} from './platform/appearance-store.mjs';
-import {mediaBackgroundUrls,uploadBackground,clearBackground,findBackground,authorizeOwnBackground,listAttachments,addAttachment,getAttachment,removeAttachment} from './platform/media-store.mjs';
+import {mediaBackgroundUrls,uploadBackground,clearBackground,findBackground,authorizeOwnBackground,listAttachments,addAttachment,getAttachment,removeAttachment,updateCaseDocument} from './platform/media-store.mjs';
 import {listClients,createClient,updateClient,archiveClient} from './platform/operations-clients.mjs';
 import {listCases,createCase,updateCase,archiveCase,caseHistory} from './platform/operations-cases.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
@@ -45,7 +45,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sqlStatements(sql))await executeSql(statement);
  }
@@ -166,6 +166,11 @@ createServer(async(req,res)=>{
       {attachment:await addAttachment(token,mediaAttachList[1],mediaAttachList[2],mediaAttachList[3],body)},
      {methods:['GET','POST'],maxBytes:2_800_000});
   }
+  const documentEditPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/case-documents\/([0-9a-f-]{36})$/);
+  if(documentEditPath){
+    return processApi(req,res,async({token,body})=>({document:await updateCaseDocument(token,documentEditPath[1],documentEditPath[2],body)}),
+      {methods:['PATCH']});
+  }
   if(pathname==='/api/admin/appearance'){
     return processApi(req,res,async({actor,body})=>({appearance:req.method==='GET'?await getPlatformAppearance():await setPlatformAppearance(body,actor),backgrounds:await mediaBackgroundUrls('madre',null)}),{admin:true,methods:['GET','PUT']});
   }
@@ -264,8 +269,8 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===16;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===18;
       }catch{schemaReady=false;}
     }
     const healthy=db.status==='connected'&&schemaReady;
