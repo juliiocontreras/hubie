@@ -34,6 +34,6 @@ class RelationSchema(unittest.TestCase):
   with self.assertRaises(sqlite3.IntegrityError):
    self.db.execute("INSERT INTO tenant_entity_links(organization_id,id,left_tool_id,left_record_id,right_tool_id,right_record_id) VALUES('org-a','link-3','C001','a-1','C001','a-1')")
   with self.assertRaises(sqlite3.IntegrityError):
-   self.db.execute("INSERT INTO tenant_entity_links(organization_id,id,left_tool_id,left_record_id,right_tool_id,right_record_id) VALUES('org-b','link-4','C001','b-1','C002','d1')")
+   self.db.execute("INSERT INTO tenant_entity_links(organization_id,id,left_tool_id,left_record_id,right_tool_id,right_record_id) VALUES('org-b','link-4','C001','b-1','T004','task-a')")
  def test_reentrant_migration(self):self.db.executescript((BASE/'013_entity_relationships.sql').read_text())
 if __name__=='__main__':unittest.main()
