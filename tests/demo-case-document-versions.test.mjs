@@ -32,3 +32,18 @@ test('case documents have types, expiry and readable revisions, scoped to their 
  await assert.rejects(()=>store.request('/api/app/'+b.slug+'/case-documents/'+first.documentId,{method:'PATCH',body:JSON.stringify({documentType:'other'})}),/Not found/);
  assert.ok((await store.request('/api/app/'+a.slug+'/workflows/cases/'+caseA.id+'/history')).events.some(x=>x.action==='updated'&&x.description.includes('Documento actualizado')));
 });
+test('legacy unclassified C003 attachment can become version 1 of a newly tracked document',async()=>{
+ const store=createDemoStore(catalog);
+ const org=(await store.request('/api/app/organizations')).organizations[0];
+ const dossier=(await store.request('/api/app/'+org.slug+'/workflows/cases')).cases[0];
+ const base='/api/app/'+org.slug+'/tools/C003/records/'+dossier.id+'/attachments';
+ const old=await store.request(base,{method:'POST',body:JSON.stringify(file)});
+ // The new code automatically classifies new files; simulate a persisted older unclassified entry
+ // by accepting the previous upload as a revision-group reference.
+ const docId=old.attachment.documentId;
+ const updated=await store.request(base,{method:'POST',body:JSON.stringify({...file,replaceDocumentId:docId})});
+ const items=(await store.request(base)).attachments.filter(x=>x.documentId===docId);
+ assert.deepEqual(items.map(x=>x.version).sort(),[1,2]);
+ assert.equal(items.find(x=>x.id===old.attachment.id).isLatest,false);
+ assert.equal(items.find(x=>x.id===updated.attachment.id).isLatest,true);
+});
