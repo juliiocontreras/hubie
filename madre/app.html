@@ -7,9 +7,9 @@
 <section id="login" class="login-page" hidden><div class="card">
 <img src="/assets/hubie-logo-official.png" alt="Hubie" width="155"><p class="eyebrow">Acceso exclusivo a Hubie Madre</p>
 <h1>Tu fábrica de <span style="color:#2b79d9">Suites.</span></h1><p class="subline">Gestiona organizaciones, herramientas, identidad y accesos en un solo lugar.</p>
-<p class="message" id="login-message"></p><a class="btn btn-primary" href="/api/auth/google/start">Entrar con Google</a>
+<p class="message" id="login-message"></p><div class="toolbar"><a id="google-entry" class="btn btn-primary" href="/api/auth/google/start">Entrar con Google</a><a class="btn" href="/madre/app.html?demo=1">Explorar PWA Madre (demo) ↗</a></div><p class="help">La demostración usa información ficticia, sin acceso a datos reales.</p>
 </div></section>
-<div class="shell" id="console" hidden>
+<div class="demo-banner" id="demo-banner" hidden>VISTA DE DEMOSTRACIÓN · Datos ficticios guardados temporalmente en este navegador. No ingreses datos reales. <a href="/app/?demo=1">Abrir PWA cliente ↗</a></div><div class="shell" id="console" hidden>
 <aside class="sidebar"><a class="brand" href="/madre/app.html"><img src="/assets/hubie-logo-official.png" alt="Hubie"><strong style="font-size:10px;color:#b8d8f7">MADRE</strong></a>
 <div class="nav-label">Administración central</div><nav class="nav-stack" aria-label="Secciones de Hubie Madre">
 <button class="nav-item" data-view="overview">◈ &nbsp; Resumen</button>
