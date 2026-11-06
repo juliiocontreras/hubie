@@ -60,7 +60,7 @@ export function decorateSidebar(sidebar){
  for(const node of sidebar.querySelectorAll('.nav-item')){
   if(node.querySelector('svg'))continue;
   const key=node.dataset.view||node.dataset.home&&'overview';
-  const type=node.id==='logout'?'logout':node.id==='appearance-nav'?'palette':mapping[key]||node.matches('a')?'layers':'layers';
+  const type=node.id==='logout'?'logout':node.id==='appearance-nav'?'palette':mapping[key]||(node.matches('a')?'layers':'layers');
   const label=node.textContent.trim().replace(/^[^\p{L}\p{N}]+/u,'').trim();
   node.replaceChildren(icon(type),document.createTextNode(label));
  }
