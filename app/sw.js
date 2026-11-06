@@ -1,7 +1,7 @@
-const CACHE='hubie-client-pwa-documents-v2';
+const CACHE='hubie-client-pwa-relations-v3';
 const FILES=['/app/index.html','/assets/pwa-console.css','/assets/pwa-refined.css','/assets/pwa-navigation.css',
  '/assets/appearance-ui.js','/assets/media-ui.js','/assets/ui-icons.js','/assets/app-console.js',
- '/assets/demo-backend.js','/assets/catalog.json','/assets/app-records.js','/assets/attachments-ui.js',
+ '/assets/demo-backend.js','/assets/relationships-ui.js','/assets/catalog.json','/assets/app-records.js','/assets/attachments-ui.js',
  '/assets/tool-forms.js','/assets/app-workflows.js','/assets/operational-clients.js','/assets/operational-crm.js',
  '/assets/operational-agenda.js','/assets/operational-cases.js','/assets/operational-stock.js','/assets/favicon.svg'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)));self.skipWaiting();});
