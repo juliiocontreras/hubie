@@ -93,7 +93,7 @@ export async function listAttachments(token,slug,toolId,recordId){
    id:a[0],filename:a[1],mime:a[2],bytes:Number(a[3]),createdAt:a[4],
    downloadUrl:'/api/app/'+encodeURIComponent(slug)+'/attachments/'+a[0],
    ...(caseMode?{
-    documentId:a[5]||a[0],documentType:a[6]||'other',expiresOn:a[7]||null,
+    documentId:a[5]||a[0],managed:!!a[5],documentType:a[6]||'other',expiresOn:a[7]||null,
     version:Number(a[8]||1),isLatest:a[8]==null?true:Number(a[8])===Number(a[9])
    }:{})
  }))};
