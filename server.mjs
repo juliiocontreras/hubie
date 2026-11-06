@@ -1,5 +1,6 @@
 import { isSameOrigin } from './platform/public-origin.mjs';
 import {configurationStatus} from './platform/setup-health.mjs';
+import {seedQaCompanyIfRequested} from './platform/staging-qa-seed.mjs';
 import {sqlStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
@@ -316,5 +317,8 @@ createServer(async(req,res)=>{
     res.end(req.method==='HEAD'?undefined:data);
   }catch{res.writeHead(404);res.end('Not found');}
 }).listen(port,'0.0.0.0',()=>console.log('Hubie listening on '+port));
-migrationsReady=applyCoreSchema().then(()=>Boolean(configurationStatus().databaseConfigured))
- .catch(error=>{console.error('Core migration failed:',error?.code||error?.name||'unknown');return false;});
+migrationsReady=applyCoreSchema().then(async()=>{
+  if(!configurationStatus().databaseConfigured)return false;
+  await seedQaCompanyIfRequested();
+  return true;
+ }).catch(error=>{console.error('Core migration / QA fixture failed:',error?.code||error?.name||'unknown');return false;});
