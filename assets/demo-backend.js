@@ -111,6 +111,30 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
       if(!target)return null;
       return {id:x.id,targetToolId,targetRecordId,title:target.title||target.name,toolName:catalog.tools.find(t=>t.id===targetToolId)?.name,relationType:x.relationType};
      }).filter(Boolean);
+    const implied=[];
+    if(tool==='C001'){
+     implied.push(...entityList(tenant,'C002').filter(d=>d.clientId===recordId).map(x=>['C002',x.id]));
+     implied.push(...entityList(tenant,'C003').filter(c=>c.clientId===recordId).map(x=>['C003',x.id]));
+     implied.push(...entityList(tenant,'C004').filter(e=>e.clientId===recordId).map(x=>['C004',x.id]));
+    }else if(tool==='C002'){
+     const deal=entity(tenant,tool,recordId);
+     if(deal.clientId)implied.push(['C001',deal.clientId]);
+     implied.push(...entityList(tenant,'C004').filter(e=>e.dealId===recordId).map(x=>['C004',x.id]));
+    }else if(tool==='C003'){
+     const dossier=entity(tenant,tool,recordId);
+     if(dossier.clientId)implied.push(['C001',dossier.clientId]);
+    }else if(tool==='C004'){
+     const appointment=entity(tenant,tool,recordId);
+     if(appointment.clientId)implied.push(['C001',appointment.clientId]);
+     if(appointment.dealId)implied.push(['C002',appointment.dealId]);
+    }
+    for(const [targetToolId,targetRecordId]of implied){
+     if(!tenant.tools.some(t=>t.id===targetToolId&&t.enabled)||
+       links.some(link=>link.targetToolId===targetToolId&&link.targetRecordId===targetRecordId))continue;
+     const target=entityList(tenant,targetToolId).find(x=>x.id===targetRecordId);
+     if(target)links.push({id:null,targetToolId,targetRecordId,title:target.title||target.name,
+      toolName:catalog.tools.find(t=>t.id===targetToolId)?.name,relationType:'related',builtIn:true});
+    }
     return emit({links});
    }
    if(method==='POST'){
