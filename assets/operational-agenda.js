@@ -25,7 +25,7 @@ export async function renderAgenda(ctx){
  let events=[],editing=null;
  const reset=()=>{editing=null;form.reset();fields.resource.input.value='general';save.textContent='Agendar cita';cancel.hidden=true;};
  cancel.addEventListener('click',reset,{signal:ctx.signal});
- async function reload(){const r=await ctx.api(path);if(ctx.signal.aborted)return;events=r.events||[];draw();}
+ async function reload(){const r=await ctx.api(path);if(ctx.signal.aborted)return;events=r.events||[];draw();ctx.attachmentsPanel?.update(events);}
  function draw(){
   if(ctx.signal.aborted)return;
   stats.replaceChildren();list.replaceChildren();
