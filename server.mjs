@@ -1,4 +1,5 @@
 import { isSameOrigin } from './platform/public-origin.mjs';
+import {configurationStatus} from './platform/setup-health.mjs';
 import {sqlStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
@@ -19,6 +20,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 const root=process.cwd();
+let migrationsReady=Promise.resolve(false);
 const types={'.webmanifest':'application/manifest+json','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon'};
 const port=Number(process.env.PORT||10000);
 const nav=`<button class="hubie-menu-toggle" type="button" aria-expanded="false" aria-controls="hubie-main-nav" aria-label="Abrir menú">☰ <span>Menú</span></button>
@@ -70,7 +72,8 @@ async function readApiBody(req,maxBytes=16000){
  try{return JSON.parse(raw);}catch{throw Error('Invalid JSON');}
 }
 async function processApi(req,res,fn,{admin=false,methods=['GET'],maxBytes=16000}={}){
- if(process.env.HUBIE_AUTH_ENABLED!=='true')return sendApi(res,503,{error:'Autenticación no configurada'});
+ if(!configurationStatus().readyForLive)return sendApi(res,503,{error:'Autenticación o base de datos no configurada'});
+ if(!(await migrationsReady))return sendApi(res,503,{error:'La base de datos no está inicializada'});
  if(!methods.includes(req.method)){res.writeHead(405,{'allow':methods.join(', ')});res.end();return;}
  if(!['GET','HEAD'].includes(req.method)&&!sameOrigin(req))return sendApi(res,403,{error:'Origin forbidden'});
  try{
@@ -89,7 +92,7 @@ createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
   if(pathname==='/api/auth/google/start'){
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}
-    if(!googleConfigured()){
+    if(!googleConfigured()||!(await migrationsReady)){
       res.writeHead(303,{'location':'/auth/configuracion.html','cache-control':'no-store'});res.end();return;
     }
     try{const url=await startGoogleLogin();res.writeHead(302,{'location':url,'cache-control':'no-store'});res.end();}
@@ -98,7 +101,7 @@ createServer(async(req,res)=>{
   }
   if(pathname==='/api/auth/google/callback'){
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}
-    try{const query=new URL(req.url,'http://localhost').searchParams;const session=await completeGoogleLogin(query.get('state'),query.get('code'));res.writeHead(303,{'location':session.isSuperAdmin?'/madre/app.html':'/app/','set-cookie':'__Host-hubie_session='+encodeURIComponent(session.token)+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400','cache-control':'no-store'});res.end();}catch{res.writeHead(303,{'location':'/admin.html?login=failed','cache-control':'no-store'});res.end();}return;
+    try{if(!(await migrationsReady))throw Error('Database setup not ready');const query=new URL(req.url,'http://localhost').searchParams;const session=await completeGoogleLogin(query.get('state'),query.get('code'));res.writeHead(303,{'location':session.isSuperAdmin?'/madre/app.html':'/app/','set-cookie':'__Host-hubie_session='+encodeURIComponent(session.token)+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400','cache-control':'no-store'});res.end();}catch{res.writeHead(303,{'location':'/admin.html?login=failed','cache-control':'no-store'});res.end();}return;
   }
   if(pathname==='/api/admin/tenants'){
     if(req.method==='POST'&&!sameOrigin(req)){sendApi(res,403,{error:'Origin forbidden'});return;}
@@ -288,9 +291,11 @@ createServer(async(req,res)=>{
         schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===21;
       }catch{schemaReady=false;}
     }
-    const healthy=db.status==='connected'&&schemaReady;
+    const setup=configurationStatus();
+    const ready=await migrationsReady;
+    const healthy=db.status==='connected'&&schemaReady&&ready&&setup.readyForLive;
     res.writeHead(healthy?200:503,{'content-type':'application/json','cache-control':'no-store'});
-    res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,schema:schemaReady?'ready':'not-ready',...(db.reason?{reason:db.reason}:{})}));
+    res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,schema:schemaReady?'ready':'not-ready',setup,...(db.reason?{reason:db.reason}:{})}));
     return;
   }
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
@@ -311,4 +316,5 @@ createServer(async(req,res)=>{
     res.end(req.method==='HEAD'?undefined:data);
   }catch{res.writeHead(404);res.end('Not found');}
 }).listen(port,'0.0.0.0',()=>console.log('Hubie listening on '+port));
-applyCoreSchema().catch(error=>console.error('Core migration failed:',error?.code||error?.name||'unknown'));
+migrationsReady=applyCoreSchema().then(()=>Boolean(configurationStatus().databaseConfigured))
+ .catch(error=>{console.error('Core migration failed:',error?.code||error?.name||'unknown');return false;});
