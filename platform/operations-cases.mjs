@@ -5,7 +5,9 @@ import {normalizeCase,normalizeCaseUpdate,caseKinds,caseStatuses} from './cases-
 const rows=r=>r?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
 const changed=r=>Number(r?.rowsAffected??r?.affected_row_count??0)>0;
 const caseFields=`SELECT c.id,c.client_id,p.name,c.title,c.kind,c.status,c.notes,c.created_at,c.updated_at,
- (SELECT COUNT(*) FROM pwa_media m WHERE m.organization_id=c.organization_id AND m.tool_id='C003' AND m.record_id=c.id AND m.kind='attachment')
+ (SELECT COUNT(DISTINCT COALESCE(v.document_id,m.id)) FROM pwa_media m
+  LEFT JOIN tenant_case_document_versions v ON v.organization_id=m.organization_id AND v.media_id=m.id
+  WHERE m.organization_id=c.organization_id AND m.tool_id='C003' AND m.record_id=c.id AND m.kind='attachment')
  FROM tenant_client_cases c JOIN tenant_client_profiles p ON p.organization_id=c.organization_id AND p.id=c.client_id`;
 const convert=r=>({id:r[0],clientId:r[1],clientName:r[2],title:r[3],kind:r[4],status:r[5],notes:r[6],createdAt:r[7],updatedAt:r[8],documentsCount:Number(r[9])});
 const audit=(org,actor,action,id)=>({sql:'INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,?,?,?)',
