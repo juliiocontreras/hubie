@@ -83,7 +83,12 @@ createServer(async(req,res)=>{
   const pathname=new URL(req.url||'/','http://localhost').pathname;
   if(pathname==='/api/auth/google/start'){
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}
-    try{const url=await startGoogleLogin();res.writeHead(302,{'location':url,'cache-control':'no-store'});res.end();}catch{res.writeHead(503,{'content-type':'text/plain'});res.end('El acceso con Google aún no está configurado.');}return;
+    if(!googleConfigured()){
+      res.writeHead(303,{'location':'/auth/configuracion.html','cache-control':'no-store'});res.end();return;
+    }
+    try{const url=await startGoogleLogin();res.writeHead(302,{'location':url,'cache-control':'no-store'});res.end();}
+    catch{res.writeHead(503,{'content-type':'text/plain; charset=utf-8','cache-control':'no-store'});res.end('No se pudo iniciar el acceso con Google.');}
+    return;
   }
   if(pathname==='/api/auth/google/callback'){
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}
@@ -205,7 +210,7 @@ createServer(async(req,res)=>{
     const s=await stat(file);if(!s.isFile())throw Error('not file');
     const isHtml=extname(file).toLowerCase()==='.html';
     const raw=await readFile(file);
-    const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded.startsWith('/app/');
+    const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded==='/auth/configuracion.html'||decoded.startsWith('/app/');
     const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
     res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream','x-content-type-options':'nosniff'});
     res.end(req.method==='HEAD'?undefined:data);
