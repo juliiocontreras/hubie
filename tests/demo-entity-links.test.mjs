@@ -44,3 +44,17 @@ test('generic T and C Tools can link real records safely, dedupe bidirectionally
  await store.request('/api/app/'+a.slug+'/relations/'+relation.link.id,{method:'DELETE'});
  assert.equal((await store.request(path)).links.length,0);
 });
+test('Core relationships appear automatically in both directions without manual links',async()=>{
+ const store=createDemoStore(catalog);
+ const a=(await store.request('/api/app/organizations')).organizations[0];
+ const client=(await store.request('/api/app/'+a.slug+'/workflows/clients')).clients[0];
+ const core=(await store.request('/api/app/'+a.slug+'/tools/C001/records/'+client.id+'/links')).links;
+ const codes=new Set(core.filter(x=>x.builtIn).map(x=>x.targetToolId));
+ assert.ok(codes.has('C002'));assert.ok(codes.has('C003'));assert.ok(codes.has('C004'));
+ const deal=core.find(x=>x.targetToolId==='C002');
+ const reverse=(await store.request('/api/app/'+a.slug+'/tools/C002/records/'+deal.targetRecordId+'/links')).links;
+ assert.ok(reverse.some(x=>x.builtIn&&x.targetToolId==='C001'&&x.targetRecordId===client.id));
+ const dossier=core.find(x=>x.targetToolId==='C003');
+ const file=(await store.request('/api/app/'+a.slug+'/tools/C003/records/'+dossier.targetRecordId+'/links')).links;
+ assert.ok(file.some(x=>x.builtIn&&x.targetToolId==='C001'&&x.targetRecordId===client.id));
+});
