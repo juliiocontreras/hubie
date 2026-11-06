@@ -22,7 +22,7 @@ export async function renderStock(ctx){
  let items=[],movements=[],editing=null;
  const reset=()=>{editing=null;form.reset();fields.sku.input.disabled=false;fields.lowStock.input.value='0';save.textContent='Agregar producto';cancel.hidden=true;};
  cancel.addEventListener('click',reset,{signal:ctx.signal});
- async function reload(){const data=await ctx.api(path);if(ctx.signal.aborted)return;items=data.items||[];movements=data.movements||[];draw();}
+ async function reload(){const data=await ctx.api(path);if(ctx.signal.aborted)return;items=data.items||[];movements=data.movements||[];draw();ctx.attachmentsPanel?.update(items.map(i=>({id:i.id,title:i.sku+' · '+i.title})));}
  function draw(){
   if(ctx.signal.aborted)return;
   stats.replaceChildren();list.replaceChildren();ledger.replaceChildren();
