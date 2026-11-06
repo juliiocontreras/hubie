@@ -94,6 +94,10 @@ export function setupAttachments(ctx){
  },{signal});
  const component={
   controller,
+  select(recordId){
+   if(signal.aborted||!records.some(x=>x.id===recordId))return;
+   chooser.value=recordId;message.textContent='';void reload();
+  },
   update(items){
    if(signal.aborted)return;
    records=Array.isArray(items)?items.filter(x=>x?.id&&x.title):[];
