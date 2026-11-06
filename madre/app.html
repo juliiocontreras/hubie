@@ -22,13 +22,43 @@
 <button class="nav-item" id="logout">↪ &nbsp; Cerrar sesión</button>
 </nav></aside>
 <main class="workspace">
-<header class="topline"><span class="breadcrumb">HUBIE / PWA MADRE / MULTITENANT</span><span class="pill">● Sistema privado · Control central</span></header>
-<section class="page-head"><div><span class="eyebrow">Hubie Control Center</span><h1>Tu ecosistema, <span style="color:#2d78da">a tu medida.</span></h1><p class="subline">Crea una Suite por empresa y decide qué herramientas tendrá activas, sin duplicar la infraestructura.</p></div><button class="btn btn-primary" data-view="create">＋ Nueva empresa</button></section>
+<header class="topline premium-toolbar">
+ <span class="breadcrumb">HUBIE / MADRE / ADMINISTRACIÓN MULTITENANT</span>
+ <label class="premium-search" for="global-search"><span aria-hidden="true">⌕</span><input id="global-search" type="search" placeholder="Buscar empresa o Suite..." autocomplete="off" aria-label="Buscar empresa o Suite"></label>
+ <span class="pill premium-profile"><span aria-hidden="true">◉</span> Admin Global</span>
+</header>
+<section class="page-head premium-head">
+ <div><span class="eyebrow">PANEL ADMINISTRATIVO · HUBIE MADRE</span>
+ <h1>Bienvenido a <span>Hubie Madre</span></h1>
+ <p class="subline">Controla tus empresas, personaliza cada Suite y administra sus herramientas desde un mismo lugar.</p></div>
+ <button class="btn btn-primary btn-lg" data-view="create">＋ Crear nueva empresa</button>
+</section>
 <p class="message" id="feedback" role="status"></p>
-<section id="view-overview" class="section">
-<div class="cards"><article class="stat"><span class="stat-label">Empresas registradas</span><div class="stat-number" id="stat-companies">—</div><span class="help">Organizaciones independientes</span></article><article class="stat"><span class="stat-label">Suites disponibles</span><div class="stat-number" id="stat-suites">—</div><span class="help">Catálogo de referencia</span></article><article class="stat"><span class="stat-label">Herramientas disponibles</span><div class="stat-number" id="stat-tools">—</div><span class="help">Se habilitan por empresa</span></article><article class="stat"><span class="stat-label">Core incluido</span><div class="stat-number" id="stat-core">—</div><span class="help">Herramientas base de la plataforma</span></article></div>
-<div class="cover"><h2>Una sola plataforma.<br>Infinitas configuraciones.</h2><p>Cada negocio conserva su identidad, sus usuarios y sus datos. Las Tools se habilitan o suspenden de manera individual.</p><button class="btn btn-primary" data-view="create">Configurar cliente ↗</button></div>
-<div class="overview-insights"><div class="card"><div class="card-title"><h2>Empresas recientes</h2><button class="btn" data-view="companies">Ver todas</button></div><div id="overview-companies" class="company-list"></div></div><div class="card"><div class="card-title"><h2>Plantillas de Suites</h2><button class="btn" data-view="catalog">Ver catálogo</button></div><p class="help">Elige una Suite base para cada cliente.</p><div id="overview-suites" class="overview-suite-grid"></div></div></div><div class="card"><div class="card-title"><h2>Tools de la plataforma</h2><button class="btn" data-view="catalog">Explorar</button></div><p class="help">Disponibilidad definida por empresa, no una activación global.</p><div id="overview-tools" class="aurora-list"></div></div></section>
+<section id="view-overview" class="section premium-overview">
+ <div class="cards premium-kpis">
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">▦</span><div><span class="stat-label">Empresas registradas</span><div class="stat-number" id="stat-companies">—</div><span class="help">Organizaciones independientes</span></div></article>
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">◈</span><div><span class="stat-label">Suites disponibles</span><div class="stat-number" id="stat-suites">—</div><span class="help">Catálogo oficial Hubie</span></div></article>
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">◫</span><div><span class="stat-label">Tools del catálogo</span><div class="stat-number" id="stat-tools">—</div><span class="help">Configurables por empresa</span></div></article>
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">✦</span><div><span class="stat-label">Herramientas Core</span><div class="stat-number" id="stat-core">—</div><span class="help">Disponibles como base</span></div></article>
+ </div>
+ <div class="madre-feature-grid">
+  <article class="card premium-panel"><div class="card-title"><h2>Empresas recientes</h2><button class="btn btn-link" data-view="companies">Ver todas ↗</button></div>
+   <div id="overview-companies" class="company-list"></div></article>
+  <article class="card premium-panel"><div class="card-title"><h2>Plantillas de Suites</h2><button class="btn btn-link" data-view="catalog">Ver catálogo ↗</button></div>
+   <p class="help">Cada cliente recibe una configuración propia.</p><div id="overview-suites" class="overview-suite-grid"></div></article>
+  <article class="card premium-panel"><div class="card-title"><h2>Tools de la plataforma</h2><button class="btn btn-link" data-view="catalog">Gestionar ↗</button></div>
+   <div id="overview-tools" class="aurora-list"></div></article>
+ </div>
+ <div class="madre-insights-grid">
+  <article class="card premium-panel"><div class="card-title"><div><h2>Distribución por Suite</h2><p class="help">Empresas registradas · datos actuales</p></div></div>
+    <div id="madre-suite-distribution" class="suite-distribution"><span class="help">Calculando distribución…</span></div></article>
+  <article class="card premium-action-panel"><span class="premium-action-icon">✧</span>
+   <span class="eyebrow">TU ESPACIO DE CONTROL</span><h2>Una identidad para cada empresa.</h2>
+   <p>Personaliza los fondos de Hubie Madre y configura cada Suite sin afectar los demás espacios.</p>
+   <div class="premium-action-links"><button class="btn btn-primary" data-view="appearance" id="madre-theme-quick">Personalizar fondos ↗</button>
+    <button class="btn" data-view="create">Crear Suite ↗</button></div></article>
+ </div>
+</section>
 <section id="view-companies" class="section" hidden><div class="card"><div class="card-title"><h2>Empresas y Suites asignadas</h2><button class="btn btn-primary" data-view="create">Nueva empresa</button></div><input class="search" id="filter-companies" placeholder="Buscar empresa o identificador" aria-label="Buscar empresas"><div class="company-list" id="companies"></div></div></section>
 <section id="view-create" class="section" hidden><div class="two-col">
 <div class="card"><h2>Crear Suite personalizada</h2><p class="help">Selecciona una Suite como punto de partida. Ajusta las herramientas sin alterar la plantilla original.</p>
