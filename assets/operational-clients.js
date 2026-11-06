@@ -23,6 +23,7 @@ export async function renderClients(ctx){
  editor.append(line('Directorio de clientes y prospectos','group-label'),form);
  host.replaceChildren(stats);if(canWrite)host.append(editor);host.append(list);
  let clients=[],editing=null;
+ let focusRecord=ctx.initialRecordId||null;
  const reset=()=>{editing=null;form.reset();save.textContent='Guardar cliente';cancel.hidden=true;};
  cancel.addEventListener('click',reset,{signal:ctx.signal});
  async function reload(){
@@ -47,6 +48,51 @@ export async function renderClients(ctx){
    if(c.notes)info.append(line(c.notes,'help'));
    card.append(info);
    const controls=container('record-actions');
+   const summary=container('client-360');summary.hidden=true;
+   const view=button('Ver ficha 360°','btn');
+   async function loadSummary(){
+    summary.replaceChildren(line('Consultando relaciones del cliente…','help'));
+    try{
+     const data=await ctx.api(path+'/'+c.id+'/summary');
+     if(ctx.signal.aborted)return;
+     summary.replaceChildren();
+     const counters=container('client-360-stats');
+     for(const [name,num] of [['Oportunidades',data.counts?.deals||0],['Expedientes',data.counts?.cases||0],['Citas',data.counts?.appointments||0]]){
+      const stat=container('client-360-count');stat.append(line(name,'help'),line(String(num),'stat-number'));counters.append(stat);
+     }
+     summary.append(counters);
+     const sets=[['Oportunidades','C002',data.deals],['Expedientes','C003',data.cases],['Citas','C004',data.appointments]];
+     for(const [name,tool,entries] of sets){
+      if(!ctx.config.tools.some(t=>t.id===tool))continue;
+      const block=container('client-360-section');block.append(line(name,'group-label'));
+      if(!entries?.length)block.append(line('No existen registros vinculados.','help'));
+      for(const entry of entries){
+       const row=container('client-360-row');
+       const text=container('stack');text.append(line(entry.title,'client-360-title'),line(entry.stage||entry.status||entry.kind||'','help'));
+       const open=button('Abrir','btn');open.addEventListener('click',()=>ctx.navigateToTool?.(tool,{recordId:entry.id,clientId:c.id}),{signal:ctx.signal});
+       row.append(text,open);block.append(row);
+      }
+      summary.append(block);
+     }
+     if(!data.deals?.length&&!data.cases?.length&&!data.appointments?.length)
+       summary.append(line('Al crear una oportunidad o cita desde esta ficha se vinculará automáticamente con este cliente.','help'));
+    }catch(err){summary.replaceChildren(line('No se pudo cargar la ficha 360°: '+err.message,'error'));}
+   }
+   view.addEventListener('click',async()=>{
+    summary.hidden=!summary.hidden;
+    view.textContent=summary.hidden?'Ver ficha 360°':'Ocultar ficha 360°';
+    if(!summary.hidden)await loadSummary();
+   },{signal:ctx.signal});
+   controls.append(view);
+   for(const [tool,label] of [['C002','Nueva oportunidad'],['C004','Nueva cita']]){
+    if(!canWrite||!ctx.config.tools.some(t=>t.id===tool))continue;
+    const create=button(label,'btn');
+    create.addEventListener('click',()=>ctx.navigateToTool?.(tool,{clientId:c.id}),{signal:ctx.signal});
+    controls.append(create);
+   }
+   card.append(summary);
+   if(focusRecord===c.id){focusRecord=null;queueMicrotask(()=>{if(!ctx.signal.aborted)view.click();});}
+
    if(ctx.config.tools.some(t=>t.id==='C003')){
     const dossiers=button('Expedientes','btn');
     dossiers.addEventListener('click',()=>ctx.navigateToTool?.('C003',{clientId:c.id}),{signal:ctx.signal});
@@ -82,6 +128,6 @@ export async function renderClients(ctx){
   finally{save.disabled=false;}
  },{signal:ctx.signal});
  ctx.search.addEventListener('input',draw,{signal:ctx.signal});
- document.getElementById('module-message').textContent='Directorio privado por empresa. Próximo: enlazar clientes con oportunidades CRM.';
+ document.getElementById('module-message').textContent='Ficha 360°: Clientes se relaciona con CRM, Expedientes y Agenda mediante IDs de la misma empresa.';
  try{await reload();}catch(e){ctx.notice('Error al cargar Clientes: '+e.message,true);}
 }
