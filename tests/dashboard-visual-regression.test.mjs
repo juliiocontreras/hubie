@@ -22,7 +22,7 @@ test('client dashboard gives CRM data visualization and own actual KPI cards wit
 test('both service workers allow fresh page navigations and versioned styles',()=>{
  for(const source of [madreSW,clientSW]){
   assert.match(source,/e\.request\.mode==='navigate'/);
-  assert.match(source,/pwa-(?:premium-v2|documents-v2)/);
+  assert.match(source,/pwa-(?:premium-v2|relations-v3)/);
  }
 });
 test('suite distribution uses actual tenant counts and omits invented series',()=>{
