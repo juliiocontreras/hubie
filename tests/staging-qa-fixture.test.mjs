@@ -17,7 +17,7 @@ test('QA fixture is deterministic, non-destructive and connected by composite te
  assert.ok(rows.every(q=>q.args[0]===orgId||q.sql.includes('audit_events')));
  assert.ok(rows.some(q=>q.sql.includes('tenant_deal_clients')&&q.args.includes(ids.client)&&q.args.includes(ids.deal)));
  assert.ok(rows.some(q=>q.sql.includes('tenant_appointment_links')&&q.args.includes(ids.client)&&q.args.includes(ids.deal)));
- assert.ok(rows.some(q=>q.sql.includes('tenant_case_document_versions')&&q.args.includes(ids.case)));
+ assert.ok(rows.some(q=>q.sql.includes('tenant_case_document_versions')&&q.args.includes(ids.document)&&q.args.includes(ids.media)));
  assert.ok(rows.some(q=>q.sql.includes('tenant_entity_links')&&q.args.includes('T004')));
  assert.ok(rows.some(q=>q.sql.includes('tenant_tool_records')&&q.args.includes('T013')));
 });
