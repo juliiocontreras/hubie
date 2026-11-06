@@ -132,17 +132,27 @@ function renderMembers(items){
 async function loadMembers(id){renderMembers((await api('/api/admin/tenants/'+id+'/members')).members);}
 function renderDetail(t){
  state.detail=t;$('detail-heading').textContent=t.name;
+ const bgPath='/api/admin/tenants/'+t.id+'/media/';
+ const savePhoto=(kind,result)=>{
+  t.backgrounds={...t.backgrounds,...(result.backgrounds||{[kind]:bgPath+kind+'?v='+result.media?.id})};
+  return {backgrounds:t.backgrounds};
+ };
+
  $('detail-subtitle').textContent='Identificador: '+t.slug+' · '+t.suiteId;
  $('detail-open').href='/app/?'+(demoMode?'demo=1&':'')+'tenant='+encodeURIComponent(t.slug);
  themeUI.createAppearanceEditor($('tenant-appearance'),{
-  initial:t.appearance,
-  title:'Fondos y apariencia de '+t.name,
-  description:'Configura de forma independiente el dashboard y panel lateral de esta empresa. Sin imágenes decorativas ni plantas.',
+  initial:t.appearance,backgrounds:t.backgrounds,
+  title:'Fondos de '+t.name,
+  description:'Añade imágenes o elige colores independientes para el dashboard y el menú de esta Suite.',
   live:false,
+  onImageUpload:async(kind,file)=>savePhoto(kind,await write(bgPath+kind,'POST',file)),
+  onImageRemove:async kind=>{
+   const result=await api(bgPath+kind,{method:'DELETE'});
+   t.backgrounds={...t.backgrounds,...(result.backgrounds||{}),[kind]:null};return {backgrounds:t.backgrounds};
+  },
   onSave:async theme=>{
    const result=await write('/api/admin/tenants/'+t.id+'/appearance','PUT',theme);
-   t.appearance=result.appearance;notice('Apariencia de '+t.name+' actualizada.');
-   return result;
+   t.appearance=result.appearance;notice('Apariencia de '+t.name+' actualizada.');return result;
   }
  });
  const form=$('detail-form');
@@ -200,6 +210,20 @@ async function addMember(ev){
 }
 let slugTouched=false;
 function initEvents(){
+ const toggle=$('sidebar-toggle');
+ toggle?.addEventListener('click',()=>{
+  const state=document.documentElement.classList.toggle('mobile-nav-open');
+  toggle.setAttribute('aria-expanded',String(state));
+ });
+ const search=$('global-search');
+ search?.addEventListener('input',()=>{
+  $('filter-companies').value=search.value;
+  filterCompanies();if(search.value.trim())screen('companies');
+ });
+ document.querySelectorAll('.sidebar [data-view]').forEach(btn=>btn.addEventListener('click',()=>{
+  document.documentElement.classList.remove('mobile-nav-open');toggle?.setAttribute('aria-expanded','false');
+ }));
+
  document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>screen(btn.dataset.view)));
  $('create-form').addEventListener('submit',createCompany);
  $('detail-form').addEventListener('submit',saveDetail);
@@ -220,19 +244,32 @@ async function init(){
   document.title='Hubie Madre · Demostración sin conexión';
  }
  initEvents();
+ iconUI.decorateSidebar(document.querySelector('.sidebar'));
+ if(demoMode)document.querySelector('.sidebar .brand').href='/madre/app.html?demo=1';
  try{
   const [catalogData,tenantData,platformData]=await Promise.all([api('/api/admin/catalog'),api('/api/admin/tenants'),api('/api/admin/appearance')]);
   state.platformAppearance=platformData.appearance;
+  state.platformBackgrounds=platformData.backgrounds||{dashboard:null,sidebar:null};
   themeUI.applyAppearance(state.platformAppearance);
+  const photoRoute='/api/admin/media/';
   themeUI.createAppearanceEditor($('platform-appearance'),{
-   initial:state.platformAppearance,
+   initial:state.platformAppearance,backgrounds:state.platformBackgrounds,
    title:'Apariencia de Hubie Madre',
-   description:'Fondos independientes de dashboard y panel lateral. Personaliza el color o selecciona un estilo de la marca Hubie.',
+   description:'Sube imágenes de fondo o utiliza los acabados originales de Hubie.',
    live:true,
+   onImageUpload:async(kind,file)=>{
+    const result=await write(photoRoute+kind,'POST',file);
+    state.platformBackgrounds={...state.platformBackgrounds,...(result.backgrounds||{[kind]:photoRoute+kind+'?v='+result.media?.id})};
+    return {backgrounds:state.platformBackgrounds};
+   },
+   onImageRemove:async kind=>{
+    const result=await api(photoRoute+kind,{method:'DELETE'});
+    state.platformBackgrounds={...state.platformBackgrounds,...(result.backgrounds||{}),[kind]:null};
+    return {backgrounds:state.platformBackgrounds};
+   },
    onSave:async appearance=>{
     const result=await write('/api/admin/appearance','PUT',appearance);
-    state.platformAppearance=result.appearance;
-    return result;
+    state.platformAppearance=result.appearance;return result;
    }
   });
   state.catalog=catalogData.catalog;state.tenants=tenantData.tenants;
