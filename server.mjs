@@ -3,6 +3,7 @@ import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
+import {getPlatformAppearance,setPlatformAppearance,setTenantAppearance,setOwnTenantAppearance} from './platform/appearance-store.mjs';
 import {listClients,createClient,updateClient,archiveClient} from './platform/operations-clients.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
 import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
@@ -41,7 +42,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -115,6 +116,17 @@ createServer(async(req,res)=>{
     if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
     try{const token=readSessionCookie(req.headers.cookie);if(token)await revokeSession(token);}catch{}
     res.writeHead(204,{'set-cookie':'__Host-hubie_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0','cache-control':'no-store'});res.end();return;
+  }
+  if(pathname==='/api/admin/appearance'){
+    return processApi(req,res,async({actor,body})=>({appearance:req.method==='GET'?await getPlatformAppearance():await setPlatformAppearance(body,actor)}),{admin:true,methods:['GET','PUT']});
+  }
+  const adminAppearancePath=pathname.match(/^\/api\/admin\/tenants\/([0-9a-f-]{36})\/appearance$/);
+  if(adminAppearancePath){
+    return processApi(req,res,async({actor,body})=>({appearance:await setTenantAppearance(adminAppearancePath[1],body,actor)}),{admin:true,methods:['PUT']});
+  }
+  const ownAppearancePath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/appearance$/);
+  if(ownAppearancePath){
+    return processApi(req,res,async({token,body})=>({appearance:await setOwnTenantAppearance(token,ownAppearancePath[1],body)}),{methods:['PUT']});
   }
   if(pathname==='/api/admin/catalog'){
     return processApi(req,res,async()=>({catalog:getAdminCatalog()}),{admin:true,methods:['GET']});
@@ -192,8 +204,8 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===11;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===13;
       }catch{schemaReady=false;}
     }
     const healthy=db.status==='connected'&&schemaReady;
