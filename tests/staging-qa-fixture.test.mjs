@@ -22,6 +22,6 @@ test('QA fixture is deterministic, non-destructive and connected by composite te
  assert.ok(rows.some(q=>q.sql.includes('tenant_tool_records')&&q.args.includes('T013')));
 });
 test('seed count verification fails on incomplete company and accepts all expected links',()=>{
- assert.equal(checkQaCounts([1,1,1,1,1,1,1,1,1,2]),true);
+ assert.equal(checkQaCounts([1,1,1,1,1,1,1,1,2,2]),true);
  assert.equal(checkQaCounts([1,1,1,1,1,1,1,1,0,2]),false);
 });
