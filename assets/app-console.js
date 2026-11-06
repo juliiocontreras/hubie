@@ -45,7 +45,7 @@ function home(){
 async function showTool(id){
  closeMobileNav();
  const tool=config.tools.find(t=>t.id===id);if(!tool)return notice('La herramienta está desactivada.',true);
- applyAppearance(config.appearance);
+ applyAppearance(config.appearance,document.documentElement,config.backgrounds);
  activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;
  document.querySelector('[data-home]').removeAttribute('aria-current');
  $('appearance-nav').removeAttribute('aria-current');
@@ -126,7 +126,7 @@ async function openOrganization(slug){
  try{
   config=await api('/api/app/'+encodeURIComponent(slug)+'/config');
   config.backgrounds=config.backgrounds||{dashboard:null,sidebar:null};
-  applyAppearance(config.appearance);
+  applyAppearance(config.appearance,document.documentElement,config.backgrounds);
   $('appearance-nav').hidden=!['owner','admin'].includes(config.tenant.role);
   document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#327ce7');
   $('brand-name').textContent=config.tenant.displayName;
