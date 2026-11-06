@@ -11,12 +11,19 @@ test('case documents have types, expiry and readable revisions, scoped to their 
  let result=await store.request(base);let first=result.attachments.find(x=>x.id===v1.attachment.id);
  assert.equal(first.documentType,'contract');assert.equal(first.expiresOn,'2027-06-30');
  assert.equal(first.version,1);assert.equal(first.isLatest,true);
- const v2=await store.request(base,{method:'POST',body:JSON.stringify({...file,replaceDocumentId:first.documentId})});
+ const changedPayload=Buffer.from('%PDF-1.4\\nVersion 2 modificada').toString('base64');
+ const v2=await store.request(base,{method:'POST',body:JSON.stringify({...file,data:changedPayload,replaceDocumentId:first.documentId})});
  result=await store.request(base);
  const old=result.attachments.find(x=>x.id===first.id),latest=result.attachments.find(x=>x.id===v2.attachment.id);
  assert.equal(old.isLatest,false);assert.equal(latest.version,2);assert.equal(latest.isLatest,true);
  assert.equal(latest.documentId,first.documentId);assert.equal(latest.documentType,'contract');
  assert.equal(latest.expiresOn,'2027-06-30');
+ const originalData=(await store.request(old.downloadUrl)).file.data;
+ const updatedData=(await store.request(latest.downloadUrl)).file.data;
+ assert.equal(originalData,file.data,'version 1 bytes remain unchanged');
+ assert.equal(updatedData,changedPayload,'version 2 stores different bytes');
+ assert.notEqual(originalData,updatedData);
+
  const metadataRoute='/api/app/'+a.slug+'/case-documents/'+first.documentId;
  await store.request(metadataRoute,{method:'PATCH',body:JSON.stringify({documentType:'identification',expiresOn:'2027-12-31'})});
  result=await store.request(base);
