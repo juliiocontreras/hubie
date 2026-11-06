@@ -30,13 +30,14 @@ const paths={
  truck:['path:M2 6h12v12H2zM14 10h4l4 4v4h-8','circle:6 19 2','circle:18 19 2'],
  receipt:['path:M4 2h16v20l-4-2-4 2-4-2-4 2zM8 7h8M8 11h8M8 15h5']
 };
+paths.survey=['rect:4 3 16 18 2','path:M8 8h8M8 12h3M8 16h3','path:M14 14l2 2 4-5'];
 const toolIcons={
  C001:'users',C002:'target',C003:'folder',C004:'calendar',C005:'box',C006:'grid',C007:'money',
  C008:'chart',C009:'shield',C010:'bell',
  T001:'briefcase',T002:'clipboard',T003:'file',T004:'list',T005:'receipt',
  T006:'chart',T007:'truck',T008:'calendar',T009:'users',T010:'money',
  T011:'box',T012:'file',T013:'receipt',T014:'briefcase',T015:'calendar',
- T016:'chart',T017:'clipboard',T018:'folder',T019:'settings',T020:'spark'
+ T016:'chart',T017:'clipboard',T018:'folder',T019:'settings',T020:'spark',T021:'survey'
 };
 export function icon(name,size=18){
  const svg=document.createElementNS(ns,'svg');
