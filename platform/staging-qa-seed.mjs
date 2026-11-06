@@ -29,6 +29,8 @@ export async function seedQaCompanyIfRequested(){
   const created=await createTenant(QA_COMPANY,actorId);
   orgId=created.id;
  }
+ // Enable T021 only in the already verified QA company, never for other tenants.
+ await executeSql("INSERT INTO tenant_tools(organization_id,tool_id,enabled) VALUES(?,'T021',1) ON CONFLICT(organization_id,tool_id) DO UPDATE SET enabled=1",[orgId]);
  // INSERT OR IGNORE plus deterministic IDs avoids duplicates on re-deployment.
  await executeBatch(makeQaSeedPlan(orgId,actorId));
  const result=await executeSql(QA_VERIFY_SQL,Array(10).fill(orgId));
