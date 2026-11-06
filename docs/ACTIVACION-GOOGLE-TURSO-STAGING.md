@@ -19,18 +19,16 @@ El servidor tiene diagnósticos sin secretos en `GET /healthz`. Verifica:
 
 ### 1) Turso Cloud: base independiente
 
-1. Abrir https://app.turso.tech/ e iniciar sesión con la cuenta o la organización destinada **exclusivamente a Hubie**.
-2. Crear una base llamada `hubie-staging` en **libSQL**. La aplicación actual usa `@libsql/client` / Hrana HTTP; no crear una base del nuevo motor no compatible sin verificar antes el SDK.
-3. Copiar la URL libSQL de esta nueva base y emitir un token de base de datos con permisos de lectura/escritura; **no enviar ese token por chat, documentos o repositorios**.
-4. En https://dashboard.render.com/web/srv-dbmgp361egvs73fanbtg → **Environment**, añadir:
-   - `TURSO_DATABASE_URL` — URL real de la base independiente
-   - `TURSO_AUTH_TOKEN` — token secreto de esa base
+1. La base **`hubie-staging` ya se creó** en Turso Cloud, con URL de tipo `turso://`, según la captura del 6 de noviembre de 2026. El controlador moderno `@tursodatabase/serverless/compat` permite esta URL sin recrear la base; el anterior `@libsql/client` sigue disponible para proyectos libSQL legados.
+2. La URL no secreta de `hubie-staging` ya se añadió a `TURSO_DATABASE_URL` en el servicio Render de **Hubie staging**.
+3. **El primer token apareció en una captura compartida: trátalo como comprometido.** Invalida los tokens de la base desde las herramientas de Turso si están disponibles, o solicita asistencia de Turso para invalidarlos; emite uno nuevo de acceso a la base. **No envíes ese token por chat, documentos o repositorios.**
+4. En https://dashboard.render.com/web/srv-dbmgp361egvs73fanbtg → **Environment**, añadir exclusivamente **`TURSO_AUTH_TOKEN`** con el token recién generado; no es necesario volver a crear `TURSO_DATABASE_URL`.
 
 No reutilizar ninguna DB de TapRent, Hubie-dev ni otros proyectos.
 
 ### 2) Google Cloud: OAuth web de staging
 
-1. Abrir https://console.cloud.google.com/auth/clients y elegir o crear proyecto para **Hubie Staging**.
+1. Abrir https://console.cloud.google.com/auth/clients?project=hubie-513419: el proyecto Google Cloud **hubie** (`hubie-513419`) ya existe y está seleccionado según la captura.
 2. Configurar **Branding** (nombre Hubie), audiencia externa de prueba y la cuenta `juliiocontreras@gmail.com` como usuario de prueba si aplica.
 3. Crear un cliente OAuth 2.0 de tipo **Aplicación web**.
 4. En **Authorized JavaScript origins**: `https://hubie-pwa-staging.onrender.com`
@@ -68,3 +66,11 @@ La aplicación solicita solamente scopes `openid email profile`; el secreto OAut
 - `/api/auth/google/start` redirige a la pantalla de configuración cuando no está disponible.
 
 **Nunca incluir tokens de Turso o secretos de Google en GitHub, variables públicas JavaScript, capturas, mensajes de chat o respuestas del servidor.**
+
+### Diagnóstico de la implementación del 6 de noviembre de 2026
+
+- El proyecto Google Cloud y la base Turso ya existen. **No** se ha confirmado aún que exista un cliente OAuth web ni que estén cargados los secretos en Render.
+- La conexión Turso actual admite `turso://` usando `@tursodatabase/serverless/compat`; mantiene el conector libSQL legado para otros entornos.
+- Pruebas de protocolo y transformación de resultados: `tests/turso-cloud-driver.test.mjs`.
+- El servidor debe permanecer con `HUBIE_AUTH_ENABLED=false` hasta que las otras tres variables secretas estén guardadas y el esquema de la base haya terminado la migración.
+- El token visible en la captura no se utilizó, copió ni almacenó en los archivos del proyecto.
