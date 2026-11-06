@@ -42,7 +42,7 @@ function home(){
  }
  void loadHomeInsights(config);
 }
-async function showTool(id){
+async function showTool(id,options={}){
  closeMobileNav();
  const tool=config.tools.find(t=>t.id===id);if(!tool)return notice('La herramienta está desactivada.',true);
  applyAppearance(config.appearance,document.documentElement,config.backgrounds);
@@ -52,7 +52,7 @@ async function showTool(id){
  document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-current',b.dataset.tool===id?'page':'false'));
  $('suite-name').textContent=config.tenant.suiteName+' / '+tool.group;
  head(tool.name,'Información exclusiva de '+config.tenant.displayName);
- await openRecords({tool,config,api,write,elt,notice});
+ await openRecords({tool,config,api,write,elt,notice,initialClientId:options.clientId||null,navigateToTool:(id,options)=>showTool(id,options)});
 }
 function showAppearance(){
  closeMobileNav();
