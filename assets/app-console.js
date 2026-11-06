@@ -1,9 +1,12 @@
 import {openRecords} from './app-records.js';
 import {closeOperationalModule} from './app-workflows.js';
+const demoMode=new URLSearchParams(location.search).get('demo')==='1';
+const demoApi=async(path,options)=>(await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
 const elt=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
 let organizations=[],config=null,activeTool=null;
 async function api(path,options={}){
+ if(demoMode)return demoApi(path,options);
  const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...options});
  const d=await r.json().catch(()=>({}));
  if(!r.ok)throw Object.assign(new Error(d.error||'Servicio no disponible'),{status:r.status});
@@ -65,9 +68,14 @@ async function openOrganization(slug){
  }catch(e){notice('No se pudo abrir la empresa: '+e.message,true);}
 }
 async function init(){
+ if(demoMode){
+  $('demo-banner').hidden=false;
+  $('logout').textContent='↪  Salir de la demostración';
+  document.title='Hubie App · Demostración sin conexión';
+ }
  $('tenant-select').addEventListener('change',e=>openOrganization(e.target.value));
  document.querySelector('[data-home]').addEventListener('click',home);
- $('logout').addEventListener('click',async()=>{await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
+ $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/app/';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
  try{
   organizations=(await api('/api/app/organizations')).organizations;
   if(!organizations.length)throw Error('Tu cuenta no tiene una empresa asignada. Solicita acceso a Hubie Madre.');
@@ -75,7 +83,7 @@ async function init(){
   $('console').hidden=false;
   const requested=new URLSearchParams(location.search).get('tenant');
   await openOrganization(organizations.some(o=>o.slug===requested)?requested:organizations[0].slug);
- }catch(e){$('login').hidden=false;$('login-message').textContent=e.status===401?'Inicia sesión con Google para continuar.':e.message;}
+ }catch(e){$('login').hidden=false;if(e.status===503){$('google-entry').hidden=true;$('login-message').textContent='La conexión real con Google y Turso está pendiente. Explora el panel con datos simulados.';}else $('login-message').textContent=e.status===401?'Inicia sesión con Google para continuar.':e.message;}
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/app/sw.js',{scope:'/app/'}).catch(()=>{});
 }
 init();
