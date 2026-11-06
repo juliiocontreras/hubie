@@ -4,6 +4,7 @@ import {requireTenantSession} from '../auth.mjs';
 import {resolveTenant} from '../tenant.mjs';
 import {authorizeTool} from './records.mjs';
 import {validateMediaUpload} from './media-policy.mjs';
+import {normalizeCaseDocumentMetadata} from './case-document-domain.mjs';
 const rows=r=>r?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
 const bgKinds=['dashboard_bg','sidebar_bg'];
 const kindMap={dashboard:'dashboard_bg',sidebar:'sidebar_bg'};
@@ -77,30 +78,97 @@ export async function listAttachments(token,slug,toolId,recordId){
  const {tenant}=await authorizeTool(token,slug,toolId);
  if(['C008','C009'].includes(toolId))throw Error('Read only tool');
  await checkRecord(tenant.id,toolId,recordId);
- const r=await executeSql('SELECT id,name,mime,size_bytes,created_at FROM pwa_media WHERE scope=? AND organization_id=? AND kind=? AND tool_id=? AND record_id=? ORDER BY rowid DESC LIMIT 25',
- ['tenant',tenant.id,'attachment',toolId,recordId]);
- return {attachments:rows(r).map(a=>({id:a[0],filename:a[1],mime:a[2],bytes:Number(a[3]),createdAt:a[4],
-  downloadUrl:'/api/app/'+encodeURIComponent(slug)+'/attachments/'+a[0]}))};
+ const caseMode=toolId==='C003';
+ const statement=caseMode?
+  `SELECT m.id,m.name,m.mime,m.size_bytes,m.created_at,d.id,d.document_type,d.expires_on,v.version,
+    (SELECT MAX(v2.version) FROM tenant_case_document_versions v2 WHERE v2.organization_id=m.organization_id AND v2.document_id=d.id)
+   FROM pwa_media m
+   LEFT JOIN tenant_case_document_versions v ON v.organization_id=m.organization_id AND v.media_id=m.id
+   LEFT JOIN tenant_case_documents d ON d.organization_id=v.organization_id AND d.id=v.document_id AND d.case_id=m.record_id
+   WHERE m.scope=? AND m.organization_id=? AND m.kind=? AND m.tool_id=? AND m.record_id=?
+   ORDER BY m.rowid DESC LIMIT 100`:
+  'SELECT id,name,mime,size_bytes,created_at FROM pwa_media WHERE scope=? AND organization_id=? AND kind=? AND tool_id=? AND record_id=? ORDER BY rowid DESC LIMIT 25';
+ const r=await executeSql(statement,['tenant',tenant.id,'attachment',toolId,recordId]);
+ return {attachments:rows(r).map(a=>({
+   id:a[0],filename:a[1],mime:a[2],bytes:Number(a[3]),createdAt:a[4],
+   downloadUrl:'/api/app/'+encodeURIComponent(slug)+'/attachments/'+a[0],
+   ...(caseMode?{
+    documentId:a[5]||a[0],documentType:a[6]||'other',expiresOn:a[7]||null,
+    version:Number(a[8]||1),isLatest:a[8]==null?true:Number(a[8])===Number(a[9])
+   }:{})
+ }))};
 }
 export async function addAttachment(token,slug,toolId,recordId,input){
  const {tenant,session}=await authorizeTool(token,slug,toolId,true);
  if(['C008','C009'].includes(toolId))throw Error('Read only tool');
  await checkRecord(tenant.id,toolId,recordId);
  const media=validateMediaUpload(input,'attachment');
+ const caseMode=toolId==='C003';
+ const meta=caseMode?normalizeCaseDocumentMetadata({
+  documentType:input.documentType,expiresOn:input.expiresOn,replaceDocumentId:input.replaceDocumentId
+ }):null;
  const count=rows(await executeSql('SELECT COUNT(*),COALESCE(SUM(size_bytes),0) FROM pwa_media WHERE organization_id=?',[tenant.id]))[0]||[0,0];
  if(Number(count[1])+media.bytes>60_000_000)throw Error('Storage quota exceeded');
  const existing=rows(await executeSql('SELECT COUNT(*) FROM pwa_media WHERE organization_id=? AND kind=? AND tool_id=? AND record_id=?',[tenant.id,'attachment',toolId,recordId]));
  if(Number(existing[0]?.[0]||0)>=12)throw Error('Storage quota exceeded');
  const id=randomUUID();
- await executeBatch([
+ const commands=[
   {sql:'INSERT INTO pwa_media(id,scope,organization_id,kind,tool_id,record_id,name,mime,size_bytes,content_b64,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
    args:[id,'tenant',tenant.id,'attachment',toolId,recordId,media.filename,media.mime,media.bytes,media.data,session.userId]},
   {sql:"INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,'media.attachment_uploaded','attachment',?)",
    args:[randomUUID(),tenant.id,session.userId,id]},
-  ...(toolId==='C003'?[{sql:"INSERT INTO tenant_case_events(organization_id,id,case_id,action,description,actor_user_id) VALUES(?,?,?,'document_added',?,?)",
-   args:[tenant.id,randomUUID(),recordId,media.filename,session.userId]}]:[])
+ ];
+ let documentId=null;
+ if(caseMode){
+  let legacy=false;
+  if(meta.replaceDocumentId){
+   documentId=meta.replaceDocumentId;
+   const matches=rows(await executeSql('SELECT id FROM tenant_case_documents WHERE organization_id=? AND case_id=? AND id=?',[tenant.id,recordId,documentId]));
+   if(!matches.length){
+    const old=rows(await executeSql('SELECT id FROM pwa_media WHERE scope=? AND organization_id=? AND kind=? AND tool_id=? AND record_id=? AND id=?',['tenant',tenant.id,'attachment','C003',recordId,documentId]));
+    if(!old.length)throw Error('Not found');
+    legacy=true;
+   }
+  }else documentId=randomUUID();
+  if(!meta.replaceDocumentId){
+   commands.push({sql:'INSERT INTO tenant_case_documents(organization_id,id,case_id,document_type,expires_on,latest_version,created_by) VALUES(?,?,?,?,?,1,?)',
+    args:[tenant.id,documentId,recordId,meta.documentType,meta.expiresOn,session.userId]});
+  }else if(legacy){
+   commands.push({sql:'INSERT INTO tenant_case_documents(organization_id,id,case_id,document_type,expires_on,latest_version,created_by) VALUES(?,?,?,?,?,2,?)',
+    args:[tenant.id,documentId,recordId,meta.documentType,meta.expiresOn,session.userId]});
+   commands.push({sql:'INSERT INTO tenant_case_document_versions(organization_id,document_id,media_id,version) VALUES(?,?,?,1)',
+    args:[tenant.id,documentId,documentId]});
+  }else{
+   commands.push({sql:'UPDATE tenant_case_documents SET latest_version=latest_version+1,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND case_id=? AND id=?',
+    args:[tenant.id,recordId,documentId]});
+  }
+  commands.push({sql:`INSERT INTO tenant_case_document_versions(organization_id,document_id,media_id,version)
+   SELECT organization_id,id,?,latest_version FROM tenant_case_documents WHERE organization_id=? AND case_id=? AND id=?`,
+   args:[id,tenant.id,recordId,documentId]});
+  commands.push({sql:"INSERT INTO tenant_case_events(organization_id,id,case_id,action,description,actor_user_id) VALUES(?,?,?,'document_added',?,?)",
+   args:[tenant.id,randomUUID(),recordId,(meta.replaceDocumentId?'Nueva versión: ':'Documento añadido: ')+media.filename,session.userId]});
+ }
+ await executeBatch(commands);
+ return {id,filename:media.filename,bytes:media.bytes,downloadUrl:'/api/app/'+encodeURIComponent(slug)+'/attachments/'+id,
+  ...(caseMode?{documentId}:{})};
+}
+export async function updateCaseDocument(token,slug,documentId,input){
+ const {tenant,session}=await authorizeTool(token,slug,'C003',true);
+ const meta=normalizeCaseDocumentMetadata(input);
+ if(meta.replaceDocumentId)throw Error('Invalid document');
+ const item=rows(await executeSql(`SELECT d.case_id FROM tenant_case_documents d
+   JOIN tenant_client_cases c ON c.organization_id=d.organization_id AND c.id=d.case_id
+   WHERE d.organization_id=? AND d.id=? AND c.archived_at IS NULL`,[tenant.id,documentId]))[0];
+ if(!item)throw Error('Not found');
+ await executeBatch([
+  {sql:'UPDATE tenant_case_documents SET document_type=?,expires_on=?,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND id=? AND case_id=?',
+   args:[meta.documentType,meta.expiresOn,tenant.id,documentId,item[0]]},
+  {sql:"INSERT INTO tenant_case_events(organization_id,id,case_id,action,description,actor_user_id) VALUES(?,?,?,'updated',?,?)",
+   args:[tenant.id,randomUUID(),item[0],'Documento actualizado · '+meta.documentType+(meta.expiresOn?' · vence '+meta.expiresOn:''),session.userId]},
+  {sql:"INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,'cases.document_updated','case_document',?)",
+   args:[randomUUID(),tenant.id,session.userId,documentId]}
  ]);
- return {id,filename:media.filename,bytes:media.bytes,downloadUrl:'/api/app/'+encodeURIComponent(slug)+'/attachments/'+id};
+ return {documentId,documentType:meta.documentType,expiresOn:meta.expiresOn};
 }
 export async function getAttachment(token,slug,id){
  const tenant=await resolveTenant(slug);
