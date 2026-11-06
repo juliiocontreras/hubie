@@ -2,8 +2,8 @@
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const demoApi=async(path,options)=> (await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
-const state={catalog:null,tenants:[],selected:null,detail:null,platformAppearance:null};
-let themeUI=null;
+const state={catalog:null,tenants:[],selected:null,detail:null,platformAppearance:null,platformBackgrounds:{dashboard:null,sidebar:null}};
+let themeUI=null,iconUI=null;
 const money=n=>n==null?'A cotizar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
 function node(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
 async function api(path,options={}){
@@ -16,7 +16,7 @@ async function api(path,options={}){
 async function write(path,method,body){return api(path,{method,headers:{'content-type':'application/json'},body:JSON.stringify(body)});}
 function notice(message,error=false){const e=$('feedback');e.textContent=message;e.classList.toggle('error',error);}
 function screen(view){
- if(view!=='appearance'&&state.platformAppearance&&themeUI)themeUI.applyAppearance(state.platformAppearance);
+ if(view!=='appearance'&&state.platformAppearance&&themeUI)themeUI.applyAppearance(state.platformAppearance,document.documentElement,state.platformBackgrounds);
  for(const s of document.querySelectorAll('[id^="view-"]'))s.hidden=s.id!=='view-'+view;
  for(const b of document.querySelectorAll('[data-view]'))b.setAttribute('aria-current',b.dataset.view===view?'page':'false');
  window.scrollTo({top:0,behavior:'instant'});
@@ -29,34 +29,43 @@ function suiteOptions(select){
 }
 function toolRow(tool,checked,onChange,editable=true){
  const label=node('label',undefined,'tool-option');
- const input=document.createElement('input');input.type='checkbox';input.checked=checked;input.disabled=!editable;
+ const input=document.createElement('input');input.type='checkbox';input.checked=checked;input.disabled=!editable;input.dataset.toolId=tool.id;
  if(onChange)input.addEventListener('change',()=>onChange(input));
- label.append(input);
+ label.append(iconUI.toolIcon(tool.id),input);
  const mid=node('span');
  mid.append(node('strong',tool.name),node('small',(tool.included?'Core · incluido':tool.group+' · '+money(tool.price))));
  label.append(mid);
  return label;
 }
-function renderCreateTools(){
- const host=$('create-tools');host.replaceChildren();
- for(const t of toolList())host.append(toolRow(t,!!t.included,null));
+function groupedTools(host,items,makeRow){
+ host.replaceChildren();
+ const groups=new Map();
+ for(const tool of items){const group=tool.group||'Core';if(!groups.has(group))groups.set(group,[]);groups.get(group).push(tool);}
+ for(const [group,list]of groups){
+  const detail=node('details',undefined,'tool-group');detail.open=group==='Core';
+  const head=node('summary',undefined,'tool-group-title');head.append(iconUI.icon('layers'),document.createTextNode(group+' · '+list.length+' Tools'));
+  const grid=node('div',undefined,'tool-grid compact-tool-grid');
+  for(const tool of list)grid.append(makeRow(tool));
+  detail.append(head,grid);host.append(detail);
+ }
 }
+function renderCreateTools(){groupedTools($('create-tools'),toolList(),t=>toolRow(t,!!t.included,null));}
 function renderCatalog(){
  const host=$('catalog-suites');host.replaceChildren();
  for(const s of suiteList()){
   const x=node('article',undefined,'module-card');
   const content=node('div');
   content.append(node('strong',s.name),node('small',money(s.price)+' · '+s.users+' usuarios'));
-  x.append(node('span','◈','company-icon'),content);host.append(x);
+  const badge=node('span',undefined,'company-icon');badge.append(iconUI.icon('layers'));x.append(badge,content);host.append(x);
  }
  const list=$('catalog-tools');list.replaceChildren();
- for(const t of toolList())list.append(toolRow(t,!!t.included,null,false));
+ groupedTools(list,toolList(),t=>toolRow(t,!!t.included,null,false));
 }
 function companyRow(t){
  const btn=node('button',undefined,'company');btn.type='button';
  const meta=node('div',undefined,'company-meta');meta.append(node('strong',t.name),node('small',t.slug+' · '+(suiteList().find(s=>s.id===t.suiteId)?.name||t.suiteId||'Sin Suite')));
  const status=node('span',t.status==='active'?'Activa':'Suspendida','status'+(t.status==='active'?'':' off'));
- btn.append(node('span','▦','company-icon'),meta,status);
+ const badge=node('span',undefined,'company-icon');badge.append(iconUI.icon('building'));btn.append(badge,meta,status);
  btn.addEventListener('click',()=>openDetail(t.id));
  return btn;
 }
@@ -71,14 +80,14 @@ function renderTenants(){
  const suites=$('overview-suites');suites.replaceChildren();
  for(const item of suiteList().slice(0,6)){
   const btn=node('button',undefined,'suite-tile');btn.type='button';
-  btn.append(node('span','◈','company-icon'),node('strong',item.name.replace(/^Hubie /,'')),node('small',item.users+' usuarios · '+money(item.price)));
+  const badge=node('span',undefined,'company-icon');badge.append(iconUI.icon('layers'));btn.append(badge,node('strong',item.name.replace(/^Hubie /,'')),node('small',item.users+' usuarios · '+money(item.price)));
   btn.addEventListener('click',()=>{$('create-suite').value=item.id;screen('create');});
   suites.append(btn);
  }
  const tools=$('overview-tools');tools.replaceChildren();
  for(const item of toolList().slice(0,5)){
   const row=node('div',undefined,'aurora-row');
-  const ico=node('span','◫','insight-mark');
+  const ico=node('span',undefined,'insight-mark');ico.append(iconUI.toolIcon(item.id));
   const meta=node('span',undefined,'insight-meta');
   meta.append(node('strong',item.name),node('small',item.included?'Core incluido':'Complemento · '+money(item.price)));
   row.append(ico,meta,node('span',item.included?'Incluida':'Opcional','status'+(item.included?'':' off')));
@@ -139,7 +148,7 @@ function renderDetail(t){
  const form=$('detail-form');
  for(const key of ['name','displayName','suiteId','primaryColor','secondaryColor','status','logoUrl'])form.elements[key].value=t[key]??'';
  const host=$('detail-tools');host.replaceChildren();
- let count=t.tools.filter(x=>x.enabled).length;
+ const grouped=new Map();let count=t.tools.filter(x=>x.enabled).length;
  $('detail-tools-total').textContent=count+' activas / '+t.tools.length;
  for(const tool of t.tools){
   const row=toolRow(tool,tool.enabled,async input=>{
@@ -153,7 +162,12 @@ function renderDetail(t){
    }catch(e){input.checked=!input.checked;notice('No se guardó: '+e.message,true);}
    finally{input.disabled=false;}
   });
-  host.append(row);
+  const key=tool.group||'Core';if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(row);
+ }
+ for(const [group,rows]of grouped){
+  const section=node('details',undefined,'tool-group');section.open=group==='Core';
+  const summary=node('summary',group+' · '+rows.length+' Tools','tool-group-title');
+  const grid=node('div',undefined,'tool-grid compact-tool-grid');grid.append(...rows);section.append(summary,grid);host.append(section);
  }
 }
 async function openDetail(id){
@@ -197,7 +211,7 @@ function initEvents(){
  $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/madre/app.html';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
 }
 async function init(){
- themeUI=await import('./appearance-ui.js');
+ [themeUI,iconUI]=await Promise.all([import('./appearance-ui.js'),import('./ui-icons.js')]);
  if(demoMode){
   $('demo-banner').hidden=false;
   document.querySelector('.sidebar a[href="/app/"]').href='/app/?demo=1';
@@ -223,7 +237,7 @@ async function init(){
   });
   state.catalog=catalogData.catalog;state.tenants=tenantData.tenants;
   suiteOptions($('create-suite'));suiteOptions($('detail-suite'));
-  renderCreateTools();for(const [i,t] of toolList().entries())$('create-tools').children[i].querySelector('input').dataset.toolId=t.id;
+  renderCreateTools();
   renderCatalog();renderTenants();
   $('console').hidden=false;screen('overview');
   if(location.search.includes('tenant=')){const id=new URLSearchParams(location.search).get('tenant');if(state.tenants.some(t=>t.id===id))await openDetail(id);}
