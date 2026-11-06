@@ -44,3 +44,24 @@ test('demo appointment conflict and one active member cannot leak another compan
  await demo.request('/api/app/'+b.slug+'/workflows/agenda',{method:'POST',body:JSON.stringify(event)});
  assert.ok((await demo.request('/api/app/'+b.slug+'/workflows/agenda')).events.length>0);
 });
+
+
+test('independent backgrounds persist in demo per tenant and in Madre without changing other organizations',async()=>{
+ const demo=createDemoStore(catalog);
+ const original=(await demo.request('/api/app/organizations')).organizations;
+ const [a,b]=original;
+ const globalBefore=(await demo.request('/api/admin/appearance')).appearance;
+ const bBefore=(await demo.request('/api/app/'+b.slug+'/config')).appearance;
+ const newGlobal={...globalBefore,dashboardPreset:'pearl',sidebarPreset:'steel'};
+ await demo.request('/api/admin/appearance',{method:'PUT',body:JSON.stringify(newGlobal)});
+ const aBefore=(await demo.request('/api/app/'+a.slug+'/config')).appearance;
+ const custom={...aBefore,dashboardPreset:'custom',dashboardColor:'#f1e7da',sidebarPreset:'custom',sidebarColor:'#0c2445'};
+ const modified=await demo.request('/api/admin/tenants/'+(await demo.request('/api/admin/tenants')).tenants.find(t=>t.slug===a.slug).id+'/appearance',{method:'PUT',body:JSON.stringify(custom)});
+ assert.equal(modified.appearance.sidebarColor,'#0c2445');
+ assert.deepEqual((await demo.request('/api/app/'+a.slug+'/config')).appearance,custom);
+ assert.deepEqual((await demo.request('/api/app/'+b.slug+'/config')).appearance,bBefore);
+ assert.equal((await demo.request('/api/admin/appearance')).appearance.dashboardPreset,'pearl');
+ await demo.request('/api/app/'+b.slug+'/appearance',{method:'PUT',body:JSON.stringify({...bBefore,sidebarPreset:'platinum'})});
+ assert.equal((await demo.request('/api/app/'+a.slug+'/config')).appearance.sidebarColor,'#0c2445');
+ await assert.rejects(()=>demo.request('/api/admin/appearance',{method:'PUT',body:JSON.stringify({...custom,sidebarColor:'url(https://bad.example)'})}),/Invalid appearance/);
+});
