@@ -40,7 +40,7 @@ export function setupRelationships(ctx){
     const go=make('button','Abrir','btn');go.type='button';
     go.addEventListener('click',()=>ctx.navigateToTool?.(link.targetToolId,{recordId:link.targetRecordId}),{signal:signal.signal});
     row.append(details,go);
-    if(canWrite){
+    if(canWrite&&!link.builtIn){
      const remove=make('button','Desvincular','btn');remove.type='button';
      remove.addEventListener('click',async()=>{
       remove.disabled=true;
