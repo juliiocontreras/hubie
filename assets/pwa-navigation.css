@@ -113,3 +113,15 @@ html.has-sidebar-image .theme-preview-sidebar{
 @media(prefers-reduced-motion:reduce){
  .nav-group-summary svg,.sidebar .nav-item{transition:none}
 }
+
+/* Real CRM stage distribution: no decorative or invented numbers. */
+.pipeline-mini{display:grid;gap:10px;margin-top:16px}
+.pipeline-mini-row{display:grid;grid-template-columns:100px minmax(0,1fr) 22px;align-items:center;gap:10px;font-size:11px;color:#53708b}
+.pipeline-mini-row strong{text-align:right;font-size:12px;color:#24466f}
+.pipeline-mini-bar{height:10px;border-radius:20px;overflow:hidden;background:#e5edf8;position:relative}
+.pipeline-mini-bar::before{content:"";display:block;width:var(--bar-pct,0%);height:100%;
+ background:linear-gradient(90deg,#3a71c7,#73b3e7);border-radius:20px;
+ box-shadow:0 2px 8px #3976c43a;transition:width .5s ease}
+.premium-stat .premium-stat-icon{display:inline-grid;place-items:center;color:#306aaa}
+.premium-stat .premium-stat-icon svg{width:24px;height:24px}
+@media(max-width:760px){.pipeline-mini-row{grid-template-columns:78px minmax(0,1fr) 20px}}
