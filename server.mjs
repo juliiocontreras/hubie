@@ -4,6 +4,7 @@ import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
 import {getPlatformAppearance,setPlatformAppearance,setTenantAppearance,setOwnTenantAppearance} from './platform/appearance-store.mjs';
+import {mediaBackgroundUrls,uploadBackground,clearBackground,findBackground,authorizeOwnBackground,listAttachments,addAttachment,getAttachment,removeAttachment} from './platform/media-store.mjs';
 import {listClients,createClient,updateClient,archiveClient} from './platform/operations-clients.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
 import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
@@ -42,7 +43,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
  }
@@ -58,25 +59,25 @@ function sendApi(res,status,data){
  res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
  res.end(JSON.stringify(data));
 }
-async function readApiBody(req){
+async function readApiBody(req,maxBytes=16000){
  if(req.headers['content-type']?.split(';')[0]!=='application/json')throw Error('Unsupported media type');
- let raw='';
- for await(const chunk of req){raw+=chunk;if(Buffer.byteLength(raw,'utf8')>16000)throw Error('Payload too large');}
+ let raw='',size=0;
+ for await(const chunk of req){size+=chunk.length;if(size>maxBytes)throw Error('Payload too large');raw+=chunk.toString('utf8');}
  try{return JSON.parse(raw);}catch{throw Error('Invalid JSON');}
 }
-async function processApi(req,res,fn,{admin=false,methods=['GET']}={}){
+async function processApi(req,res,fn,{admin=false,methods=['GET'],maxBytes=16000}={}){
  if(process.env.HUBIE_AUTH_ENABLED!=='true')return sendApi(res,503,{error:'Autenticación no configurada'});
  if(!methods.includes(req.method)){res.writeHead(405,{'allow':methods.join(', ')});res.end();return;}
  if(!['GET','HEAD'].includes(req.method)&&!sameOrigin(req))return sendApi(res,403,{error:'Origin forbidden'});
  try{
   const token=readSessionCookie(req.headers.cookie);
   const actor=admin?await requireSuperAdmin(token):null;
-  const body=['GET','HEAD','DELETE'].includes(req.method)?null:await readApiBody(req);
+  const body=['GET','HEAD','DELETE'].includes(req.method)?null:await readApiBody(req,maxBytes);
   const result=await fn({actor,token,body});
   return sendApi(res,req.method==='POST'?201:200,result);
  }catch(error){
   const message=error?.message||'';
-  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:['Schedule conflict','Duplicate SKU','Insufficient stock','Duplicate client email'].includes(message)?409:message==='Unsupported media type'?415:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
+  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'?404:['Schedule conflict','Duplicate SKU','Insufficient stock','Duplicate client email'].includes(message)?409:message==='Unsupported media type'?415:message==='Payload too large'?413:message==='Storage quota exceeded'?409:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
   return sendApi(res,status,{error:status===503?'Operación temporalmente no disponible':message});
  }
 }
@@ -117,8 +118,54 @@ createServer(async(req,res)=>{
     try{const token=readSessionCookie(req.headers.cookie);if(token)await revokeSession(token);}catch{}
     res.writeHead(204,{'set-cookie':'__Host-hubie_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0','cache-control':'no-store'});res.end();return;
   }
+  // Media: session-scoped binary GET, safe JSON uploads. All records are in Turso, never Render's disk.
+  const mediaMother=pathname.match(/^\/api\/admin\/media\/(dashboard|sidebar)$/);
+  const mediaTenantAdmin=pathname.match(/^\/api\/admin\/tenants\/([0-9a-f-]{36})\/media\/(dashboard|sidebar)$/);
+  const mediaTenantOwn=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/media\/(dashboard|sidebar)$/);
+  const mediaAttachList=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/tools\/([A-Z][0-9]{3})\/records\/([0-9a-f-]{36})\/attachments$/);
+  const mediaAttachment=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/attachments\/([0-9a-f-]{36})$/);
+  if(mediaMother||mediaTenantAdmin||mediaTenantOwn||mediaAttachment){
+    const binaryGet=req.method==='GET'&&!mediaAttachList;
+    if(binaryGet){
+      if(process.env.HUBIE_AUTH_ENABLED!=='true')return sendApi(res,503,{error:'Autenticación no configurada'});
+      try{
+        const token=readSessionCookie(req.headers.cookie);
+        let result;
+        if(mediaMother){await requireSuperAdmin(token);result=await findBackground('madre',null,mediaMother[1]);}
+        else if(mediaTenantAdmin){await requireSuperAdmin(token);result=await findBackground('tenant',mediaTenantAdmin[1],mediaTenantAdmin[2]);}
+        else if(mediaTenantOwn){const {tenant}=await authorizeOwnBackground(token,mediaTenantOwn[1]);result=await findBackground('tenant',tenant.id,mediaTenantOwn[2]);}
+        else result=await getAttachment(token,mediaAttachment[1],mediaAttachment[2]);
+        res.writeHead(200,{'content-type':result.mime,'content-length':result.buffer.length,'cache-control':'private, no-store',
+          'x-content-type-options':'nosniff','cross-origin-resource-policy':'same-origin',
+          'content-security-policy':"default-src 'none'; sandbox",
+          'content-disposition':result.disposition+'; filename="'+result.filename.replace(/[^a-zA-Z0-9._ -]/g,'_')+'"'});
+        res.end(result.buffer);return;
+      }catch(error){
+        const msg=error?.message;
+        return sendApi(res,msg==='Not found'?404:msg==='Unauthorized'?401:msg==='Forbidden'||msg==='Tool disabled'?403:503,{error:msg==='Not found'?'Not found':'Media unavailable'});
+      }
+    }
+    if(mediaMother||mediaTenantAdmin||mediaTenantOwn){
+      const scoped=mediaMother?{scope:'madre',key:null,kind:mediaMother[1]}:
+       mediaTenantAdmin?{scope:'tenant',key:mediaTenantAdmin[1],kind:mediaTenantAdmin[2]}:
+        {scope:'tenant',key:mediaTenantOwn[1],kind:mediaTenantOwn[2]};
+      return processApi(req,res,async({actor,token,body})=>{
+        let org=scoped.key,owner=actor;
+        if(mediaTenantOwn){const {tenant,session}=await authorizeOwnBackground(token,scoped.key,true);org=tenant.id;owner=session.userId;}
+        if(req.method==='DELETE')return clearBackground(scoped.scope,org,scoped.kind);
+        return {media:await uploadBackground(scoped.scope,org,scoped.kind,body,owner)};
+      },{admin:!mediaTenantOwn,methods:['POST','DELETE'],maxBytes:1_300_000});
+    }
+    return processApi(req,res,async({token})=>({removed:await removeAttachment(token,mediaAttachment[1],mediaAttachment[2])}),{methods:['DELETE']});
+  }
+  if(mediaAttachList){
+    return processApi(req,res,async({token,body})=>req.method==='GET'?
+      listAttachments(token,mediaAttachList[1],mediaAttachList[2],mediaAttachList[3]):
+      {attachment:await addAttachment(token,mediaAttachList[1],mediaAttachList[2],mediaAttachList[3],body)},
+     {methods:['GET','POST'],maxBytes:2_800_000});
+  }
   if(pathname==='/api/admin/appearance'){
-    return processApi(req,res,async({actor,body})=>({appearance:req.method==='GET'?await getPlatformAppearance():await setPlatformAppearance(body,actor)}),{admin:true,methods:['GET','PUT']});
+    return processApi(req,res,async({actor,body})=>({appearance:req.method==='GET'?await getPlatformAppearance():await setPlatformAppearance(body,actor),backgrounds:await mediaBackgroundUrls('madre',null)}),{admin:true,methods:['GET','PUT']});
   }
   const adminAppearancePath=pathname.match(/^\/api\/admin\/tenants\/([0-9a-f-]{36})\/appearance$/);
   if(adminAppearancePath){
@@ -204,8 +251,8 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===13;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===14;
       }catch{schemaReady=false;}
     }
     const healthy=db.status==='connected'&&schemaReady;
