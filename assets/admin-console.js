@@ -33,7 +33,7 @@ function toolRow(tool,checked,onChange,editable=true){
  if(onChange)input.addEventListener('change',()=>onChange(input));
  label.append(iconUI.toolIcon(tool.id),input);
  const mid=node('span');
- mid.append(node('strong',tool.name),node('small',(tool.included?'Core · incluido':tool.group+' · '+money(tool.price))));
+ mid.append(node('strong',tool.name),node('small',(tool.included?'Core · incluido':tool.group+' · '+(tool.price===null?'Precio por definir':money(tool.price)))));
  label.append(mid);
  return label;
 }
