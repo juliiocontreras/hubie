@@ -1,4 +1,5 @@
 import { isSameOrigin } from './platform/public-origin.mjs';
+import {sqlStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
@@ -46,7 +47,7 @@ async function applyCoreSchema(){
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
  for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
-  for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean))await executeSql(statement);
+  for(const statement of sqlStatements(sql))await executeSql(statement);
  }
  const result=await executeSql("SELECT COUNT(*) AS total FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','organization_invitations','audit_events')");
  const count=Number(result?.rows?.[0]?.[0]?.value??0);
