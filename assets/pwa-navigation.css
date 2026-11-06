@@ -125,3 +125,21 @@ html.has-sidebar-image .sidebar{
 .premium-stat .premium-stat-icon{display:inline-grid;place-items:center;color:#306aaa}
 .premium-stat .premium-stat-icon svg{width:24px;height:24px}
 @media(max-width:760px){.pipeline-mini-row{grid-template-columns:78px minmax(0,1fr) 20px}}
+
+/* C003 — compact document metadata, revision history and expiry context */
+.document-meta-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;
+ gap:10px;align-items:end;margin:12px 0}
+.document-meta-field{display:grid;gap:5px;color:#44617e;font-size:11px;font-weight:750;min-width:0}
+.document-meta-field .search{width:100%;min-width:0}
+.document-meta-controls>.btn{align-self:end;min-height:38px;white-space:normal}
+.attachment-group{display:grid;gap:7px;padding:12px;border:1px solid #dce7f5;border-radius:15px;
+ background:linear-gradient(135deg,rgba(252,254,255,.96),rgba(239,246,255,.84));}
+.attachment-group>.attachment-row{border:0;padding:4px 0;background:transparent}
+.attachment-group .toolbar{gap:6px}
+.attachment-group .toolbar .btn{font-size:11px}
+.document-versions{border-top:1px solid #dce8f4;padding-top:7px}
+.document-versions summary{cursor:pointer;font-size:11px;font-weight:750;color:#365c84;padding:5px 0}
+.document-versions .attachment-row{margin-top:6px}
+.attachment-info small{display:block;line-height:1.4}
+@media(max-width:1080px){.document-meta-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.document-meta-controls{grid-template-columns:1fr}.document-meta-controls>.btn{width:100%}}
