@@ -7,7 +7,7 @@ import {validateMediaUpload} from './media-policy.mjs';
 const rows=r=>r?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
 const bgKinds=['dashboard_bg','sidebar_bg'];
 const kindMap={dashboard:'dashboard_bg',sidebar:'sidebar_bg'};
-const tableForTool=id=>({'C001':'tenant_client_profiles','C002':'tenant_crm_deals','C004':'tenant_schedule_events','C005':'tenant_inventory_items'})[id]||'tenant_tool_records';
+const tableForTool=id=>({'C001':'tenant_client_profiles','C002':'tenant_crm_deals','C003':'tenant_client_cases','C004':'tenant_schedule_events','C005':'tenant_inventory_items'})[id]||'tenant_tool_records';
 const mediaPublic=(scope,key,kind)=>scope==='madre'?'/api/admin/media/'+kind:scope==='admin'?'/api/admin/tenants/'+key+'/media/'+kind:'/api/app/'+key+'/media/'+kind;
 export async function latestBackground(scope,key,kind){
  const realKind=kindMap[kind];
@@ -96,7 +96,9 @@ export async function addAttachment(token,slug,toolId,recordId,input){
   {sql:'INSERT INTO pwa_media(id,scope,organization_id,kind,tool_id,record_id,name,mime,size_bytes,content_b64,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
    args:[id,'tenant',tenant.id,'attachment',toolId,recordId,media.filename,media.mime,media.bytes,media.data,session.userId]},
   {sql:"INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,'media.attachment_uploaded','attachment',?)",
-   args:[randomUUID(),tenant.id,session.userId,id]}
+   args:[randomUUID(),tenant.id,session.userId,id]},
+  ...(toolId==='C003'?[{sql:"INSERT INTO tenant_case_events(organization_id,id,case_id,action,description,actor_user_id) VALUES(?,?,?,'document_added',?,?)",
+   args:[tenant.id,randomUUID(),recordId,media.filename,session.userId]}]:[])
  ]);
  return {id,filename:media.filename,bytes:media.bytes,downloadUrl:'/api/app/'+encodeURIComponent(slug)+'/attachments/'+id};
 }
@@ -112,10 +114,14 @@ export async function getAttachment(token,slug,id){
 export async function removeAttachment(token,slug,id){
  const tenant=await resolveTenant(slug);
  if(!tenant)throw Error('Not found');
- const found=rows(await executeSql('SELECT tool_id FROM pwa_media WHERE scope=? AND organization_id=? AND kind=? AND id=?',['tenant',tenant.id,'attachment',id]))[0];
+ const found=rows(await executeSql('SELECT tool_id,record_id,name FROM pwa_media WHERE scope=? AND organization_id=? AND kind=? AND id=?',['tenant',tenant.id,'attachment',id]))[0];
  if(!found)throw Error('Not found');
  const {session}=await authorizeTool(token,slug,found[0],true);
- await executeSql('DELETE FROM pwa_media WHERE organization_id=? AND id=? AND kind=?',[tenant.id,id,'attachment']);
- await executeSql("INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,'media.attachment_removed','attachment',?)",[randomUUID(),tenant.id,session.userId,id]);
+ await executeBatch([
+  {sql:'DELETE FROM pwa_media WHERE organization_id=? AND id=? AND kind=?',args:[tenant.id,id,'attachment']},
+  {sql:"INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,'media.attachment_removed','attachment',?)",args:[randomUUID(),tenant.id,session.userId,id]},
+  ...(found[0]==='C003'?[{sql:"INSERT INTO tenant_case_events(organization_id,id,case_id,action,description,actor_user_id) VALUES(?,?,?,'document_removed',?,?)",
+   args:[tenant.id,randomUUID(),found[1],found[2],session.userId]}]:[])
+ ]);
  return {removed:true};
 }
