@@ -23,5 +23,5 @@ test('case documents have types, expiry and readable revisions, scoped to their 
  assert.equal(result.attachments.find(x=>x.id===latest.id).documentType,'identification');
  assert.equal((await store.request('/api/app/'+b.slug+'/workflows/cases')).cases.some(x=>x.id===caseA.id),false);
  await assert.rejects(()=>store.request('/api/app/'+b.slug+'/case-documents/'+first.documentId,{method:'PATCH',body:JSON.stringify({documentType:'other'})}),/Not found/);
- assert.ok((await store.request('/api/app/'+a.slug+'/workflows/cases/'+caseA.id+'/history')).events.some(x=>x.action==='document_updated'));
+ assert.ok((await store.request('/api/app/'+a.slug+'/workflows/cases/'+caseA.id+'/history')).events.some(x=>x.action==='updated'&&x.description.includes('Documento actualizado')));
 });
