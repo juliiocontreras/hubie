@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { catalog, getSuite, getTool, normalizeTenantInput, resolveEnabledTools, validateRecord } from '../platform/catalog.mjs';
 
-test('la PWA Madre usa las diez suites y treinta tools del catálogo comercial existente', () => {
+test('la PWA Madre conserva las 30 Tools originales y añade encuesta de satisfacción sin precio inventado', () => {
  assert.equal(catalog.suites.length, 10);
- assert.equal(catalog.tools.length, 30);
+ assert.equal(catalog.tools.length, 31);
+ assert.equal(catalog.tools.filter(t=>t.id!=='T021').length,30);
+ assert.equal(getTool('T021').price,null);
+ assert.equal(getTool('T021').pricing,'quote');
  assert.equal(getSuite('S001').price, 9900);
  assert.equal(getTool('T015').price, 6100);
  assert.equal(catalog.rules.monthlyPlatformFee, 0);
