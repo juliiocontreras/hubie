@@ -2,7 +2,8 @@
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const demoApi=async(path,options)=> (await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
-const state={catalog:null,tenants:[],selected:null,detail:null};
+const state={catalog:null,tenants:[],selected:null,detail:null,platformAppearance:null};
+let themeUI=null;
 const money=n=>n==null?'A cotizar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
 function node(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
 async function api(path,options={}){
@@ -15,6 +16,7 @@ async function api(path,options={}){
 async function write(path,method,body){return api(path,{method,headers:{'content-type':'application/json'},body:JSON.stringify(body)});}
 function notice(message,error=false){const e=$('feedback');e.textContent=message;e.classList.toggle('error',error);}
 function screen(view){
+ if(view!=='appearance'&&state.platformAppearance&&themeUI)themeUI.applyAppearance(state.platformAppearance);
  for(const s of document.querySelectorAll('[id^="view-"]'))s.hidden=s.id!=='view-'+view;
  for(const b of document.querySelectorAll('[data-view]'))b.setAttribute('aria-current',b.dataset.view===view?'page':'false');
  window.scrollTo({top:0,behavior:'instant'});
@@ -62,9 +64,26 @@ function renderTenants(){
  $('stat-companies').textContent=state.tenants.length;
  $('stat-suites').textContent=suiteList().length;
  $('stat-tools').textContent=toolList().length;
+ $('stat-core').textContent=toolList().filter(t=>t.included).length;
  const recent=$('overview-companies');recent.replaceChildren();
  for(const t of state.tenants.slice(0,5))recent.append(companyRow(t));
  if(!state.tenants.length)recent.append(node('div','Aún no hay empresas. Crea la primera desde Hubie Madre.','empty'));
+ const suites=$('overview-suites');suites.replaceChildren();
+ for(const item of suiteList().slice(0,6)){
+  const btn=node('button',undefined,'suite-tile');btn.type='button';
+  btn.append(node('span','◈','company-icon'),node('strong',item.name.replace(/^Hubie /,'')),node('small',item.users+' usuarios · '+money(item.price)));
+  btn.addEventListener('click',()=>{$('create-suite').value=item.id;screen('create');});
+  suites.append(btn);
+ }
+ const tools=$('overview-tools');tools.replaceChildren();
+ for(const item of toolList().slice(0,5)){
+  const row=node('div',undefined,'aurora-row');
+  const ico=node('span','◫','insight-mark');
+  const meta=node('span',undefined,'insight-meta');
+  meta.append(node('strong',item.name),node('small',item.included?'Core incluido':'Complemento · '+money(item.price)));
+  row.append(ico,meta,node('span',item.included?'Incluida':'Opcional','status'+(item.included?'':' off')));
+  tools.append(row);
+ }
  filterCompanies();
 }
 function filterCompanies(){
@@ -106,6 +125,17 @@ function renderDetail(t){
  state.detail=t;$('detail-heading').textContent=t.name;
  $('detail-subtitle').textContent='Identificador: '+t.slug+' · '+t.suiteId;
  $('detail-open').href='/app/?'+(demoMode?'demo=1&':'')+'tenant='+encodeURIComponent(t.slug);
+ themeUI.createAppearanceEditor($('tenant-appearance'),{
+  initial:t.appearance,
+  title:'Fondos y apariencia de '+t.name,
+  description:'Configura de forma independiente el dashboard y panel lateral de esta empresa. Sin imágenes decorativas ni plantas.',
+  live:false,
+  onSave:async theme=>{
+   const result=await write('/api/admin/tenants/'+t.id+'/appearance','PUT',theme);
+   t.appearance=result.appearance;notice('Apariencia de '+t.name+' actualizada.');
+   return result;
+  }
+ });
  const form=$('detail-form');
  for(const key of ['name','displayName','suiteId','primaryColor','secondaryColor','status','logoUrl'])form.elements[key].value=t[key]??'';
  const host=$('detail-tools');host.replaceChildren();
@@ -167,6 +197,7 @@ function initEvents(){
  $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/madre/app.html';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
 }
 async function init(){
+ themeUI=await import('./appearance-ui.js');
  if(demoMode){
   $('demo-banner').hidden=false;
   document.querySelector('.sidebar a[href="/app/"]').href='/app/?demo=1';
@@ -176,7 +207,20 @@ async function init(){
  }
  initEvents();
  try{
-  const [catalogData,tenantData]=await Promise.all([api('/api/admin/catalog'),api('/api/admin/tenants')]);
+  const [catalogData,tenantData,platformData]=await Promise.all([api('/api/admin/catalog'),api('/api/admin/tenants'),api('/api/admin/appearance')]);
+  state.platformAppearance=platformData.appearance;
+  themeUI.applyAppearance(state.platformAppearance);
+  themeUI.createAppearanceEditor($('platform-appearance'),{
+   initial:state.platformAppearance,
+   title:'Apariencia de Hubie Madre',
+   description:'Fondos independientes de dashboard y panel lateral. Personaliza el color o selecciona un estilo de la marca Hubie.',
+   live:true,
+   onSave:async appearance=>{
+    const result=await write('/api/admin/appearance','PUT',appearance);
+    state.platformAppearance=result.appearance;
+    return result;
+   }
+  });
   state.catalog=catalogData.catalog;state.tenants=tenantData.tenants;
   suiteOptions($('create-suite'));suiteOptions($('detail-suite'));
   renderCreateTools();for(const [i,t] of toolList().entries())$('create-tools').children[i].querySelector('input').dataset.toolId=t.id;
