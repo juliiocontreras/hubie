@@ -27,7 +27,7 @@ export async function renderClients(ctx){
  cancel.addEventListener('click',reset,{signal:ctx.signal});
  async function reload(){
   const result=await ctx.api(path);if(ctx.signal.aborted)return;
-  clients=result.clients||[];draw();
+  clients=result.clients||[];draw();ctx.attachmentsPanel?.update(clients.map(c=>({id:c.id,title:c.name})));
  }
  function draw(){
   if(ctx.signal.aborted)return;
