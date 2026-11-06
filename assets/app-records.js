@@ -1,5 +1,6 @@
 import {openOperationalModule,closeOperationalModule} from './app-workflows.js';
 import {fieldsFor,hintFor} from './tool-forms.js';
+import {setupAttachments} from './attachments-ui.js';
 const $=id=>document.getElementById(id);
 let ctx=null,records=[],editing=null,initialized=false;
 function notify(msg,error=false){ctx.notice(msg,error);}
@@ -37,6 +38,7 @@ async function refresh(){
   records=tool.id==='C008'?Object.entries(data.counts||{}).map(([id,count])=>({id,title:config.tools.find(t=>t.id===id)?.name||id,status:'active',fields:{registros:count}})):data.records||[];
  }
  render();
+ ctx.attachmentsPanel?.update(['C008','C009'].includes(tool.id)?[]:records);
 }
 function openDialog(record=null){
  if(!writable())return;
@@ -79,7 +81,7 @@ function wire(){
 }
 export async function openRecords(context){
  closeOperationalModule();
- ctx=context;
+ ctx={...context,attachmentsPanel:setupAttachments(context)};
  if($('record-dialog').open)$('record-dialog').close();
  if(['C001','C002','C004','C005'].includes(ctx.tool.id))return openOperationalModule(ctx);
  wire();editing=null;records=[];
