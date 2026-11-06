@@ -17,7 +17,7 @@ export function databaseProtocol(value){
  const url=String(value??'').trim().replace(/^["']|["']$/g,'').trim();
  let parsed;
  try{parsed=new URL(url);}catch{throw Error('Unsupported Turso database protocol');}
- if(!parsed.hostname||parsed.username||parsed.password||parsed.search||parsed.hash||parsed.pathname!=='/')throw Error('Unsupported Turso database protocol');
+ if(!parsed.hostname||parsed.username||parsed.password||parsed.search||parsed.hash||!['','/'].includes(parsed.pathname))throw Error('Unsupported Turso database protocol');
  if(parsed.protocol==='turso:')return 'turso';
  if(['libsql:','https:'].includes(parsed.protocol))return 'libsql';
  throw Error('Unsupported Turso database protocol');
