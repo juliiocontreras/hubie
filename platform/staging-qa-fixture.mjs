@@ -10,7 +10,7 @@ export const QA_COMPANY=Object.freeze({
  suiteId:'S006',
  primaryColor:'#4768ee',
  secondaryColor:'#8760f4',
- toolIds:[...defaultToolIds(),'T004','T013']
+ toolIds:[...defaultToolIds(),'T004','T013','T021']
 });
 const stable=(org,label)=>{
  const hex=createHash('sha256').update('hubie-qa-piloto:v1:'+org+':'+label).digest('hex').slice(0,32);
@@ -18,7 +18,7 @@ const stable=(org,label)=>{
 };
 export function fixtureIds(org){
  return Object.fromEntries(['client','deal','case','appointment','item','movement',
-  'task','quote','document','media','caseCreated','documentAdded','taskLink','quoteLink'].map(label=>[label,stable(org,label)]));
+  'task','quote','survey','document','media','caseCreated','documentAdded','taskLink','quoteLink'].map(label=>[label,stable(org,label)]));
 }
 const fakeNote='DOCUMENTO FICTICIO - HUBIE QA. Solo demuestra almacenamiento, consulta y control de versiones. No contiene información personal.\n';
 export function makeQaSeedPlan(org,owner){
@@ -48,6 +48,11 @@ export function makeQaSeedPlan(org,owner){
   q('tenant_tool_records',['organization_id','id','tool_id','title','status','fields_json','created_by'],
    [org,id.quote,'T013','[DEMO] Cotización sin valor comercial','draft',
     JSON.stringify({concepto:'Servicio de demostración',total_estimado:45000,moneda:'MXN',es_demostracion:true}),owner]),
+  q('tenant_surveys',['organization_id','id','title','questions_json','created_by'],
+   [org,id.survey,'[DEMO] Encuesta de satisfacción posventa',
+    JSON.stringify([{id:'csat',type:'csat',label:'¿Qué tan satisfecho estás con nuestra atención?',required:true},
+     {id:'nps',type:'nps',label:'Del 0 al 10, ¿nos recomendarías?',required:true},
+     {id:'comentario',type:'text',label:'¿Qué podemos mejorar?',required:false}]),owner]),
   q('tenant_entity_links',['organization_id','id','left_tool_id','left_record_id','right_tool_id','right_record_id','relation_type','created_by'],
    [org,id.taskLink,'C001',id.client,'T004',id.task,'related',owner]),
   q('tenant_entity_links',['organization_id','id','left_tool_id','left_record_id','right_tool_id','right_record_id','relation_type','created_by'],
