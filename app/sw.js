@@ -1,4 +1,4 @@
-const CACHE='hubie-client-pwa-cases-v1';
+const CACHE='hubie-client-pwa-documents-v2';
 const FILES=['/app/index.html','/assets/pwa-console.css','/assets/pwa-refined.css','/assets/pwa-navigation.css',
  '/assets/appearance-ui.js','/assets/media-ui.js','/assets/ui-icons.js','/assets/app-console.js',
  '/assets/demo-backend.js','/assets/catalog.json','/assets/app-records.js','/assets/attachments-ui.js',
