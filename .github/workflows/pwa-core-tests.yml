@@ -44,9 +44,11 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/auth/configuracion.html)" = 200
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/api/auth/google/start)" = 303
           curl -fsS http://localhost:4017/assets/demo-backend.js | grep -q 'createDemoStore'
+          curl -fsS http://localhost:4017/assets/pwa-refined.css | grep -q 'HUBIE PWA'
+          curl -fsS http://localhost:4017/assets/appearance-ui.js | grep -q 'createAppearanceEditor'
       - name: Validate JavaScript syntax
         run: |
-          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js assets/demo-backend.js assets/app-workflows.js assets/operational-*.js; do
+          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js assets/demo-backend.js assets/appearance-ui.js assets/app-workflows.js assets/operational-*.js; do
             node --check "$file"
           done
       - name: Run unit and contract tests
