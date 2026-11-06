@@ -1,9 +1,12 @@
 'use strict';
+const demoMode=new URLSearchParams(location.search).get('demo')==='1';
+const demoApi=async(path,options)=> (await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
 const state={catalog:null,tenants:[],selected:null,detail:null};
 const money=n=>n==null?'A cotizar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
 function node(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
 async function api(path,options={}){
+ if(demoMode)return demoApi(path,options);
  const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...options});
  const data=await r.json().catch(()=>({}));
  if(!r.ok)throw Object.assign(new Error(data.error||'Error al conectar'),{status:r.status});
@@ -102,7 +105,7 @@ async function loadMembers(id){renderMembers((await api('/api/admin/tenants/'+id
 function renderDetail(t){
  state.detail=t;$('detail-heading').textContent=t.name;
  $('detail-subtitle').textContent='Identificador: '+t.slug+' · '+t.suiteId;
- $('detail-open').href='/app/?tenant='+encodeURIComponent(t.slug);
+ $('detail-open').href='/app/?'+(demoMode?'demo=1&':'')+'tenant='+encodeURIComponent(t.slug);
  const form=$('detail-form');
  for(const key of ['name','displayName','suiteId','primaryColor','secondaryColor','status','logoUrl'])form.elements[key].value=t[key]??'';
  const host=$('detail-tools');host.replaceChildren();
@@ -161,9 +164,15 @@ function initEvents(){
  $('reset-tools').addEventListener('click',()=>{for(const c of $('create-tools').querySelectorAll('input'))c.checked=!!toolList().find(t=>t.id===c.dataset.toolId)?.included;});
  $('create-slug').addEventListener('input',()=>{slugTouched=true;});
  $('create-name').addEventListener('input',ev=>{if(!slugTouched)$('create-slug').value=ev.target.value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,63);});
- $('logout').addEventListener('click',async()=>{await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
+ $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/madre/app.html';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
 }
 async function init(){
+ if(demoMode){
+  $('demo-banner').hidden=false;
+  document.querySelector('.sidebar a[href="/app/"]').href='/app/?demo=1';
+  $('logout').textContent='↪  Salir de la demostración';
+  document.title='Hubie Madre · Demostración sin conexión';
+ }
  initEvents();
  try{
   const [catalogData,tenantData]=await Promise.all([api('/api/admin/catalog'),api('/api/admin/tenants')]);
@@ -175,7 +184,12 @@ async function init(){
   if(location.search.includes('tenant=')){const id=new URLSearchParams(location.search).get('tenant');if(state.tenants.some(t=>t.id===id))await openDetail(id);}
  }catch(e){
   $('login').hidden=false;
-  $('login-message').textContent=e.status===403?'Tu cuenta no tiene permiso de Super Admin. Puedes abrir la PWA de cliente.':'Accede con tu cuenta autorizada para gestionar Hubie Madre.';
+  if(e.status===503){
+   $('google-entry').hidden=true;
+   $('login-message').textContent='El acceso real requiere configurar Google y Turso. Puedes explorar una demostración segura con datos ficticios.';
+  }else{
+   $('login-message').textContent=e.status===403?'Tu cuenta no tiene permiso de Super Admin. Puedes abrir la PWA de cliente.':'Accede con tu cuenta autorizada para gestionar Hubie Madre.';
+  }
  }
  if('serviceWorker'in navigator)navigator.serviceWorker.register('/madre/sw.js',{scope:'/madre/'}).catch(()=>{});
 }
