@@ -20,7 +20,7 @@ test('case belongs to existing client; rejects cross-tenant client ID and keeps 
  const hist=(await demo.request(path+'/'+create.case.id+'/history')).events;
  assert.ok(hist.some(e=>e.action==='created'));
  assert.ok(hist.some(e=>e.action==='document_added'));
- await demo.request(path+'/'+create.case.id,{method:'PATCH',body:JSON.stringify({...create.case,status:'completed'})});
+ await demo.request(path+'/'+create.case.id,{method:'PATCH',body:JSON.stringify({title:create.case.title,kind:create.case.kind,status:'completed',notes:create.case.notes})});
  assert.equal((await demo.request(path)).cases[0].status,'completed');
  await demo.request(path+'/'+create.case.id,{method:'DELETE'});
  assert.equal((await demo.request(path)).cases.length,0);
