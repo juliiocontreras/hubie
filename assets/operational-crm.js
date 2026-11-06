@@ -32,7 +32,7 @@ export async function renderCrm(ctx){
  cancel.addEventListener('click',reset,{signal:ctx.signal});
  async function reload(){
   const d=await ctx.api(path);if(ctx.signal.aborted)return;
-  deals=d.deals||[];draw();
+  deals=d.deals||[];draw();ctx.attachmentsPanel?.update(deals);
  }
  function draw(){
   if(ctx.signal.aborted)return;
