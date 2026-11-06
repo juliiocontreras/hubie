@@ -6,6 +6,8 @@ const copy=x=>structuredClone(x);
 const error=(message,status=400)=>Object.assign(new Error(message),{status});
 const statuses=['prospect','active','inactive'];
 const stages=['lead','qualified','proposal','negotiation','won','lost'];
+const caseKinds=['general','commercial','contract','service','administrative'];
+const caseStatuses=['open','in_progress','on_hold','completed'];
 const appearanceDefaults={dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#eaf1ff',sidebarColor:'#10294b'};
 const appearanceFields=Object.keys(appearanceDefaults);
 const normalizeTheme=input=>{
@@ -31,12 +33,14 @@ function createTenant(catalog,input,id=uuid()){
  return {id,appearance:{...appearanceDefaults},backgrounds:{dashboard:null,sidebar:null},uploads:[],slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
   tools:catalog.tools.map(t=>({...t,enabled:selected.has(t.id)})),
   members:[{id:'33333333-3333-4333-8333-333333333333',email:'superadmin@ejemplo.invalid',role:'owner',status:'active'}],
-  clients:[],deals:[],events:[],items:[],movements:[],generic:{}};
+  clients:[],cases:[],caseEvents:[],deals:[],events:[],items:[],movements:[],generic:{}};
 }
 function initial(catalog){
  const first=createTenant(catalog,{name:'Comercio de demostración',slug:'comercio-demo',suiteId:'S004',toolIds:[...catalog.tools.filter(t=>t.included).map(t=>t.id),'T004','T013']},initialId[0]);
  const second=createTenant(catalog,{name:'Consultoría de demostración',slug:'consultoria-demo',suiteId:'S006'},initialId[1]);
  first.clients.push({id:uuid(),name:'Contacto de ejemplo',company:'Negocio ficticio',email:'ejemplo@correo.invalid',phone:'',status:'prospect',notes:'Datos ficticios para conocer la interfaz.'});
+ first.cases.push({id:uuid(),clientId:first.clients[0].id,clientName:first.clients[0].name,title:'Expediente comercial de ejemplo',kind:'commercial',status:'open',notes:'Carpeta de demostración, sin datos de clientes reales.',createdAt:now(),updatedAt:now()});
+ first.caseEvents.push({id:uuid(),caseId:first.cases[0].id,action:'created',description:'Expediente de demostración creado',createdAt:now()});
  first.deals.push({id:uuid(),title:'Oportunidad de demostración',customer:'Negocio ficticio',amountCents:250000,stage:'proposal',notes:'Operación simulada; no se realiza ningún cobro.',followUpAt:null});
  first.items.push({id:uuid(),sku:'DEMO-001',title:'Producto de muestra',location:'Almacén ficticio',quantity:8,lowStock:3});
  first.events.push({id:uuid(),title:'Reunión de ejemplo',customer:'Contacto ficticio',resource:'sala-1',startsAt:'2026-11-12T16:00:00.000Z',endsAt:'2026-11-12T17:00:00.000Z',status:'scheduled',notes:''});
@@ -49,7 +53,10 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  state.platformAppearance=normalizeTheme(state.platformAppearance||{});
  for(const tenant of state.tenants)tenant.appearance=normalizeTheme(tenant.appearance||{});
  state.platformBackgrounds=makeBackgrounds(state.platformBackgrounds);
- for(const tenant of state.tenants){tenant.backgrounds=makeBackgrounds(tenant.backgrounds);tenant.uploads=Array.isArray(tenant.uploads)?tenant.uploads:[];}
+ for(const tenant of state.tenants){
+  tenant.backgrounds=makeBackgrounds(tenant.backgrounds);tenant.uploads=Array.isArray(tenant.uploads)?tenant.uploads:[];
+  tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];
+ }
  const sync=()=>save(copy(state));
  const tenantById=id=>{const t=state.tenants.find(t=>t.id===id);if(!t)throw error('Not found',404);return t;};
  const tenantBySlug=slug=>{const t=state.tenants.find(t=>t.slug===slug&&t.status==='active');if(!t)throw error('Not found',404);return t;};
@@ -83,9 +90,10 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    if(method==='GET')return emit({attachments:items.map(({id,filename,mime,size})=>({id,filename,mime,bytes:size,downloadUrl:'/api/app/'+tenant.slug+'/attachments/'+id}))});
    if(method==='POST'){
     const media=demoMedia(input);if(media.size>650000||items.length>=12)throw error('Storage quota exceeded');
-    const list={C001:tenant.clients,C002:tenant.deals,C004:tenant.events,C005:tenant.items}[tool]||tenant.generic[tool]||[];
+    const list={C001:tenant.clients,C002:tenant.deals,C003:tenant.cases.filter(c=>!c.archivedAt),C004:tenant.events,C005:tenant.items}[tool]||tenant.generic[tool]||[];
     if(!list.some(x=>x.id===recordId))throw error('Not found',404);
     tenant.uploads.push({...media,toolId:tool,recordId});
+    if(tool==='C003')tenant.caseEvents.unshift({id:uuid(),caseId:recordId,action:'document_added',description:media.filename,createdAt:now()});
     return send({attachment:{id:media.id,filename:media.filename,bytes:media.size}});
    }
   }
@@ -95,7 +103,11 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    if(!file)throw error('Not found',404);
    allowed(tenant,file.toolId);
    if(method==='GET')return emit({file:{filename:file.filename,mime:file.mime,data:file.data}});
-   if(method==='DELETE'){tenant.uploads=tenant.uploads.filter(x=>x.id!==file.id);return send({removed:true});}
+   if(method==='DELETE'){
+    tenant.uploads=tenant.uploads.filter(x=>x.id!==file.id);
+    if(file.toolId==='C003')tenant.caseEvents.unshift({id:uuid(),caseId:file.recordId,action:'document_removed',description:file.filename,createdAt:now()});
+    return send({removed:true});
+   }
   }
   if(p==='/api/admin/appearance'){
    if(method==='GET')return emit({appearance:state.platformAppearance,backgrounds:state.platformBackgrounds});
@@ -157,11 +169,51 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    return emit({tenant:{id:t.id,slug:t.slug,name:t.name,role:'owner',displayName:t.displayName,logoUrl:t.logoUrl,primaryColor:t.primaryColor,secondaryColor:t.secondaryColor,timezone:t.timezone,suiteId:t.suiteId,suiteName:suite?.name||t.suiteId},
     appearance:t.appearance,backgrounds:t.backgrounds,tools:t.tools.filter(x=>x.enabled),members:t.members.filter(x=>x.status==='active').map(x=>({email:x.email,role:x.role}))});
   }
+  m=p.match(/^\/api\/app\/([a-z0-9-]+)\/workflows\/cases(?:\/([a-z0-9-]+))?(?:\/(history))?$/);
+  if(m){
+   const tenant=tenantBySlug(m[1]),id=m[2],action=m[3];allowed(tenant,'C003');
+   const active=tenant.cases.filter(c=>!c.archivedAt);
+   if(method==='GET'&&!id)return emit({
+    cases:active.map(c=>({...c,clientName:tenant.clients.find(x=>x.id===c.clientId)?.name||c.clientName||'Cliente archivado',
+      documentsCount:tenant.uploads.filter(x=>x.toolId==='C003'&&x.recordId===c.id).length})),
+    clients:tenant.clients.map(c=>({id:c.id,name:c.name,company:c.company,email:c.email})),
+    kinds:caseKinds,statuses:caseStatuses
+   });
+   if(method==='GET'&&action==='history'){
+    getRecord(active,id);
+    return emit({events:tenant.caseEvents.filter(x=>x.caseId===id)});
+   }
+   const normalize=(value,updating=false)=>{
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!(updating?['title','kind','status','notes']:['clientId','title','kind','status','notes']).includes(k)))throw error('Invalid case');
+    const title=String(value.title??'').trim(),kind=value.kind||'general',status=value.status||'open',notes=String(value.notes??'').trim();
+    if(title.length<1||title.length>180||!caseKinds.includes(kind)||!caseStatuses.includes(status)||notes.length>2000)throw error('Invalid case');
+    return {title,kind,status,notes};
+   };
+   if(method==='POST'&&!id){
+    const client=tenant.clients.find(c=>c.id===input.clientId);
+    if(!client)throw error('Client not found',404);
+    const obj={id:uuid(),clientId:client.id,clientName:client.name,...normalize(input),createdAt:now(),updatedAt:now()};
+    tenant.cases.unshift(obj);
+    tenant.caseEvents.unshift({id:uuid(),caseId:obj.id,action:'created',description:'Expediente registrado',createdAt:now()});
+    return send({case:obj});
+   }
+   if(id&&!action&&method==='PATCH'){
+    const c=getRecord(active,id);Object.assign(c,normalize(input,true),{updatedAt:now()});
+    tenant.caseEvents.unshift({id:uuid(),caseId:c.id,action:'updated',description:'Expediente actualizado',createdAt:now()});
+    return send({case:c});
+   }
+   if(id&&!action&&method==='DELETE'){
+    const c=getRecord(active,id);c.archivedAt=now();
+    tenant.caseEvents.unshift({id:uuid(),caseId:c.id,action:'archived',description:'Expediente archivado',createdAt:now()});
+    return send({archived:true});
+   }
+   throw error('Not found',404);
+  }
   m=p.match(/^\/api\/app\/([a-z0-9-]+)\/tools\/([A-Z][0-9]{3})\/records(?:\/([a-z0-9-]+))?$/);
   if(m){
    const t=tenantBySlug(m[1]),tool=m[2],id=m[3];allowed(t,tool);
    if(tool==='C008'&&method==='GET'){
-    const counts={C001:t.clients.length,C002:t.deals.length,C004:t.events.length,C005:t.items.length};
+    const counts={C001:t.clients.length,C002:t.deals.length,C003:t.cases.filter(c=>!c.archivedAt).length,C004:t.events.length,C005:t.items.length};
     for(const [key,list]of Object.entries(t.generic))counts[key]=list.length;
     return emit({dashboard:true,counts:Object.fromEntries(Object.entries(counts).filter(([key])=>t.tools.some(x=>x.id===key&&x.enabled)))});
    }
