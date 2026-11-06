@@ -1,6 +1,7 @@
 // Record-level attachments. C003 adds document classification, expiry and immutable revisions.
 // Every server operation validates tenant, case, active Tool and role independently.
 import {encodeSelectedFile,downloadBlob,displayBytes} from './media-ui.js';
+import {setupRelationships} from './relationships-ui.js';
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const docMime=['image/png','image/jpeg','image/webp','application/pdf','text/plain','text/csv',
@@ -17,7 +18,7 @@ const expiryStatus=expiresOn=>{
 };
 let current=null;
 export function closeAttachments(){
- if(current){current.controller.abort();current=null;}
+ if(current){current.controller.abort();current.relations?.close();current=null;}
  const host=document.getElementById('module-attachments');host?.replaceChildren();
 }
 export function setupAttachments(ctx){
@@ -55,7 +56,9 @@ export function setupAttachments(ctx){
  }
  card.append(head,help,fields);
  if(caseMode&&canWrite)card.append(meta);
- card.append(hint,filter,list,message);host.replaceChildren(card);
+ card.append(hint,filter,list,message);
+ const relations=setupRelationships(ctx);
+ host.replaceChildren(card,relations.element);
  let records=[],attachments=[],generation=0;
  const path=()=>'/api/app/'+encodeURIComponent(config.tenant.slug)+'/tools/'+tool.id+'/records/'+encodeURIComponent(chooser.value)+'/attachments';
  const metaRoute=id=>'/api/app/'+encodeURIComponent(config.tenant.slug)+'/case-documents/'+encodeURIComponent(id);
@@ -198,14 +201,15 @@ export function setupAttachments(ctx){
   finally{upload.disabled=false;}
  },{signal});
  const component={
-  controller,onChange:null,
+  controller,relations,onChange:null,
   select(recordId){
    if(signal.aborted||!records.some(x=>x.id===recordId))return;
-   chooser.value=recordId;message.textContent='';filter.value='';versionOf.value='';void reload();
+   chooser.value=recordId;message.textContent='';filter.value='';versionOf.value='';void reload();relations.select(recordId);
   },
   update(items){
    if(signal.aborted)return;
    records=Array.isArray(items)?items.filter(x=>x?.id&&x.title):[];
+   relations.update(records);
    const previous=chooser.value;
    chooser.replaceChildren(new Option('Seleccionar registro…',''));
    for(const item of records)chooser.add(new Option(item.title,item.id));
