@@ -151,3 +151,20 @@ El código de esta rama es de desarrollo, **no está montado aún en el entorno 
 - Nuevo código sigue solo en PR #6 de GitHub; la PWA operativa **todavía no se ha desplegado en Render**.
 - Consultar `docs/RENDER-PWA-DEPLOY.md` para los valores de entorno y los pasos de staging seguro.
 - Los nuevos scripts de frontend se agregaron a la caché de shell PWA, no a la caché de respuestas de la API.
+
+## Etapa 4 — Rediseño Hubie y apariencia por superficie
+
+- Interfaz renovada en **Hubie Madre** y **Hubie Suites**: cristales suaves, placas metálicas, acentos azules de marca, relieve de tarjetas, brillos y transiciones sutiles. El archivo oficial `assets/hubie-logo-official.png` se reutiliza sin modificarlo.
+- No se usan plantas ni fotografías botánicas. Los fondos son gradientes geométricos abstractos CSS, sin cargas de imágenes externas ni material ornamental no solicitado.
+- `assets/pwa-refined.css` es exclusivo de las dos PWA; no afecta los estilos del sitio público.
+- La PWA Madre tiene menú **Apariencia de Hubie Madre**: color/preset independiente para dashboard y menú lateral, vista previa inmediata, restablecimiento Hubie y persistencia tras guardar.
+- Cada cliente tiene su propia sección **Fondos y apariencia** en la ficha de empresa del Super Admin. También puede configurarla un **owner/admin** directamente desde su PWA Suite, sin acceso de roles viewer/member a esa mutación.
+- Presets del dashboard: `hubie` (predeterminado azul), `pearl`, `silver`, `sand`, `custom`.
+- Presets del panel lateral: `midnight` (predeterminado azul noche), `steel`, `platinum`, `graphite`, `custom`. Los colores personalizados deben ser hex `#RRGGBB` y no se admiten URLs ni CSS arbitrario.
+- Migración `009_appearance.sql` crea tablas `platform_appearance` y `tenant_appearance` aisladas y no destructivas. Las mutaciones se auditan y requieren sesión verificada. Los cambios no afectan a ninguna otra empresa.
+- Endpoints: `GET/PUT /api/admin/appearance` (solo plataforma), `PUT /api/admin/tenants/:id/appearance` (solo plataforma) y `PUT /api/app/:slug/appearance` (solo owner/admin de la empresa).
+- El frontend lee `appearance` en `GET /api/admin/tenants/:id` y `GET /api/app/:slug/config`.
+- El modo `?demo=1` usa `sessionStorage` local y simula guardar estas mismas preferencias sin enviar información a Turso. No representa permisos reales.
+- `Hubie Suite / Inicio` presenta indicadores desde los endpoints existentes, con tarjetas de CRM, clientes recientes, citas próximas e inventario; no inventa estadísticas cuando una Tool está desactivada.
+- Animaciones con CSS para entrada de tarjetas, brillos, botones, fondos abstractos y elevación en hover. Todas se desactivan con `prefers-reduced-motion: reduce`. Responsive móvil/tablet.
+- Antes de considerarlo listo para producción se requiere QA de navegador móvil y Turso/OAuth de staging con datos reales.
