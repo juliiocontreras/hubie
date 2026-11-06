@@ -151,7 +151,7 @@ async function saveDetail(ev){
 async function addMember(ev){
  ev.preventDefault();if(!state.selected)return;
  const payload=Object.fromEntries(new FormData(ev.currentTarget));
- try{const d=await write('/api/admin/tenants/'+state.selected+'/members','POST',payload);renderMembers(d.members);ev.currentTarget.reset();notice('Usuario autorizado para esta empresa. Ya puede ingresar con Google.');}
+ try{const d=await write('/api/admin/tenants/'+state.selected+'/members','POST',payload);renderMembers(d.members);ev.currentTarget.reset();notice(demoMode?'Usuario ficticio añadido a la demo; no se envían invitaciones.':'Usuario autorizado para esta empresa. Ya puede ingresar con Google.');}
  catch(e){notice('No fue posible autorizar: '+e.message,true);}
 }
 let slugTouched=false;
@@ -171,6 +171,7 @@ async function init(){
   $('demo-banner').hidden=false;
   document.querySelector('.sidebar a[href="/app/"]').href='/app/?demo=1';
   $('logout').textContent='↪  Salir de la demostración';
+  const foot=document.querySelector('footer.help');if(foot)foot.textContent='Hubie Madre · MODO DEMO: cambios ficticios en este navegador, no guardados en Turso.';
   document.title='Hubie Madre · Demostración sin conexión';
  }
  initEvents();
