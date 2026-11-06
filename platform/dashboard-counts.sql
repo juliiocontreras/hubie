@@ -1,15 +1,17 @@
--- Counts for C008 dashboard. 6 bound organization_id arguments. Never show disabled tools.
+-- Counts for C008 dashboard. 7 bound organization_id arguments. Never show disabled tools.
 SELECT metrics.tool_id, SUM(metrics.qty) AS total
 FROM (
  SELECT tr.tool_id, COUNT(*) AS qty
  FROM tenant_tool_records tr
  WHERE tr.organization_id = ? AND tr.archived_at IS NULL
-   AND tr.tool_id NOT IN ('C001','C002','C004','C005')
+   AND tr.tool_id NOT IN ('C001','C002','C003','C004','C005')
  GROUP BY tr.tool_id
  UNION ALL
  SELECT 'C001' AS tool_id, COUNT(*) AS qty FROM tenant_client_profiles WHERE organization_id = ? AND archived_at IS NULL
  UNION ALL
  SELECT 'C002' AS tool_id, COUNT(*) AS qty FROM tenant_crm_deals WHERE organization_id = ? AND archived_at IS NULL
+ UNION ALL
+ SELECT 'C003' AS tool_id, COUNT(*) AS qty FROM tenant_client_cases WHERE organization_id = ? AND archived_at IS NULL
  UNION ALL
  SELECT 'C004' AS tool_id, COUNT(*) AS qty FROM tenant_schedule_events WHERE organization_id = ?
  UNION ALL
