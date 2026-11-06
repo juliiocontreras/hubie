@@ -105,7 +105,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
     const group=tenant.caseDocumentMeta[file.documentId],same=items.filter(x=>x.documentId===file.documentId);
     const latest=same.length?Math.max(...same.map(x=>x.version||1)):1;
     return {id:file.id,filename:file.filename,mime:file.mime,bytes:file.size,
-     documentId:group?file.documentId:file.id,version:file.version||1,isLatest:!group||file.version===latest,
+     documentId:group?file.documentId:file.id,managed:!!group,version:file.version||1,isLatest:!group||file.version===latest,
      documentType:group?.documentType||'other',expiresOn:group?.expiresOn||null,
      downloadUrl:'/api/app/'+tenant.slug+'/attachments/'+file.id};
    })});
@@ -218,7 +218,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    const active=tenant.cases.filter(c=>!c.archivedAt);
    if(method==='GET'&&!id)return emit({
     cases:active.map(c=>({...c,clientName:tenant.clients.find(x=>x.id===c.clientId)?.name||c.clientName||'Cliente archivado',
-      documentsCount:tenant.uploads.filter(x=>x.toolId==='C003'&&x.recordId===c.id).length})),
+      documentsCount:new Set(tenant.uploads.filter(x=>x.toolId==='C003'&&x.recordId===c.id).map(x=>x.documentId||x.id)).size})),
     clients:tenant.clients.map(c=>({id:c.id,name:c.name,company:c.company,email:c.email})),
     kinds:caseKinds,statuses:caseStatuses
    });
