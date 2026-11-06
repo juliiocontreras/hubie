@@ -367,10 +367,12 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    const linkedDeal=d=>({...d,clientName:t.clients.find(c=>c.id===d.clientId)?.name||null});
    if(method==='GET'){
     if(module==='clients')return emit({clients:entityList(t,'C001'),statuses});
-    if(module==='crm')return emit({deals:deals.map(linkedDeal),clients:clientChoices,stages});
-    if(module==='agenda')return emit({events:list.map(e=>({...e,clientName:t.clients.find(c=>c.id===e.clientId)?.name||null,
-      dealTitle:t.deals.find(d=>d.id===e.dealId)?.title||null})),clients:clientChoices,
-      deals:deals.map(d=>({id:d.id,title:d.title,clientId:d.clientId||null}))});
+    const canClients=t.tools.some(x=>x.id==='C001'&&x.enabled),canCRM=t.tools.some(x=>x.id==='C002'&&x.enabled);
+    if(module==='crm')return emit({deals:deals.map(d=>canClients?linkedDeal(d):{...d,clientId:null,clientName:null}),clients:canClients?clientChoices:[],stages});
+    if(module==='agenda')return emit({events:list.map(e=>({...e,
+      clientId:canClients?e.clientId:null,clientName:canClients?t.clients.find(c=>c.id===e.clientId)?.name||null:null,
+      dealId:canCRM?e.dealId:null,dealTitle:canCRM?t.deals.find(d=>d.id===e.dealId)?.title||null:null})),
+      clients:canClients?clientChoices:[],deals:canCRM?deals.map(d=>({id:d.id,title:d.title,clientId:canClients?d.clientId||null:null})):[]});
     return emit({items:list.map(i=>({...i,isLow:i.quantity<=i.lowStock})),movements:t.movements});
    }
    if(module==='inventory'&&movement==='movements'&&method==='POST'){
@@ -395,6 +397,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
      if(!stages.includes(input.stage))throw error('Invalid deal');getRecord(deals,id).stage=input.stage;return send({ok:true});
     }
     const clientId=input.clientId||null;
+    if(clientId)allowed(t,'C001');
     if(clientId&&!clients.some(x=>x.id===clientId))throw error('Client not found',404);
     const deal={title:String(input.title||'').trim(),customer:String(input.customer||''),clientId,
       amountCents:input.amountCents??0,stage:input.stage||'lead',followUpAt:input.followUpAt||null,notes:String(input.notes||'')};
@@ -412,9 +415,11 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
     if(method==='PATCH'&&Object.keys(input).length===1&&['completed','cancelled'].includes(input.status)){getRecord(list,id).status=input.status;return send({ok:true});}
     let clientId=input.clientId||null;const dealId=input.dealId||null;
     if(dealId){
+     allowed(t,'C002');
      const deal=getRecord(deals,dealId);
      if(deal.clientId){if(clientId&&clientId!==deal.clientId)throw error('Relation mismatch');clientId=deal.clientId;}
     }
+    if(clientId)allowed(t,'C001');
     if(clientId&&!clients.some(x=>x.id===clientId))throw error('Client not found',404);
     const event={title:String(input.title||'').trim(),customer:String(input.customer||''),clientId,dealId,
      resource:String(input.resource||'general').trim().toLowerCase(),startsAt:input.startsAt,endsAt:input.endsAt,
