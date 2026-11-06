@@ -1,7 +1,8 @@
 import {randomUUID} from 'node:crypto';
 import {executeSql,executeBatch} from '../database.mjs';
 import {authorizeTool} from './records.mjs';
-import {getTenantTools} from '../tenant.mjs';
+import {getTenantTools,resolveTenant} from '../tenant.mjs';
+import {requireTenantSession} from '../auth.mjs';
 import {getTool} from './catalog.mjs';
 import {normalizeEntityLink,canonicalPair,validEntityId} from './entity-relations.mjs';
 const values=r=>r?.rows?.map(x=>x.map(c=>c?.value??null))??[];
@@ -68,7 +69,9 @@ export async function linkEntities(token,slug,toolId,recordId,input){
 }
 export async function unlinkEntities(token,slug,id){
  if(!validEntityId(id))throw Error('Not found');
- const {tenant}=await authorizeTool(token,slug,'C001',true); // authorized tenant context, not dependent on a referenced tool
+ const tenant=await resolveTenant(slug);
+ if(!tenant)throw Error('Not found');
+ await requireTenantSession(token,tenant.id,['owner','admin','member']);
  const pair=values(await executeSql('SELECT left_tool_id,left_record_id,right_tool_id,right_record_id FROM tenant_entity_links WHERE organization_id=? AND id=?',[tenant.id,id]))[0];
  if(!pair)throw Error('Not found');
  const allowed=await Promise.all([authorizeTool(token,slug,pair[0],true),authorizeTool(token,slug,pair[2],true)]);
