@@ -106,3 +106,7 @@
 6. **P2 integraciones:** facturación CFDI, firma legal, cámara/barcode, pagos reales y portal externo, sujetos a revisión de seguridad y proveedores.
 
 La propuesta es un backlog/auditoría, **no una afirmación de funcionalidades ya implementadas**. Validar con pruebas de extremo a extremo y Turso staging real antes de liberar a clientes.
+
+## Inconsistencia adicional del Excel v5
+
+La hoja **Reglas de cobro** menciona cinco usuarios incluidos para Suites Automotive e Industrial, pero esas dos Suites **no aparecen** entre las diez S001–S010 de la hoja **Suites**. Esta regla podría proceder de una versión anterior; no crear Suites, usuarios incluidos o tarifas nuevas hasta confirmar cuál versión comercial es la vigente.
