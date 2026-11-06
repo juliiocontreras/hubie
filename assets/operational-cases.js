@@ -131,6 +131,7 @@ export async function renderCases(ctx){
  clientFilter.addEventListener('change',draw,{signal:ctx.signal});
  statusFilter.addEventListener('change',draw,{signal:ctx.signal});
  ctx.search.addEventListener('input',draw,{signal:ctx.signal});
+ if(ctx.attachmentsPanel)ctx.attachmentsPanel.onChange=reload;
  document.getElementById('module-message').textContent='Expedientes privados con clientes relacionados, archivos adjuntos e historial por organización.';
  try{await reload();}catch(e){ctx.notice('No fue posible consultar Expedientes: '+e.message,true);}
 }
