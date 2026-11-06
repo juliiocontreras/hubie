@@ -11,6 +11,7 @@ test('QA fixture is deterministic, non-destructive and connected by composite te
  assert.equal(QA_COMPANY.suiteId,'S006');
  assert.ok(QA_COMPANY.toolIds.includes('C003'));
  assert.ok(QA_COMPANY.toolIds.includes('T004'));
+ assert.ok(QA_COMPANY.toolIds.includes('T021'));
  const rows=makeQaSeedPlan(orgId,actorId);
  assert.ok(rows.length>=13);
  assert.ok(rows.every(q=>/^INSERT OR IGNORE\s/i.test(q.sql)||/^INSERT\s+OR\s+IGNORE\s/i.test(q.sql)));
@@ -20,6 +21,7 @@ test('QA fixture is deterministic, non-destructive and connected by composite te
  assert.ok(rows.some(q=>q.sql.includes('tenant_case_document_versions')&&q.args.includes(ids.document)&&q.args.includes(ids.media)));
  assert.ok(rows.some(q=>q.sql.includes('tenant_entity_links')&&q.args.includes('T004')));
  assert.ok(rows.some(q=>q.sql.includes('tenant_tool_records')&&q.args.includes('T013')));
+ assert.ok(rows.some(q=>q.sql.includes('tenant_surveys')&&q.args.includes(ids.survey)));
 });
 test('seed count verification fails on incomplete company and accepts all expected links',()=>{
  assert.equal(checkQaCounts([1,1,1,1,1,1,1,1,2,2]),true);
