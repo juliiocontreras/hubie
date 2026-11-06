@@ -3,6 +3,7 @@ import {executeSql,executeBatch} from './database.mjs';
 import {verifySession} from './auth.mjs';
 import {catalog,getSuite,getTool,normalizeTenantInput,resolveEnabledTools} from './platform/catalog.mjs';
 import {getTenantAppearance} from './platform/appearance-store.mjs';
+import {mediaBackgroundUrls} from './platform/media-store.mjs';
 const rows=r=>r?.rows?.map(row=>row.map(x=>x?.value??null))??[];
 const audited=(actorId,orgId,action,targetType,targetId)=>({sql:'INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,?,?,?)',args:[randomUUID(),orgId,actorId,action,targetType,targetId]});
 export async function requireSuperAdmin(token){
@@ -39,7 +40,7 @@ export async function getTenantAdmin(id){
   id:org[0],slug:org[1],name:org[2],status:org[3],suiteId:org[4],displayName:org[5],
   logoUrl:org[6],primaryColor:org[7],secondaryColor:org[8],timezone:org[9],
   tools:catalog.tools.map(t=>({...t,enabled:enabledMap.get(t.id)===true})),
-  appearance:await getTenantAppearance(id)
+  appearance:await getTenantAppearance(id),backgrounds:await mediaBackgroundUrls('admin',id)
  };
 }
 export async function setTenantTool(id,toolId,enabled,actorId){
