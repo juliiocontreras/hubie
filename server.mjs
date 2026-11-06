@@ -8,6 +8,8 @@ import {getPlatformAppearance,setPlatformAppearance,setTenantAppearance,setOwnTe
 import {mediaBackgroundUrls,uploadBackground,clearBackground,findBackground,authorizeOwnBackground,listAttachments,addAttachment,getAttachment,removeAttachment,updateCaseDocument} from './platform/media-store.mjs';
 import {listClients,createClient,updateClient,archiveClient} from './platform/operations-clients.mjs';
 import {listCases,createCase,updateCase,archiveCase,caseHistory} from './platform/operations-cases.mjs';
+import {listEntityLinks,linkEntities,unlinkEntities,relationCandidates} from './platform/entity-links-store.mjs';
+import {getClientSummary} from './platform/client-summary.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
 import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
 import {listInventory,createStockItem,updateStockItem,moveStock} from './platform/operations-inventory.mjs';
@@ -45,7 +47,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sqlStatements(sql))await executeSql(statement);
  }
@@ -222,6 +224,19 @@ createServer(async(req,res)=>{
       return updateCase(token,slug,caseId,body);
     },{methods:action==='history'?['GET']:caseId?['PATCH','DELETE']:['GET','POST']});
   }
+  const entityLinksPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/tools\/([A-Z][0-9]{3})\/records\/([0-9a-f-]{36})\/links$/);
+  if(entityLinksPath){
+    return processApi(req,res,async({token,body})=>req.method==='GET'?
+     listEntityLinks(token,entityLinksPath[1],entityLinksPath[2],entityLinksPath[3]):
+     linkEntities(token,entityLinksPath[1],entityLinksPath[2],entityLinksPath[3],body),
+    {methods:['GET','POST']});
+  }
+  const entityCandidatesPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/relations\/options\/([A-Z][0-9]{3})$/);
+  if(entityCandidatesPath)return processApi(req,res,async({token})=>relationCandidates(token,entityCandidatesPath[1],entityCandidatesPath[2]),{methods:['GET']});
+  const entityUnlinkPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/relations\/([0-9a-f-]{36})$/);
+  if(entityUnlinkPath)return processApi(req,res,async({token})=>unlinkEntities(token,entityUnlinkPath[1],entityUnlinkPath[2]),{methods:['DELETE']});
+  const clientSummaryPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/clients\/([0-9a-f-]{36})\/summary$/);
+  if(clientSummaryPath)return processApi(req,res,async({token})=>getClientSummary(token,clientSummaryPath[1],clientSummaryPath[2]),{methods:['GET']});
   const workflowPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/(clients|crm|agenda|inventory)(?:\/([0-9a-f-]{36}))?(?:\/(movements))?$/);
   if(workflowPath){
     const slug=workflowPath[1],module=workflowPath[2],id=workflowPath[3],action=workflowPath[4];
@@ -269,8 +284,8 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===18;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions','tenant_deal_clients','tenant_appointment_links','tenant_entity_links')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===21;
       }catch{schemaReady=false;}
     }
     const healthy=db.status==='connected'&&schemaReady;
