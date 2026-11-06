@@ -5,6 +5,7 @@ const uuid=()=>globalThis.crypto?.randomUUID?.()||'demo-'+Math.random().toString
 const copy=x=>structuredClone(x);
 const error=(message,status=400)=>Object.assign(new Error(message),{status});
 const statuses=['prospect','active','inactive'];
+const validExpiry=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;const x=new Date(d+'T00:00:00Z');return !isNaN(x.getTime())&&x.toISOString().slice(0,10)===d;};
 const stages=['lead','qualified','proposal','negotiation','won','lost'];
 const caseKinds=['general','commercial','contract','service','administrative'];
 const caseStatuses=['open','in_progress','on_hold','completed'];
@@ -33,7 +34,7 @@ function createTenant(catalog,input,id=uuid()){
  return {id,appearance:{...appearanceDefaults},backgrounds:{dashboard:null,sidebar:null},uploads:[],slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
   tools:catalog.tools.map(t=>({...t,enabled:selected.has(t.id)})),
   members:[{id:'33333333-3333-4333-8333-333333333333',email:'superadmin@ejemplo.invalid',role:'owner',status:'active'}],
-  clients:[],cases:[],caseEvents:[],deals:[],events:[],items:[],movements:[],generic:{}};
+  clients:[],cases:[],caseEvents:[],caseDocumentMeta:{},deals:[],events:[],items:[],movements:[],generic:{}};
 }
 function initial(catalog){
  const first=createTenant(catalog,{name:'Comercio de demostración',slug:'comercio-demo',suiteId:'S004',toolIds:[...catalog.tools.filter(t=>t.included).map(t=>t.id),'T004','T013']},initialId[0]);
@@ -55,7 +56,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  state.platformBackgrounds=makeBackgrounds(state.platformBackgrounds);
  for(const tenant of state.tenants){
   tenant.backgrounds=makeBackgrounds(tenant.backgrounds);tenant.uploads=Array.isArray(tenant.uploads)?tenant.uploads:[];
-  tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];
+  tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];tenant.caseDocumentMeta=tenant.caseDocumentMeta&&typeof tenant.caseDocumentMeta==='object'?tenant.caseDocumentMeta:{};
  }
  const sync=()=>save(copy(state));
  const tenantById=id=>{const t=state.tenants.find(t=>t.id===id);if(!t)throw error('Not found',404);return t;};
@@ -83,18 +84,60 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    if(method==='DELETE'){target[kind]=null;return send({backgrounds:makeBackgrounds(target),removed:true});}
    throw error('Not found',404);
   }
+  const docsMetadata=p.match(/^\/api\/app\/([a-z0-9-]+)\/case-documents\/([a-z0-9-]+)$/);
+  if(docsMetadata&&method==='PATCH'){
+   const tenant=tenantBySlug(docsMetadata[1]);allowed(tenant,'C003');
+   const doc=tenant.caseDocumentMeta[docsMetadata[2]];
+   if(!doc||!tenant.cases.some(c=>c.id===doc.caseId&&!c.archivedAt))throw error('Not found',404);
+   const types=['other','contract','identification','invoice','consent','certificate'];
+   if(Object.keys(input).some(k=>!['documentType','expiresOn'].includes(k)))throw error('Invalid document');
+   const newType=input.documentType??'other',expiry=input.expiresOn||null;
+   if(!types.includes(newType)||expiry&&!validExpiry(expiry))throw error('Invalid document');
+   doc.documentType=newType;doc.expiresOn=expiry;
+   tenant.caseEvents.unshift({id:uuid(),caseId:doc.caseId,action:'updated',description:'Documento actualizado · '+newType,createdAt:now()});
+   return send({document:{documentId:docsMetadata[2],documentType:newType,expiresOn:expiry}});
+  }
   const filesPath=p.match(/^\/api\/app\/([a-z0-9-]+)\/tools\/([A-Z][0-9]{3})\/records\/([a-z0-9-]+)\/attachments$/);
   if(filesPath){
    const tenant=tenantBySlug(filesPath[1]),tool=filesPath[2],recordId=filesPath[3];allowed(tenant,tool);
    const items=tenant.uploads.filter(x=>x.toolId===tool&&x.recordId===recordId);
-   if(method==='GET')return emit({attachments:items.map(({id,filename,mime,size})=>({id,filename,mime,bytes:size,downloadUrl:'/api/app/'+tenant.slug+'/attachments/'+id}))});
+   if(method==='GET')return emit({attachments:items.map(file=>{
+    const group=tenant.caseDocumentMeta[file.documentId],same=items.filter(x=>x.documentId===file.documentId);
+    const latest=same.length?Math.max(...same.map(x=>x.version||1)):1;
+    return {id:file.id,filename:file.filename,mime:file.mime,bytes:file.size,
+     documentId:group?file.documentId:file.id,version:file.version||1,isLatest:!group||file.version===latest,
+     documentType:group?.documentType||'other',expiresOn:group?.expiresOn||null,
+     downloadUrl:'/api/app/'+tenant.slug+'/attachments/'+file.id};
+   })});
    if(method==='POST'){
     const media=demoMedia(input);if(media.size>650000||items.length>=12)throw error('Storage quota exceeded');
     const list={C001:tenant.clients,C002:tenant.deals,C003:tenant.cases.filter(c=>!c.archivedAt),C004:tenant.events,C005:tenant.items}[tool]||tenant.generic[tool]||[];
     if(!list.some(x=>x.id===recordId))throw error('Not found',404);
-    tenant.uploads.push({...media,toolId:tool,recordId});
-    if(tool==='C003')tenant.caseEvents.unshift({id:uuid(),caseId:recordId,action:'document_added',description:media.filename,createdAt:now()});
-    return send({attachment:{id:media.id,filename:media.filename,bytes:media.size}});
+    let docId=null,version=1;
+    if(tool==='C003'){
+     const types=['other','contract','identification','invoice','consent','certificate'];
+     if(Object.keys(input).some(k=>!['filename','mime','data','documentType','expiresOn','replaceDocumentId'].includes(k)))throw error('Invalid document');
+     const expiry=input.expiresOn||null,kind=input.documentType||'other';
+     if(!types.includes(kind)||expiry&&!validExpiry(expiry))throw error('Invalid document');
+     if(input.replaceDocumentId){
+      docId=input.replaceDocumentId;
+      let group=tenant.caseDocumentMeta[docId];
+      if(!group){
+       const legacy=items.find(x=>x.id===docId);
+       if(!legacy)throw error('Not found',404);
+       legacy.documentId=docId;legacy.version=1;
+       group=tenant.caseDocumentMeta[docId]={caseId:recordId,documentType:kind,expiresOn:expiry,nextVersion:1};
+      }
+      if(group.caseId!==recordId)throw error('Not found',404);
+      version=++group.nextVersion;
+     }else{
+      docId=uuid();
+      tenant.caseDocumentMeta[docId]={caseId:recordId,documentType:kind,expiresOn:expiry,nextVersion:1};
+     }
+    }
+    tenant.uploads.push({...media,toolId:tool,recordId,...(docId?{documentId:docId,version}:{})});
+    if(tool==='C003')tenant.caseEvents.unshift({id:uuid(),caseId:recordId,action:'document_added',description:(version>1?'Nueva versión: ':'Documento añadido: ')+media.filename,createdAt:now()});
+    return send({attachment:{id:media.id,filename:media.filename,bytes:media.size,documentId:docId}});
    }
   }
   const filePath=p.match(/^\/api\/app\/([a-z0-9-]+)\/attachments\/([a-z0-9-]+)$/);
