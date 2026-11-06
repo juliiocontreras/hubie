@@ -25,11 +25,11 @@ class StagingQASeed(unittest.TestCase):
    for query in self.statements:self.db.execute(query['sql'],query['args'])
  def test_seed_is_consistent_reentrant_and_fully_tenant_scoped(self):
   self.apply()
-  for table in ['tenant_client_profiles','tenant_crm_deals','tenant_deal_clients','tenant_client_cases','tenant_schedule_events','tenant_appointment_links','tenant_inventory_items','tenant_case_documents','tenant_case_document_versions','pwa_media','tenant_entity_links']:
+  for table in ['tenant_client_profiles','tenant_crm_deals','tenant_deal_clients','tenant_client_cases','tenant_schedule_events','tenant_appointment_links','tenant_inventory_items','tenant_case_documents','tenant_case_document_versions','pwa_media','tenant_entity_links','tenant_surveys']:
    self.assertGreater(self.db.execute('SELECT COUNT(*) FROM '+table+' WHERE organization_id=?',(ORGANIZATION,)).fetchone()[0],0,table)
   row=self.db.execute("SELECT c.name,d.title,k.title,e.title FROM tenant_client_profiles c JOIN tenant_deal_clients l ON l.organization_id=c.organization_id AND l.client_id=c.id JOIN tenant_crm_deals d ON d.organization_id=l.organization_id AND d.id=l.deal_id JOIN tenant_client_cases k ON k.organization_id=c.organization_id AND k.client_id=c.id JOIN tenant_appointment_links al ON al.organization_id=c.organization_id AND al.client_id=c.id AND al.deal_id=d.id JOIN tenant_schedule_events e ON e.organization_id=al.organization_id AND e.id=al.appointment_id WHERE c.organization_id=?",(ORGANIZATION,)).fetchone()
   self.assertTrue(all('DEMO' in x or 'Demo' in x for x in row))
-  before={t:self.db.execute('SELECT COUNT(*) FROM '+t+' WHERE organization_id=?',(ORGANIZATION,)).fetchone()[0] for t in ['tenant_client_profiles','tenant_crm_deals','tenant_case_documents','tenant_tool_records','pwa_media']}
+  before={t:self.db.execute('SELECT COUNT(*) FROM '+t+' WHERE organization_id=?',(ORGANIZATION,)).fetchone()[0] for t in ['tenant_client_profiles','tenant_crm_deals','tenant_case_documents','tenant_tool_records','pwa_media','tenant_surveys']}
   self.apply()
   after={t:self.db.execute('SELECT COUNT(*) FROM '+t+' WHERE organization_id=?',(ORGANIZATION,)).fetchone()[0] for t in before}
   self.assertEqual(before,after,'repeated staging deployment must not double sample data')
