@@ -1,0 +1,27 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createDemoStore} from '../assets/demo-backend.js';
+import {catalog} from '../platform/catalog.mjs';
+const file={filename:'contrato.pdf',mime:'application/pdf',data:Buffer.from('%PDF-1.4\nFactura').toString('base64')};
+test('case documents have types, expiry and readable revisions, scoped to their tenant',async()=>{
+ const store=createDemoStore(catalog);
+ const [a,b]=(await store.request('/api/app/organizations')).organizations;
+ const caseA=(await store.request('/api/app/'+a.slug+'/workflows/cases')).cases[0];
+ const base='/api/app/'+a.slug+'/tools/C003/records/'+caseA.id+'/attachments';
+ const v1=await store.request(base,{method:'POST',body:JSON.stringify({...file,documentType:'contract',expiresOn:'2027-06-30'})});
+ let result=await store.request(base);let first=result.attachments.find(x=>x.id===v1.attachment.id);
+ assert.equal(first.documentType,'contract');assert.equal(first.expiresOn,'2027-06-30');
+ assert.equal(first.version,1);assert.equal(first.isLatest,true);
+ const v2=await store.request(base,{method:'POST',body:JSON.stringify({...file,replaceDocumentId:first.documentId})});
+ result=await store.request(base);
+ const old=result.attachments.find(x=>x.id===first.id),latest=result.attachments.find(x=>x.id===v2.attachment.id);
+ assert.equal(old.isLatest,false);assert.equal(latest.version,2);assert.equal(latest.isLatest,true);
+ assert.equal(latest.documentId,first.documentId);assert.equal(latest.documentType,'contract');
+ assert.equal(latest.expiresOn,'2027-06-30');
+ const metadataRoute='/api/app/'+a.slug+'/case-documents/'+first.documentId;
+ await store.request(metadataRoute,{method:'PATCH',body:JSON.stringify({documentType:'identification',expiresOn:'2027-12-31'})});
+ result=await store.request(base);
+ assert.equal(result.attachments.find(x=>x.id===latest.id).documentType,'identification');
+ assert.equal((await store.request('/api/app/'+b.slug+'/workflows/cases')).cases.some(x=>x.id===caseA.id),false);
+ await assert.rejects(()=>store.request('/api/app/'+b.slug+'/case-documents/'+first.documentId,{method:'PATCH',body:JSON.stringify({documentType:'other'})}),/Not found/);
+ assert.ok((await store.request('/api/app/'+a.slug+'/workflows/cases/'+caseA.id+'/history')).events.some(x=>x.action==='document_updated'));
+});
