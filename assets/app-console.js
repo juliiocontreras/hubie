@@ -71,6 +71,7 @@ async function init(){
  if(demoMode){
   $('demo-banner').hidden=false;
   $('logout').textContent='↪  Salir de la demostración';
+  const foot=document.querySelector('footer');if(foot)foot.textContent='Hubie App · MODO DEMO: datos ficticios y temporales, sin conexión a Turso.';
   document.title='Hubie App · Demostración sin conexión';
  }
  $('tenant-select').addEventListener('change',e=>openOrganization(e.target.value));
