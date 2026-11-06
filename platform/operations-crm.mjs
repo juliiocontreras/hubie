@@ -44,13 +44,21 @@ export async function updateDeal(token,slug,id,input){
  }else{
   const d=normalizeDeal(input);
   await ensureClient(tenant.id,d.clientId);
+  if(d.clientId){
+   const mismatch=values(await executeSql(`SELECT COUNT(*) FROM tenant_appointment_links
+    WHERE organization_id=? AND deal_id=? AND client_id IS NOT NULL AND client_id!=?`,[tenant.id,id,d.clientId]));
+   if(Number(mismatch[0]?.[0]||0)>0)throw Error('Relation mismatch');
+  }
   const original=values(await executeSql('SELECT id FROM tenant_crm_deals WHERE organization_id=? AND id=? AND archived_at IS NULL',[tenant.id,id]));
   if(!original.length)throw Error('Not found');
   await executeBatch([
    {sql:'UPDATE tenant_crm_deals SET title=?,customer=?,amount_cents=?,stage=?,follow_up_at=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND id=? AND archived_at IS NULL',
     args:[d.title,d.customer,d.amountCents,d.stage,d.followUpAt,d.notes,tenant.id,id]},
    {sql:'DELETE FROM tenant_deal_clients WHERE organization_id=? AND deal_id=?',args:[tenant.id,id]},
-   ...(d.clientId?[{sql:'INSERT INTO tenant_deal_clients(organization_id,deal_id,client_id) VALUES(?,?,?)',args:[tenant.id,id,d.clientId]}]:[])
+   ...(d.clientId?[
+    {sql:'INSERT INTO tenant_deal_clients(organization_id,deal_id,client_id) VALUES(?,?,?)',args:[tenant.id,id,d.clientId]},
+    {sql:'UPDATE tenant_appointment_links SET client_id=? WHERE organization_id=? AND deal_id=? AND client_id IS NULL',args:[d.clientId,tenant.id,id]}
+   ]:[])
   ]);
  }
  const record=audit(tenant.id,session.userId,'crm.deal_updated',id);
