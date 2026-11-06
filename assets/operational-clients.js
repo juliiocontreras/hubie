@@ -46,8 +46,13 @@ export async function renderClients(ctx){
    if(c.email||c.phone)info.append(line([c.email,c.phone].filter(Boolean).join(' · '),'help'));
    if(c.notes)info.append(line(c.notes,'help'));
    card.append(info);
+   const controls=container('record-actions');
+   if(ctx.config.tools.some(t=>t.id==='C003')){
+    const dossiers=button('Expedientes','btn');
+    dossiers.addEventListener('click',()=>ctx.navigateToTool?.('C003',{clientId:c.id}),{signal:ctx.signal});
+    controls.append(dossiers);
+   }
    if(canWrite){
-    const controls=container('record-actions');
     const edit=button('Editar');
     edit.addEventListener('click',()=>{
      editing=c.id;
@@ -60,13 +65,10 @@ export async function renderClients(ctx){
      try{await ctx.api(path+'/'+c.id,{method:'DELETE'});ctx.notice('Cliente archivado.');await reload();}
      catch(e){ctx.notice('No fue posible archivar: '+e.message,true);}
     },{signal:ctx.signal});
-    if(ctx.config.tools.some(t=>t.id==='C003')){
-     const dossiers=button('Expedientes','btn');
-     dossiers.addEventListener('click',()=>ctx.navigateToTool?.('C003',{clientId:c.id}),{signal:ctx.signal});
-     controls.prepend(dossiers);
-    }
-    controls.append(edit,archive);card.append(controls);
+
+    controls.append(edit,archive);
    }
+   if(controls.children.length)card.append(controls);
    list.append(card);
   }
  }
