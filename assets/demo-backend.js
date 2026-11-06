@@ -57,6 +57,14 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  for(const tenant of state.tenants){
   tenant.backgrounds=makeBackgrounds(tenant.backgrounds);tenant.uploads=Array.isArray(tenant.uploads)?tenant.uploads:[];
   tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];tenant.caseDocumentMeta=tenant.caseDocumentMeta&&typeof tenant.caseDocumentMeta==='object'?tenant.caseDocumentMeta:{};tenant.entityLinks=Array.isArray(tenant.entityLinks)?tenant.entityLinks:[];
+  if(tenant.slug==='comercio-demo'){
+   const sampleClient=tenant.clients.find(c=>c.name==='Contacto de ejemplo');
+   const sampleDeal=tenant.deals.find(d=>d.title==='Oportunidad de demostración');
+   const sampleAppointment=tenant.events.find(e=>e.title==='Reunión de ejemplo');
+   if(sampleClient&&sampleDeal&&!sampleDeal.clientId)sampleDeal.clientId=sampleClient.id;
+   if(sampleClient&&sampleAppointment&&!sampleAppointment.clientId)sampleAppointment.clientId=sampleClient.id;
+   if(sampleDeal&&sampleAppointment&&!sampleAppointment.dealId)sampleAppointment.dealId=sampleDeal.id;
+  }
  }
  const sync=()=>save(copy(state));
  const tenantById=id=>{const t=state.tenants.find(t=>t.id===id);if(!t)throw error('Not found',404);return t;};
