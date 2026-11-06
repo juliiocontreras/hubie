@@ -83,7 +83,7 @@ export async function openRecords(context){
  closeOperationalModule();
  ctx={...context,attachmentsPanel:setupAttachments(context)};
  if($('record-dialog').open)$('record-dialog').close();
- if(['C001','C002','C004','C005'].includes(ctx.tool.id))return openOperationalModule(ctx);
+ if(['C001','C002','C003','C004','C005'].includes(ctx.tool.id))return openOperationalModule(ctx);
  wire();editing=null;records=[];
  $('record-search').value='';
  $('add-record').hidden=!writable();
