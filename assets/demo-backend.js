@@ -15,13 +15,20 @@ const normalizeTheme=input=>{
  if(!/^#[0-9a-fA-F]{6}$/.test(theme.dashboardColor)||!/^#[0-9a-fA-F]{6}$/.test(theme.sidebarColor))throw error('Invalid appearance');
  return theme;
 };
+const makeBackgrounds=t=>({dashboard:t?.dashboard||null,sidebar:t?.sidebar||null});
+const dataUrl=media=>'data:'+media.mime+';base64,'+media.data;
+const allowedMime=['image/png','image/jpeg','image/webp','application/pdf','text/plain','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+const demoMedia=input=>{
+ if(!allowedMime.includes(input?.mime)||typeof input?.data!=='string'||input.data.length>1500000||!/^[A-Za-z0-9+/=]+$/.test(input.data)||typeof input.filename!=='string')throw error('Invalid media');
+ return {id:uuid(),filename:input.filename.slice(0,120),mime:input.mime,data:input.data,size:Math.floor(input.data.length*.75)};
+};
 const initialId=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
 function createTenant(catalog,input,id=uuid()){
  const suite=catalog.suites.find(s=>s.id===input.suiteId);
  if(!suite||typeof input.name!=='string'||input.name.trim().length<2||!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(input.slug||''))throw error('Invalid tenant data');
  const selected=new Set(input.toolIds||catalog.tools.filter(t=>t.included).map(t=>t.id));
  if([...selected].some(code=>!catalog.tools.some(t=>t.id===code)))throw error('Invalid tenant data');
- return {id,appearance:{...appearanceDefaults},slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
+ return {id,appearance:{...appearanceDefaults},backgrounds:{dashboard:null,sidebar:null},uploads:[],slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
   tools:catalog.tools.map(t=>({...t,enabled:selected.has(t.id)})),
   members:[{id:'33333333-3333-4333-8333-333333333333',email:'superadmin@ejemplo.invalid',role:'owner',status:'active'}],
   clients:[],deals:[],events:[],items:[],movements:[],generic:{}};
@@ -34,13 +41,15 @@ function initial(catalog){
  first.items.push({id:uuid(),sku:'DEMO-001',title:'Producto de muestra',location:'Almacén ficticio',quantity:8,lowStock:3});
  first.events.push({id:uuid(),title:'Reunión de ejemplo',customer:'Contacto ficticio',resource:'sala-1',startsAt:'2026-11-12T16:00:00.000Z',endsAt:'2026-11-12T17:00:00.000Z',status:'scheduled',notes:''});
  second.clients.push({id:uuid(),name:'Otro contacto de ejemplo',company:'Otra empresa',email:'otro@correo.invalid',phone:'',status:'active',notes:''});
- return {platformAppearance:{...appearanceDefaults},tenants:[first,second]};
+ return {platformAppearance:{...appearanceDefaults},platformBackgrounds:{dashboard:null,sidebar:null},tenants:[first,second]};
 }
 export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  let state=load();
  if(!state||!Array.isArray(state.tenants))state=initial(catalog);
  state.platformAppearance=normalizeTheme(state.platformAppearance||{});
  for(const tenant of state.tenants)tenant.appearance=normalizeTheme(tenant.appearance||{});
+ state.platformBackgrounds=makeBackgrounds(state.platformBackgrounds);
+ for(const tenant of state.tenants){tenant.backgrounds=makeBackgrounds(tenant.backgrounds);tenant.uploads=Array.isArray(tenant.uploads)?tenant.uploads:[];}
  const sync=()=>save(copy(state));
  const tenantById=id=>{const t=state.tenants.find(t=>t.id===id);if(!t)throw error('Not found',404);return t;};
  const tenantBySlug=slug=>{const t=state.tenants.find(t=>t.slug===slug&&t.status==='active');if(!t)throw error('Not found',404);return t;};
@@ -52,14 +61,50 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   const url=new URL(path,'https://hubie-demo.invalid');
   const p=url.pathname,method=(options.method||'GET').toUpperCase(),input=bodyOf(options);
   const send=data=>{sync();return emit(data);};
+  // Media endpoints deliberately never call the network: demo storage belongs to this tab only.
+  const platformMedia=p.match(/^\/api\/admin\/media\/(dashboard|sidebar)$/);
+  const adminMedia=p.match(/^\/api\/admin\/tenants\/([0-9a-f-]+)\/media\/(dashboard|sidebar)$/);
+  const suiteMedia=p.match(/^\/api\/app\/([a-z0-9-]+)\/media\/(dashboard|sidebar)$/);
+  if(platformMedia||adminMedia||suiteMedia){
+   const target=platformMedia?state.platformBackgrounds:adminMedia?tenantById(adminMedia[1]).backgrounds:tenantBySlug(suiteMedia[1]).backgrounds;
+   const kind=(platformMedia||adminMedia||suiteMedia)[platformMedia?1:2];
+   if(method==='POST'){
+    const file=demoMedia(input);
+    if(!file.mime.startsWith('image/')||file.size>900000)throw error('Invalid media');
+    target[kind]=dataUrl(file);return send({backgrounds:makeBackgrounds(target)});
+   }
+   if(method==='DELETE'){target[kind]=null;return send({backgrounds:makeBackgrounds(target),removed:true});}
+   throw error('Not found',404);
+  }
+  const filesPath=p.match(/^\/api\/app\/([a-z0-9-]+)\/tools\/([A-Z][0-9]{3})\/records\/([a-z0-9-]+)\/attachments$/);
+  if(filesPath){
+   const tenant=tenantBySlug(filesPath[1]),tool=filesPath[2],recordId=filesPath[3];allowed(tenant,tool);
+   const items=tenant.uploads.filter(x=>x.toolId===tool&&x.recordId===recordId);
+   if(method==='GET')return emit({attachments:items.map(({id,filename,mime,size})=>({id,filename,mime,bytes:size,downloadUrl:'/api/app/'+tenant.slug+'/attachments/'+id}))});
+   if(method==='POST'){
+    const media=demoMedia(input);if(media.size>650000||items.length>=12)throw error('Storage quota exceeded');
+    const list={C001:tenant.clients,C002:tenant.deals,C004:tenant.events,C005:tenant.items}[tool]||tenant.generic[tool]||[];
+    if(!list.some(x=>x.id===recordId))throw error('Not found',404);
+    tenant.uploads.push({...media,toolId:tool,recordId});
+    return send({attachment:{id:media.id,filename:media.filename,bytes:media.size}});
+   }
+  }
+  const filePath=p.match(/^\/api\/app\/([a-z0-9-]+)\/attachments\/([a-z0-9-]+)$/);
+  if(filePath){
+   const tenant=tenantBySlug(filePath[1]),file=tenant.uploads.find(x=>x.id===filePath[2]);
+   if(!file)throw error('Not found',404);
+   allowed(tenant,file.toolId);
+   if(method==='GET')return emit({file:{filename:file.filename,mime:file.mime,data:file.data}});
+   if(method==='DELETE'){tenant.uploads=tenant.uploads.filter(x=>x.id!==file.id);return send({removed:true});}
+  }
   if(p==='/api/admin/appearance'){
-   if(method==='GET')return emit({appearance:state.platformAppearance});
-   if(method==='PUT'){state.platformAppearance=normalizeTheme(input);return send({appearance:state.platformAppearance});}
+   if(method==='GET')return emit({appearance:state.platformAppearance,backgrounds:state.platformBackgrounds});
+   if(method==='PUT'){state.platformAppearance=normalizeTheme(input);return send({appearance:state.platformAppearance,backgrounds:state.platformBackgrounds});}
   }
   const themePath=p.match(/^\/api\/admin\/tenants\/([a-z0-9-]+)\/appearance$/);
   if(themePath&&method==='PUT'){
     const tenant=tenantById(themePath[1]);tenant.appearance=normalizeTheme(input);
-    return send({appearance:tenant.appearance});
+    return send({appearance:tenant.appearance,backgrounds:tenant.backgrounds});
   }
   const ownAppearancePath=p.match(/^\/api\/app\/([a-z0-9-]+)\/appearance$/);
   if(ownAppearancePath&&method==='PUT'){
@@ -110,7 +155,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   if(m&&method==='GET'){
    const t=tenantBySlug(m[1]);const suite=catalog.suites.find(s=>s.id===t.suiteId);
    return emit({tenant:{id:t.id,slug:t.slug,name:t.name,role:'owner',displayName:t.displayName,logoUrl:t.logoUrl,primaryColor:t.primaryColor,secondaryColor:t.secondaryColor,timezone:t.timezone,suiteId:t.suiteId,suiteName:suite?.name||t.suiteId},
-    appearance:t.appearance,tools:t.tools.filter(x=>x.enabled),members:t.members.filter(x=>x.status==='active').map(x=>({email:x.email,role:x.role}))});
+    appearance:t.appearance,backgrounds:t.backgrounds,tools:t.tools.filter(x=>x.enabled),members:t.members.filter(x=>x.status==='active').map(x=>({email:x.email,role:x.role}))});
   }
   m=p.match(/^\/api\/app\/([a-z0-9-]+)\/tools\/([A-Z][0-9]{3})\/records(?:\/([a-z0-9-]+))?$/);
   if(m){
