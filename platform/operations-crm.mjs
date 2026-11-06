@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {executeSql,executeBatch} from '../database.mjs';
 import {authorizeTool} from './records.mjs';
+import {getTenantTools} from '../tenant.mjs';
 import {dealStages,normalizeDeal} from './workflows.mjs';
 const values=r=>r?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
 const changed=r=>Number(r?.affected_row_count??r?.rowsAffected??0)>0;
@@ -16,15 +17,17 @@ async function ensureClient(org,id){
 }
 export async function listDeals(token,slug){
  const {tenant}=await authorizeTool(token,slug,'C002');
+ const canReadClients=(await getTenantTools(tenant.id)).includes('C001');
  const [deals,clients]=await Promise.all([
   executeSql(select+' WHERE d.organization_id=? AND d.archived_at IS NULL ORDER BY d.updated_at DESC LIMIT 200',[tenant.id]),
-  executeSql('SELECT id,name,company FROM tenant_client_profiles WHERE organization_id=? AND archived_at IS NULL ORDER BY name LIMIT 250',[tenant.id])
+  canReadClients?executeSql('SELECT id,name,company FROM tenant_client_profiles WHERE organization_id=? AND archived_at IS NULL ORDER BY name LIMIT 250',[tenant.id]):Promise.resolve({rows:[]})
  ]);
- return {deals:values(deals).map(toDeal),clients:values(clients).map(a=>({id:a[0],name:a[1],company:a[2]})),stages:dealStages};
+ return {deals:values(deals).map(a=>{const d=toDeal(a);return canReadClients?d:{...d,clientId:null,clientName:null};}),clients:values(clients).map(a=>({id:a[0],name:a[1],company:a[2]})),stages:dealStages};
 }
 export async function createDeal(token,slug,input){
  const {tenant,session}=await authorizeTool(token,slug,'C002',true);
  const d=normalizeDeal(input),id=randomUUID();
+ if(d.clientId)await authorizeTool(token,slug,'C001');
  await ensureClient(tenant.id,d.clientId);
  const commands=[
   {sql:'INSERT INTO tenant_crm_deals(organization_id,id,title,customer,amount_cents,stage,follow_up_at,notes,created_by) VALUES(?,?,?,?,?,?,?,?,?)',
@@ -43,7 +46,8 @@ export async function updateDeal(token,slug,id,input){
   if(!changed(r))throw Error('Not found');
  }else{
   const d=normalizeDeal(input);
-  await ensureClient(tenant.id,d.clientId);
+  if(d.clientId)await authorizeTool(token,slug,'C001');
+ await ensureClient(tenant.id,d.clientId);
   if(d.clientId){
    const mismatch=values(await executeSql(`SELECT COUNT(*) FROM tenant_appointment_links
     WHERE organization_id=? AND deal_id=? AND client_id IS NOT NULL AND client_id!=?`,[tenant.id,id,d.clientId]));
