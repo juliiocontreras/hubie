@@ -338,10 +338,15 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    const t=tenantBySlug(m[1]),module=m[2],id=m[3],movement=m[4];
    const tool={clients:'C001',crm:'C002',agenda:'C004',inventory:'C005'}[module];allowed(t,tool);
    const list={clients:t.clients,crm:t.deals,agenda:t.events,inventory:t.items}[module];
+   const clients=entityList(t,'C001'),deals=entityList(t,'C002');
+   const clientChoices=clients.map(x=>({id:x.id,name:x.name,company:x.company}));
+   const linkedDeal=d=>({...d,clientName:t.clients.find(c=>c.id===d.clientId)?.name||null});
    if(method==='GET'){
-    if(module==='clients')return emit({clients:list,statuses});
-    if(module==='crm')return emit({deals:list,stages});
-    if(module==='agenda')return emit({events:list});
+    if(module==='clients')return emit({clients:entityList(t,'C001'),statuses});
+    if(module==='crm')return emit({deals:deals.map(linkedDeal),clients:clientChoices,stages});
+    if(module==='agenda')return emit({events:list.map(e=>({...e,clientName:t.clients.find(c=>c.id===e.clientId)?.name||null,
+      dealTitle:t.deals.find(d=>d.id===e.dealId)?.title||null})),clients:clientChoices,
+      deals:deals.map(d=>({id:d.id,title:d.title,clientId:d.clientId||null}))});
     return emit({items:list.map(i=>({...i,isLow:i.quantity<=i.lowStock})),movements:t.movements});
    }
    if(module==='inventory'&&movement==='movements'&&method==='POST'){
@@ -355,22 +360,35 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    if(module==='clients'){
     const client={name:String(input.name||'').trim(),company:String(input.company||''),email:String(input.email||'').trim().toLowerCase(),phone:String(input.phone||''),status:input.status||'prospect',notes:String(input.notes||'')};
     if(client.name.length<2||!statuses.includes(client.status))throw error('Invalid client');
-    if(client.email&&list.some(x=>x.email===client.email&&x.id!==id))throw error('Duplicate client email',409);
+    if(client.email&&entityList(t,'C001').some(x=>x.email===client.email&&x.id!==id))throw error('Duplicate client email',409);
     if(method==='POST'){const c={id:uuid(),...client};list.unshift(c);return send({client:c});}
     if(method==='PATCH'){Object.assign(getRecord(list,id),client);return send({ok:true});}
-    if(method==='DELETE'){const rec=getRecord(list,id);list.splice(list.indexOf(rec),1);return send({archived:true});}
+    if(method==='DELETE'){const rec=getRecord(list,id);rec.archivedAt=now();return send({archived:true});}
    }
    if(module==='crm'){
-    if(method==='DELETE'){const rec=getRecord(list,id);list.splice(list.indexOf(rec),1);return send({archived:true});}
-    if(method==='PATCH'&&Object.keys(input).length===1&&input.stage){if(!stages.includes(input.stage))throw error('Invalid deal');getRecord(list,id).stage=input.stage;return send({ok:true});}
-    const deal={title:String(input.title||'').trim(),customer:String(input.customer||''),amountCents:input.amountCents??0,stage:input.stage||'lead',followUpAt:input.followUpAt||null,notes:String(input.notes||'')};
+    if(method==='DELETE'){const rec=getRecord(deals,id);rec.archivedAt=now();return send({archived:true});}
+    if(method==='PATCH'&&Object.keys(input).length===1&&input.stage){
+     if(!stages.includes(input.stage))throw error('Invalid deal');getRecord(deals,id).stage=input.stage;return send({ok:true});
+    }
+    const clientId=input.clientId||null;
+    if(clientId&&!clients.some(x=>x.id===clientId))throw error('Client not found',404);
+    const deal={title:String(input.title||'').trim(),customer:String(input.customer||''),clientId,
+      amountCents:input.amountCents??0,stage:input.stage||'lead',followUpAt:input.followUpAt||null,notes:String(input.notes||'')};
     if(deal.title.length<2||!stages.includes(deal.stage)||!Number.isSafeInteger(deal.amountCents)||deal.amountCents<0)throw error('Invalid deal');
     if(method==='POST'){const d={id:uuid(),...deal};list.unshift(d);return send({deal:d});}
-    if(method==='PATCH'){Object.assign(getRecord(list,id),deal);return send({ok:true});}
+    if(method==='PATCH'){Object.assign(getRecord(deals,id),deal);return send({ok:true});}
    }
    if(module==='agenda'){
     if(method==='PATCH'&&Object.keys(input).length===1&&['completed','cancelled'].includes(input.status)){getRecord(list,id).status=input.status;return send({ok:true});}
-    const event={title:String(input.title||'').trim(),customer:String(input.customer||''),resource:String(input.resource||'general').trim().toLowerCase(),startsAt:input.startsAt,endsAt:input.endsAt,status:input.status||'scheduled',notes:String(input.notes||'')};
+    let clientId=input.clientId||null;const dealId=input.dealId||null;
+    if(dealId){
+     const deal=getRecord(deals,dealId);
+     if(deal.clientId){if(clientId&&clientId!==deal.clientId)throw error('Relation mismatch');clientId=deal.clientId;}
+    }
+    if(clientId&&!clients.some(x=>x.id===clientId))throw error('Client not found',404);
+    const event={title:String(input.title||'').trim(),customer:String(input.customer||''),clientId,dealId,
+     resource:String(input.resource||'general').trim().toLowerCase(),startsAt:input.startsAt,endsAt:input.endsAt,
+     status:input.status||'scheduled',notes:String(input.notes||'')};
     if(event.title.length<2||!Number.isFinite(Date.parse(event.startsAt))||!Number.isFinite(Date.parse(event.endsAt))||event.endsAt<=event.startsAt)throw error('Invalid appointment');
     if(event.status==='scheduled'&&list.some(x=>x.id!==id&&x.status==='scheduled'&&x.resource===event.resource&&x.startsAt<event.endsAt&&x.endsAt>event.startsAt))throw error('Schedule conflict',409);
     if(method==='POST'){const e={id:uuid(),...event};list.unshift(e);return send({event:e});}
