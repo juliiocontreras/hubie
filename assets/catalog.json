@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "source": "Hubie_Tabla_Datos_Simple_v5.xlsx (project transcript)",
   "complete": false,
   "currency": "MXN",
@@ -279,6 +279,14 @@
       "name": "Reportes avanzados",
       "price": 3500,
       "group": "Analítica",
+      "included": false
+    },
+    {
+      "id": "T021",
+      "name": "Encuesta de Satisfacción",
+      "group": "Clientes",
+      "price": null,
+      "pricing": "quote",
       "included": false
     }
   ],
