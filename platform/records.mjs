@@ -4,6 +4,7 @@ import {executeSql} from '../database.mjs';
 import {verifySession,requireTenantSession} from '../auth.mjs';
 import {resolveTenant,getTenantSettings,getTenantTools} from '../tenant.mjs';
 import {catalog,getSuite,getTool,validateRecord} from './catalog.mjs';
+import {getTenantAppearance} from './appearance-store.mjs';
 const unpack=r=>r?.rows?.map(row=>row.map(c=>c?.value??null))??[];
 const dashboardCountsSql=readFileSync(new URL('./dashboard-counts.sql',import.meta.url),'utf8');
 const readRoles=['owner','admin','member','viewer'];
@@ -31,7 +32,7 @@ export async function tenantConfig(token,slug){
  const enabled=await getTenantTools(tenant.id);
  const canManageMembers=['owner','admin'].includes(session.role);
  const members=canManageMembers&&enabled.includes('C009')?unpack(await executeSql("SELECT u.email,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=? AND m.status='active' ORDER BY u.email LIMIT 100",[tenant.id])):[];
- return {tenant:{id:tenant.id,slug:tenant.slug,name:tenant.name,role:session.role,displayName:settings?.displayName||tenant.name,logoUrl:settings?.logoUrl,primaryColor:settings?.primaryColor,secondaryColor:settings?.secondaryColor,timezone:settings?.timezone,suiteId:settings?.suiteId,suiteName:getSuite(settings?.suiteId)?.name||settings?.suiteId},tools:catalog.tools.filter(t=>enabled.includes(t.id)&&(t.id!=='C009'||canManageMembers)),members:members.map(x=>({email:x[0],role:x[1]}))};
+ return {tenant:{id:tenant.id,slug:tenant.slug,name:tenant.name,role:session.role,displayName:settings?.displayName||tenant.name,logoUrl:settings?.logoUrl,primaryColor:settings?.primaryColor,secondaryColor:settings?.secondaryColor,timezone:settings?.timezone,suiteId:settings?.suiteId,suiteName:getSuite(settings?.suiteId)?.name||settings?.suiteId},appearance:await getTenantAppearance(tenant.id),tools:catalog.tools.filter(t=>enabled.includes(t.id)&&(t.id!=='C009'||canManageMembers)),members:members.map(x=>({email:x[0],role:x[1]}))};
 }
 export async function toolRecords(token,slug,toolId,{limit=80}={}){
  const {tenant}=await authorizeTool(token,slug,toolId);
