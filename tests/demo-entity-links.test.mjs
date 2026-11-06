@@ -58,3 +58,15 @@ test('Core relationships appear automatically in both directions without manual 
  const file=(await store.request('/api/app/'+a.slug+'/tools/C003/records/'+dossier.targetRecordId+'/links')).links;
  assert.ok(file.some(x=>x.builtIn&&x.targetToolId==='C001'&&x.targetRecordId===client.id));
 });
+
+test('reassigning a CRM deal cannot silently put its scheduled appointment under another client',async()=>{
+ const store=createDemoStore(catalog);
+ const org=(await store.request('/api/app/organizations')).organizations[0];
+ const existing=(await store.request('/api/app/'+org.slug+'/workflows/clients')).clients[0];
+ const extra=(await store.request('/api/app/'+org.slug+'/workflows/clients',{method:'POST',body:JSON.stringify({name:'Cliente independiente'})})).client;
+ const deal=(await store.request('/api/app/'+org.slug+'/workflows/crm')).deals[0];
+ const patch={title:deal.title,customer:deal.customer,amountCents:deal.amountCents,stage:deal.stage,followUpAt:deal.followUpAt,notes:deal.notes,clientId:extra.id};
+ await assert.rejects(()=>store.request('/api/app/'+org.slug+'/workflows/crm/'+deal.id,{method:'PATCH',body:JSON.stringify(patch)}),/Relation mismatch/);
+ const after=(await store.request('/api/app/'+org.slug+'/workflows/crm')).deals.find(x=>x.id===deal.id);
+ assert.equal(after.clientId,existing.id);
+});
