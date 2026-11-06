@@ -81,7 +81,7 @@ async function processApi(req,res,fn,{admin=false,methods=['GET'],maxBytes=16000
   return sendApi(res,req.method==='POST'?201:200,result);
  }catch(error){
   const message=error?.message||'';
-  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:message==='Not found'||message==='Client not found'?404:['Schedule conflict','Duplicate SKU','Insufficient stock','Duplicate client email'].includes(message)?409:message==='Unsupported media type'?415:message==='Payload too large'?413:message==='Storage quota exceeded'?409:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
+  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:['Not found','Client not found','Deal not found'].includes(message)?404:['Schedule conflict','Duplicate SKU','Insufficient stock','Duplicate client email','Duplicate relation','Relation mismatch'].includes(message)?409:message==='Unsupported media type'?415:message==='Payload too large'?413:message==='Storage quota exceeded'?409:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
   return sendApi(res,status,{error:status===503?'Operación temporalmente no disponible':message});
  }
 }
