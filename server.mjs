@@ -271,7 +271,10 @@ createServer(async(req,res)=>{
     const raw=await readFile(file);
     const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded==='/auth/configuracion.html'||decoded.startsWith('/app/');
     const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
-    res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream','x-content-type-options':'nosniff'});
+    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js'].includes(decoded);
+    res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream',
+      'cache-control':appShell||isPwaAsset?'no-store':'public, max-age=300',
+      'x-content-type-options':'nosniff'});
     res.end(req.method==='HEAD'?undefined:data);
   }catch{res.writeHead(404);res.end('Not found');}
 }).listen(port,'0.0.0.0',()=>console.log('Hubie listening on '+port));
