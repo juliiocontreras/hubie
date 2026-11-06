@@ -250,7 +250,7 @@ async function init(){
   const [catalogData,tenantData,platformData]=await Promise.all([api('/api/admin/catalog'),api('/api/admin/tenants'),api('/api/admin/appearance')]);
   state.platformAppearance=platformData.appearance;
   state.platformBackgrounds=platformData.backgrounds||{dashboard:null,sidebar:null};
-  themeUI.applyAppearance(state.platformAppearance);
+  themeUI.applyAppearance(state.platformAppearance,document.documentElement,state.platformBackgrounds);
   const photoRoute='/api/admin/media/';
   themeUI.createAppearanceEditor($('platform-appearance'),{
    initial:state.platformAppearance,backgrounds:state.platformBackgrounds,
