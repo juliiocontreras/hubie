@@ -1,7 +1,7 @@
 import sqlite3, unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-MIGRATIONS=['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql']
+MIGRATIONS=['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','011_cases.sql']
 class OperationalDashboardTests(unittest.TestCase):
  def setUp(self):
   self.db=sqlite3.connect(':memory:')
@@ -20,7 +20,7 @@ class OperationalDashboardTests(unittest.TestCase):
  def tearDown(self):self.db.close()
  def metrics(self,org):
   sql=(ROOT/'platform/dashboard-counts.sql').read_text()
-  return dict(self.db.execute(sql,(org,)*6).fetchall())
+  return dict(self.db.execute(sql,(org,)*7).fetchall())
  def test_only_enabled_tools_and_actual_core_records(self):
   self.assertEqual(self.metrics('a'),{'C001':1,'C002':1,'C005':1,'T004':1})
  def test_no_cross_company_counts(self):
