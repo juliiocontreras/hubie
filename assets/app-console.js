@@ -197,6 +197,19 @@ async function loadHomeInsights(current){
   value.textContent=String(item.id==='C004'?upcoming.length:item.id==='C005'?low.length:list.length);
   if(item.id==='C001')fillRows(targets[item.id],list.slice(0,4).map(x=>({icon:'♧',title:x.name,detail:x.company||x.email||'Contacto registrado'})),'Todavía no hay clientes.');
   if(item.id==='C002')fillRows(targets[item.id],list.slice(0,4).map(x=>({icon:'◈',title:x.title,detail:x.stage+' · '+currency(x.amountCents)})),'Todavía no hay oportunidades.');
+  if(item.id==='C002'){
+    const chart=$('home-pipeline-chart');chart.replaceChildren();
+    if(list.length){
+     const stages=[['lead','Lead'],['qualified','Calificado'],['proposal','Propuesta'],['negotiation','Negociación'],['won','Ganado'],['lost','Perdido']];
+     for(const [stage,label] of stages){
+      const count=list.filter(x=>x.stage===stage).length;if(!count)continue;
+      const track=elt('div',undefined,'pipeline-mini-row'),bar=elt('span',undefined,'pipeline-mini-bar');
+      bar.style.setProperty('--bar-pct',Math.max(6,Math.round(count/list.length*100))+'%');
+      track.append(elt('span',label),bar,elt('strong',String(count)));chart.append(track);
+     }
+    }
+  }
+
   if(item.id==='C004')fillRows(targets[item.id],upcoming.slice(0,4).map(x=>({icon:'▣',title:x.title,detail:new Date(x.startsAt).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})})),'No hay próximas citas.');
   if(item.id==='C005')fillRows(targets[item.id],low.slice(0,4).map(x=>({icon:'◇',title:x.title,detail:'Existencias: '+x.quantity+' · Mínimo: '+x.lowStock})),'Todos los artículos están por encima del mínimo.');
  }
