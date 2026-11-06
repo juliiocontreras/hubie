@@ -6,13 +6,22 @@ const copy=x=>structuredClone(x);
 const error=(message,status=400)=>Object.assign(new Error(message),{status});
 const statuses=['prospect','active','inactive'];
 const stages=['lead','qualified','proposal','negotiation','won','lost'];
+const appearanceDefaults={dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#eaf1ff',sidebarColor:'#10294b'};
+const appearanceFields=Object.keys(appearanceDefaults);
+const normalizeTheme=input=>{
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!appearanceFields.includes(k)))throw error('Invalid appearance');
+ const theme={...appearanceDefaults,...input};
+ if(!['hubie','pearl','silver','sand','custom'].includes(theme.dashboardPreset)||!['midnight','steel','platinum','graphite','custom'].includes(theme.sidebarPreset))throw error('Invalid appearance');
+ if(!/^#[0-9a-fA-F]{6}$/.test(theme.dashboardColor)||!/^#[0-9a-fA-F]{6}$/.test(theme.sidebarColor))throw error('Invalid appearance');
+ return theme;
+};
 const initialId=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
 function createTenant(catalog,input,id=uuid()){
  const suite=catalog.suites.find(s=>s.id===input.suiteId);
  if(!suite||typeof input.name!=='string'||input.name.trim().length<2||!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(input.slug||''))throw error('Invalid tenant data');
  const selected=new Set(input.toolIds||catalog.tools.filter(t=>t.included).map(t=>t.id));
  if([...selected].some(code=>!catalog.tools.some(t=>t.id===code)))throw error('Invalid tenant data');
- return {id,slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
+ return {id,appearance:{...appearanceDefaults},slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
   tools:catalog.tools.map(t=>({...t,enabled:selected.has(t.id)})),
   members:[{id:'33333333-3333-4333-8333-333333333333',email:'superadmin@ejemplo.invalid',role:'owner',status:'active'}],
   clients:[],deals:[],events:[],items:[],movements:[],generic:{}};
@@ -25,11 +34,13 @@ function initial(catalog){
  first.items.push({id:uuid(),sku:'DEMO-001',title:'Producto de muestra',location:'Almacén ficticio',quantity:8,lowStock:3});
  first.events.push({id:uuid(),title:'Reunión de ejemplo',customer:'Contacto ficticio',resource:'sala-1',startsAt:'2026-11-12T16:00:00.000Z',endsAt:'2026-11-12T17:00:00.000Z',status:'scheduled',notes:''});
  second.clients.push({id:uuid(),name:'Otro contacto de ejemplo',company:'Otra empresa',email:'otro@correo.invalid',phone:'',status:'active',notes:''});
- return {tenants:[first,second]};
+ return {platformAppearance:{...appearanceDefaults},tenants:[first,second]};
 }
 export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  let state=load();
  if(!state||!Array.isArray(state.tenants))state=initial(catalog);
+ state.platformAppearance=normalizeTheme(state.platformAppearance||{});
+ for(const tenant of state.tenants)tenant.appearance=normalizeTheme(tenant.appearance||{});
  const sync=()=>save(copy(state));
  const tenantById=id=>{const t=state.tenants.find(t=>t.id===id);if(!t)throw error('Not found',404);return t;};
  const tenantBySlug=slug=>{const t=state.tenants.find(t=>t.slug===slug&&t.status==='active');if(!t)throw error('Not found',404);return t;};
@@ -41,6 +52,20 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   const url=new URL(path,'https://hubie-demo.invalid');
   const p=url.pathname,method=(options.method||'GET').toUpperCase(),input=bodyOf(options);
   const send=data=>{sync();return emit(data);};
+  if(p==='/api/admin/appearance'){
+   if(method==='GET')return emit({appearance:state.platformAppearance});
+   if(method==='PUT'){state.platformAppearance=normalizeTheme(input);return send({appearance:state.platformAppearance});}
+  }
+  const themePath=p.match(/^\/api\/admin\/tenants\/([a-z0-9-]+)\/appearance$/);
+  if(themePath&&method==='PUT'){
+    const tenant=tenantById(themePath[1]);tenant.appearance=normalizeTheme(input);
+    return send({appearance:tenant.appearance});
+  }
+  const ownAppearancePath=p.match(/^\/api\/app\/([a-z0-9-]+)\/appearance$/);
+  if(ownAppearancePath&&method==='PUT'){
+    const tenant=tenantBySlug(ownAppearancePath[1]);tenant.appearance=normalizeTheme(input);
+    return send({appearance:tenant.appearance});
+  }
   if(p==='/api/admin/catalog'&&method==='GET')return emit({catalog});
   if(p==='/api/admin/tenants'){
    if(method==='GET')return emit({tenants:state.tenants.map(({id,slug,name,status,suiteId})=>({id,slug,name,status,suiteId}))});
@@ -85,7 +110,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   if(m&&method==='GET'){
    const t=tenantBySlug(m[1]);const suite=catalog.suites.find(s=>s.id===t.suiteId);
    return emit({tenant:{id:t.id,slug:t.slug,name:t.name,role:'owner',displayName:t.displayName,logoUrl:t.logoUrl,primaryColor:t.primaryColor,secondaryColor:t.secondaryColor,timezone:t.timezone,suiteId:t.suiteId,suiteName:suite?.name||t.suiteId},
-    tools:t.tools.filter(x=>x.enabled),members:t.members.filter(x=>x.status==='active').map(x=>({email:x.email,role:x.role}))});
+    appearance:t.appearance,tools:t.tools.filter(x=>x.enabled),members:t.members.filter(x=>x.status==='active').map(x=>({email:x.email,role:x.role}))});
   }
   m=p.match(/^\/api\/app\/([a-z0-9-]+)\/tools\/([A-Z][0-9]{3})\/records(?:\/([a-z0-9-]+))?$/);
   if(m){
