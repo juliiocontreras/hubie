@@ -3,6 +3,7 @@ import {renderCases} from './operational-cases.js';
 import {renderCrm} from './operational-crm.js';
 import {renderAgenda} from './operational-agenda.js';
 import {renderStock} from './operational-stock.js';
+import {renderSurveys} from './operational-surveys.js';
 
 let activeController=null;
 export function closeOperationalModule(){
@@ -42,6 +43,6 @@ export async function openOperationalModule(ctx){
  search.value='';
  document.getElementById('add-record').hidden=true;
  const key=ctx.tool.id;
- const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:renderStock;
+ const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:renderStock;
  await runner({...ctx,signal,search});
 }
