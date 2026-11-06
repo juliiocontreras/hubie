@@ -5,6 +5,7 @@ import {getTenantTools,resolveTenant} from '../tenant.mjs';
 import {requireTenantSession} from '../auth.mjs';
 import {getTool} from './catalog.mjs';
 import {normalizeEntityLink,canonicalPair,validEntityId} from './entity-relations.mjs';
+import {implicitRelations} from './implicit-relations.mjs';
 const values=r=>r?.rows?.map(x=>x.map(c=>c?.value??null))??[];
 const entities={
  C001:{table:'tenant_client_profiles',name:'name'},
@@ -45,6 +46,14 @@ export async function listEntityLinks(token,slug,toolId,recordId){
    const target=await getEntity(tenant.id,targetToolId,targetRecordId);
    links.push({id,targetToolId,targetRecordId,title:target.title,toolName:target.toolName,relationType,createdAt});
   }catch{ /* target archived; omit dead link until maintenance */ }
+ }
+ for(const implied of await implicitRelations(tenant.id,toolId,recordId)){
+  if(!enabled.has(implied.targetToolId)||links.some(x=>x.targetToolId===implied.targetToolId&&x.targetRecordId===implied.targetRecordId))continue;
+  try{
+   const target=await getEntity(tenant.id,implied.targetToolId,implied.targetRecordId);
+   links.push({id:null,targetToolId:target.toolId,targetRecordId:target.id,
+    title:target.title,toolName:target.toolName,relationType:'related',builtIn:true});
+  }catch{ /* archived references do not disclose hidden records */ }
  }
  return {links};
 }
