@@ -29,6 +29,7 @@ function home(){
  $('count-suite').textContent=config.tenant.suiteName.replace('Hubie ','');
  $('home-title').textContent='Todo '+config.tenant.displayName+' en una sola Suite.';
  document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
+ $('appearance-nav').removeAttribute('aria-current');
  document.querySelector('[data-home]').setAttribute('aria-current','page');
  const host=$('module-cards');host.replaceChildren();
  for(const tool of config.tools){
@@ -44,6 +45,7 @@ async function showTool(id){
  applyAppearance(config.appearance);
  activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;
  document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('appearance-nav').removeAttribute('aria-current');
  document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-current',b.dataset.tool===id?'page':'false'));
  $('suite-name').textContent=config.tenant.suiteName+' / '+tool.group;
  head(tool.name,'Información exclusiva de '+config.tenant.displayName);
