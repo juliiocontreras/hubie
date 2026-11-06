@@ -1,6 +1,7 @@
 import {openRecords} from './app-records.js';
 import {closeOperationalModule} from './app-workflows.js';
 import {createAppearanceEditor,applyAppearance} from './appearance-ui.js';
+import {icon,toolIcon,decorateSidebar} from './ui-icons.js';
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const demoApi=async(path,options)=>(await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
@@ -18,9 +19,10 @@ function notice(s,error=false){$('feedback').textContent=s;$('feedback').classLi
 const roles={owner:'Propietario',admin:'Administrador',member:'Colaborador',viewer:'Solo lectura'};
 function head(title,desc){$('page-heading').textContent=title;$('page-description').textContent=desc;}
 function home(){
+ closeMobileNav();
  closeOperationalModule();
  $('appearance').hidden=true;
- if(config)applyAppearance(config.appearance);
+ if(config)applyAppearance(config.appearance,document.documentElement,config.backgrounds);
  activeTool=null;$('home').hidden=false;$('module').hidden=true;$('add-record').hidden=true;
  $('suite-name').textContent=config.tenant.suiteName;
  head('Bienvenido a '+config.tenant.displayName,'Tu organización tiene '+config.tools.length+' herramientas habilitadas.');
@@ -35,12 +37,13 @@ function home(){
  for(const tool of config.tools){
   const b=elt('button',undefined,'module-card');b.type='button';
   const details=elt('span');details.append(elt('strong',tool.name),elt('small',tool.included?'Core incluido':tool.group));
-  b.append(elt('span','◈','company-icon'),details);
+  const badge=elt('span',undefined,'company-icon');badge.append(toolIcon(tool.id));b.append(badge,details);
   b.addEventListener('click',()=>showTool(tool.id));host.append(b);
  }
  void loadHomeInsights(config);
 }
 async function showTool(id){
+ closeMobileNav();
  const tool=config.tools.find(t=>t.id===id);if(!tool)return notice('La herramienta está desactivada.',true);
  applyAppearance(config.appearance);
  activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;
@@ -52,6 +55,7 @@ async function showTool(id){
  await openRecords({tool,config,api,write,elt,notice});
 }
 function showAppearance(){
+ closeMobileNav();
  if(!config||!['owner','admin'].includes(config.tenant.role))return notice('Solo el propietario o administrador puede editar la apariencia.',true);
  closeOperationalModule();
  activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=false;$('add-record').hidden=true;
@@ -59,30 +63,69 @@ function showAppearance(){
  document.querySelector('[data-home]').removeAttribute('aria-current');
  $('appearance-nav').setAttribute('aria-current','page');
  head('Personalizar tu Suite','Selecciona el fondo del dashboard y del menú lateral sin modificar otras empresas.');
+ const route='/api/app/'+encodeURIComponent(config.tenant.slug)+'/media/';
  createAppearanceEditor($('suite-appearance'),{
-  initial:config.appearance,
-  title:'Apariencia de '+config.tenant.displayName,
-  description:'Ajusta cada fondo de forma independiente. Cambios visibles al instante, persistentes al guardar.',
+  initial:config.appearance,backgrounds:config.backgrounds,
+  title:'Fondos de '+config.tenant.displayName,
+  description:'Carga una imagen del dashboard y otra del panel lateral, o usa colores y acabados Hubie.',
   live:true,
+  onImageUpload:async(kind,file)=>{
+   const result=await write(route+kind,'POST',file);
+   config.backgrounds={...config.backgrounds,...(result.backgrounds||{[kind]:route+kind+'?v='+result.media?.id})};
+   return {backgrounds:config.backgrounds};
+  },
+  onImageRemove:async kind=>{
+   const result=await api(route+kind,{method:'DELETE'});
+   config.backgrounds={...config.backgrounds,...(result.backgrounds||{}),[kind]:null};
+   return {backgrounds:config.backgrounds};
+  },
   onSave:async appearance=>{
    const result=await write('/api/app/'+encodeURIComponent(config.tenant.slug)+'/appearance','PUT',appearance);
-   config.appearance=result.appearance;notice('Se ha guardado la apariencia de tu Suite.');
-   return result;
+   config.appearance=result.appearance;notice('Se ha guardado la apariencia de tu Suite.');return result;
   }
  });
 }
+function closeMobileNav(){
+ document.documentElement.classList.remove('mobile-nav-open');
+ const button=$('sidebar-toggle');if(button)button.setAttribute('aria-expanded','false');
+}
+function toolButton(tool){
+ const b=elt('button',undefined,'nav-item');b.type='button';b.dataset.tool=tool.id;
+ const text=elt('span',tool.name);b.append(toolIcon(tool.id),text);
+ b.addEventListener('click',()=>{void showTool(tool.id);closeMobileNav();});
+ return b;
+}
 function nav(){
  const host=$('tools-nav');host.replaceChildren();
- let last='';
- for(const t of config.tools){
-  if(t.group!==last){host.append(elt('div',t.group,'nav-label'));last=t.group;}
-  const b=elt('button','◫  '+t.name,'nav-item');b.type='button';b.dataset.tool=t.id;
-  b.addEventListener('click',()=>showTool(t.id));host.append(b);
+ const featured=new Set(['C001','C002','C004','C005']);
+ const active=config.tools.filter(t=>featured.has(t.id));
+ if(active.length){
+  const label=elt('div','Accesos rápidos','nav-label nav-sub-label');host.append(label);
+  for(const tool of active)host.append(toolButton(tool));
+ }
+ const groups=new Map();
+ for(const tool of config.tools){
+  if(featured.has(tool.id))continue;
+  const key=tool.group||'Otras herramientas';
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(tool);
+ }
+ for(const [name,items]of groups){
+  const detail=elt('details',undefined,'nav-group');
+  const summary=elt('summary',undefined,'nav-group-summary');
+  summary.append(icon('layers'),elt('span',name),elt('small',String(items.length)),icon('chevron',14));
+  detail.append(summary);
+  const list=elt('div',undefined,'nav-group-items');
+  for(const item of items)list.append(toolButton(item));
+  detail.append(list);
+  detail.addEventListener('toggle',()=>{if(detail.open)for(const other of host.querySelectorAll('.nav-group'))if(other!==detail)other.open=false;});
+  host.append(detail);
  }
 }
 async function openOrganization(slug){
  try{
   config=await api('/api/app/'+encodeURIComponent(slug)+'/config');
+  config.backgrounds=config.backgrounds||{dashboard:null,sidebar:null};
   applyAppearance(config.appearance);
   $('appearance-nav').hidden=!['owner','admin'].includes(config.tenant.role);
   document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#327ce7');
@@ -135,6 +178,7 @@ async function loadHomeInsights(current){
  for(const [tool,label] of [['C001','Nuevo cliente'],['C004','Nueva cita'],['C005','Agregar producto']]){
   if(!enabled.has(tool)||current.tenant.role==='viewer')continue;
   const button=elt('button',label,'btn'+(tool==='C001'?' btn-primary':''));
+  button.prepend(toolIcon(tool));
   button.type='button';button.addEventListener('click',()=>showTool(tool));$('home-quick-actions').append(button);
  }
  if(!kpi.children.length)kpi.append(elt('p','No hay módulos operativos activados.','help'));
@@ -158,6 +202,14 @@ async function loadHomeInsights(current){
  }
 }
 async function init(){
+ decorateSidebar(document.querySelector('.sidebar'));
+ const toggle=$('sidebar-toggle');
+ toggle?.addEventListener('click',()=>{
+  const expanded=document.documentElement.classList.toggle('mobile-nav-open');
+  toggle.setAttribute('aria-expanded',String(expanded));
+ });
+ if(demoMode)document.querySelector('.sidebar .brand').href='/app/?demo=1';
+
  if(demoMode){
   $('demo-banner').hidden=false;
   $('logout').textContent='↪  Salir de la demostración';
