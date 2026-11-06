@@ -46,9 +46,13 @@ jobs:
           curl -fsS http://localhost:4017/assets/demo-backend.js | grep -q 'createDemoStore'
           curl -fsS http://localhost:4017/assets/pwa-refined.css | grep -q 'HUBIE PWA'
           curl -fsS http://localhost:4017/assets/appearance-ui.js | grep -q 'createAppearanceEditor'
+          curl -fsS http://localhost:4017/assets/pwa-navigation.css | grep -q 'nav-group'
+          curl -fsS http://localhost:4017/assets/attachments-ui.js | grep -q 'setupAttachments'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/api/admin/media/dashboard)" = 503
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4017/api/app/test-company/tools/C001/records/00000000-0000-4000-8000-000000000000/attachments)" = 503
       - name: Validate JavaScript syntax
         run: |
-          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js assets/demo-backend.js assets/appearance-ui.js assets/app-workflows.js assets/operational-*.js; do
+          for file in server.mjs database.mjs admin.mjs auth.mjs google-oidc.mjs tenant.mjs platform/*.mjs assets/admin-console.js assets/app-console.js assets/app-records.js assets/tool-forms.js assets/demo-backend.js assets/appearance-ui.js assets/media-ui.js assets/attachments-ui.js assets/ui-icons.js assets/app-workflows.js assets/operational-*.js; do
             node --check "$file"
           done
       - name: Run unit and contract tests
