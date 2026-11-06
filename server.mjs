@@ -1,6 +1,7 @@
 import { isSameOrigin } from './platform/public-origin.mjs';
 import {configurationStatus} from './platform/setup-health.mjs';
 import {seedQaCompanyIfRequested} from './platform/staging-qa-seed.mjs';
+import {listSurveys,createSurvey,setSurveyStatus,createSurveyInvitation,surveyReport,publicSurvey,submitSurvey} from './platform/satisfaction-store.mjs';
 import {sqlStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, executeSql } from './database.mjs';
 import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
@@ -50,7 +51,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sqlStatements(sql))await executeSql(statement);
  }
@@ -241,6 +242,32 @@ createServer(async(req,res)=>{
   if(entityUnlinkPath)return processApi(req,res,async({token})=>unlinkEntities(token,entityUnlinkPath[1],entityUnlinkPath[2]),{methods:['DELETE']});
   const clientSummaryPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/clients\/([0-9a-f-]{36})\/summary$/);
   if(clientSummaryPath)return processApi(req,res,async({token})=>getClientSummary(token,clientSummaryPath[1],clientSummaryPath[2]),{methods:['GET']});
+  const surveyPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/surveys(?:\/([0-9a-f-]{36}))?(?:\/(invitations|report))?$/);
+  if(surveyPath){
+    const slug=surveyPath[1],id=surveyPath[2],action=surveyPath[3];
+    const methods=action==='invitations'?['POST']:action==='report'?['GET']:id?['PATCH']:['GET','POST'];
+    return processApi(req,res,async({token,body})=>{
+      if(action==='invitations')return createSurveyInvitation(token,slug,id,body);
+      if(action==='report')return surveyReport(token,slug,id);
+      if(id)return setSurveyStatus(token,slug,id,body);
+      return req.method==='GET'?listSurveys(token,slug):createSurvey(token,slug,body);
+    },{methods,maxBytes:12000});
+  }
+  const surveyPublic=pathname.match(/^\/api\/public\/surveys\/([A-Za-z0-9_-]{32})$/);
+  if(surveyPublic){
+    if(!['GET','POST'].includes(req.method)){res.writeHead(405,{'allow':'GET, POST'});res.end();return;}
+    if(req.method==='POST'&&!sameOrigin(req))return sendApi(res,403,{error:'Origin forbidden'});
+    if(!configurationStatus().databaseConfigured||!(await migrationsReady))return sendApi(res,503,{error:'Encuestas temporalmente no disponibles'});
+    try{
+      const result=req.method==='GET'?await publicSurvey(surveyPublic[1]):
+       await submitSurvey(surveyPublic[1],await readApiBody(req,7000));
+      return sendApi(res,req.method==='GET'?200:201,result);
+    }catch(e){
+      const msg=e?.message||'';
+      const status=msg==='Survey link unavailable'?404:msg==='Invalid answers'||msg==='Invalid survey token'?400:msg==='Unsupported media type'?415:msg==='Payload too large'?413:503;
+      return sendApi(res,status,{error:status===503?'No fue posible registrar tu respuesta':status===404?'Este enlace ya no está disponible':msg});
+    }
+  }
   const workflowPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/(clients|crm|agenda|inventory)(?:\/([0-9a-f-]{36}))?(?:\/(movements))?$/);
   if(workflowPath){
     const slug=workflowPath[1],module=workflowPath[2],id=workflowPath[3],action=workflowPath[4];
@@ -288,8 +315,8 @@ createServer(async(req,res)=>{
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions','tenant_deal_clients','tenant_appointment_links','tenant_entity_links')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===21;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions','tenant_deal_clients','tenant_appointment_links','tenant_entity_links','tenant_surveys','tenant_survey_invitations','tenant_survey_responses')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===24;
       }catch{schemaReady=false;}
     }
     const setup=configurationStatus();
@@ -302,15 +329,15 @@ createServer(async(req,res)=>{
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return;}
   let decoded;try{decoded=decodeURIComponent(pathname);}catch{res.writeHead(400);res.end();return;}
-  const file=resolve(root,'.'+(decoded==='/'?'/index.html':decoded==='/app/'?'/app/index.html':decoded));
+  const file=resolve(root,'.'+(decoded==='/'?'/index.html':decoded==='/app/'?'/app/index.html':decoded==='/encuesta/'?'/encuesta/index.html':decoded));
   if(!(file===root||file.startsWith(root+sep))||decoded.split('/').some(p=>p.startsWith('.'))){res.writeHead(403);res.end();return;}
   try{
     const s=await stat(file);if(!s.isFile())throw Error('not file');
     const isHtml=extname(file).toLowerCase()==='.html';
     const raw=await readFile(file);
-    const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded==='/auth/configuracion.html'||decoded.startsWith('/app/');
+    const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded==='/auth/configuracion.html'||(decoded.startsWith('/app/')||decoded.startsWith('/encuesta/'));
     const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
-    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js'].includes(decoded);
+    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js','/assets/operational-surveys.js','/assets/satisfaction-public.js'].includes(decoded);
     res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream',
       'cache-control':appShell||isPwaAsset?'no-store':'public, max-age=300',
       'x-content-type-options':'nosniff'});
