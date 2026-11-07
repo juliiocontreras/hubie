@@ -209,11 +209,20 @@ async function addMember(ev){
  catch(e){notice('No fue posible autorizar: '+e.message,true);}
 }
 let slugTouched=false;
+function closeMobileNav(){
+ document.documentElement.classList.remove('mobile-nav-open');
+ const button=$('sidebar-toggle');if(button){button.setAttribute('aria-expanded','false');button.textContent='☰ Menú';}
+}
 function initEvents(){
  const toggle=$('sidebar-toggle');
  toggle?.addEventListener('click',()=>{
   const state=document.documentElement.classList.toggle('mobile-nav-open');
   toggle.setAttribute('aria-expanded',String(state));
+  toggle.textContent=state?'✕ Cerrar':'☰ Menú';
+ });
+ document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeMobileNav();});
+ document.addEventListener('click',ev=>{
+  if(document.documentElement.classList.contains('mobile-nav-open')&&ev.target instanceof Element&&!ev.target.closest('.sidebar'))closeMobileNav();
  });
  const search=$('global-search');
  search?.addEventListener('input',()=>{
@@ -221,7 +230,7 @@ function initEvents(){
   filterCompanies();if(search.value.trim())screen('companies');
  });
  document.querySelectorAll('.sidebar [data-view]').forEach(btn=>btn.addEventListener('click',()=>{
-  document.documentElement.classList.remove('mobile-nav-open');toggle?.setAttribute('aria-expanded','false');
+  closeMobileNav();
  }));
 
  document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>screen(btn.dataset.view)));

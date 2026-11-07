@@ -87,7 +87,7 @@ function showAppearance(){
 }
 function closeMobileNav(){
  document.documentElement.classList.remove('mobile-nav-open');
- const button=$('sidebar-toggle');if(button)button.setAttribute('aria-expanded','false');
+ const button=$('sidebar-toggle');if(button){button.setAttribute('aria-expanded','false');button.textContent='☰ Menú';}
 }
 function toolButton(tool){
  const b=elt('button',undefined,'nav-item');b.type='button';b.dataset.tool=tool.id;
@@ -220,6 +220,11 @@ async function init(){
  toggle?.addEventListener('click',()=>{
   const expanded=document.documentElement.classList.toggle('mobile-nav-open');
   toggle.setAttribute('aria-expanded',String(expanded));
+  toggle.textContent=expanded?'✕ Cerrar':'☰ Menú';
+ });
+ document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeMobileNav();});
+ document.addEventListener('click',ev=>{
+  if(document.documentElement.classList.contains('mobile-nav-open')&&ev.target instanceof Element&&!ev.target.closest('.sidebar'))closeMobileNav();
  });
  if(demoMode)document.querySelector('.sidebar .brand').href='/app/?demo=1';
 
