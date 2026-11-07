@@ -111,7 +111,13 @@ html.has-sidebar-image .sidebar{
  /* Menú abierto: panel fijo a la izquierda con fondo, sin empujar el contenido */
  html.mobile-nav-open,html.mobile-nav-open body{overflow:hidden}
  html.mobile-nav-open body::after{content:"";position:fixed;inset:0;background:rgba(22,18,58,.55);z-index:65}
- html.mobile-nav-open .sidebar{position:fixed;inset:0 auto 0 0;width:min(320px,86vw);height:100vh;height:100dvh;
+ /* Sin esto el menú se abría pero ningún toque llegaba a las opciones: .shell
+    tiene isolation:isolate (pwa-refined.css), lo que atrapa al sidebar en su
+    propio contexto de apilamiento y el fondo oscuro (z-index 65) lo tapa,
+    aunque el sidebar tenga z-index 70. Al quitar el aislamiento solo con el
+    menú abierto, el sidebar vuelve al contexto raíz y queda sobre el fondo. */
+ html.mobile-nav-open .shell{isolation:auto}
+ html.mobile-nav-open .sidebar{position:fixed;inset:0 auto 0 0;width:min(320px,86vw);height:100vh;height:100dvh;z-index:70;
  overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:5px;
  padding:14px 12px calc(20px + env(safe-area-inset-bottom));border-radius:0 20px 20px 0;
  box-shadow:0 0 60px rgba(22,18,58,.4)}
