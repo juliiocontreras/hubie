@@ -14,8 +14,8 @@ export function normalizeTenantInput(input){
  const name=typeof input?.name==='string'?input.name.trim():'';
  const slug=typeof input?.slug==='string'?input.slug.trim().toLowerCase():'';
  const suiteId=input?.suiteId;
- const primaryColor=input?.primaryColor??'#4768ee';
- const secondaryColor=input?.secondaryColor??'#8760f4';
+ const primaryColor=input?.primaryColor??'#7c5cfc';
+ const secondaryColor=input?.secondaryColor??'#ec4899';
  const displayName=typeof input?.displayName==='string'?input.displayName.trim():name;
  const toolIds=input?.toolIds===undefined?defaultToolIds():input.toolIds;
  if(name.length<2||name.length>160||displayName.length<2||displayName.length>160||!slugOk(slug)||!getSuite(suiteId)||!colorOk(primaryColor)||!colorOk(secondaryColor)||!Array.isArray(toolIds)||toolIds.length>catalog.tools.length||toolIds.some(id=>!getTool(id))||new Set(toolIds).size!==toolIds.length)throw Error('Invalid tenant data');

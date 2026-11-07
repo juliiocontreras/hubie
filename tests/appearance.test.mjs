@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {appearanceDefaults,normalizeAppearance,mergeAppearance} from '../platform/appearance.mjs';
 
 test('Hubie branding uses independent safe dashboard and sidebar configuration',()=>{
- assert.deepEqual(appearanceDefaults,{dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#eaf1ff',sidebarColor:'#10294b'});
+ assert.deepEqual(appearanceDefaults,{dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#f6f7fb',sidebarColor:'#16123a'});
  const appearance=normalizeAppearance({dashboardPreset:'pearl',sidebarPreset:'platinum',dashboardColor:'#fff4ed',sidebarColor:'#ccd6e8'});
  assert.equal(appearance.dashboardPreset,'pearl');
  assert.equal(appearance.sidebarPreset,'platinum');

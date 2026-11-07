@@ -2,8 +2,8 @@
 export const appearanceDefaults=Object.freeze({
  dashboardPreset:'hubie',
  sidebarPreset:'midnight',
- dashboardColor:'#eaf1ff',
- sidebarColor:'#10294b'
+ dashboardColor:'#f6f7fb',
+ sidebarColor:'#16123a'
 });
 export const dashboardPresets=Object.freeze(['hubie','pearl','silver','sand','custom']);
 export const sidebarPresets=Object.freeze(['midnight','steel','platinum','graphite','custom']);

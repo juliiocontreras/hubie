@@ -128,7 +128,7 @@ async function openOrganization(slug){
   config.backgrounds=config.backgrounds||{dashboard:null,sidebar:null};
   applyAppearance(config.appearance,document.documentElement,config.backgrounds);
   $('appearance-nav').hidden=!['owner','admin'].includes(config.tenant.role);
-  document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#327ce7');
+  document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#7c5cfc');
   $('brand-name').textContent=config.tenant.displayName;
   $('brand-logo').src=config.tenant.logoUrl||'/assets/hubie-logo-official.png';
   $('brand-logo').alt=config.tenant.displayName;

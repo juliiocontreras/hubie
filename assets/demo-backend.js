@@ -9,7 +9,7 @@ const validExpiry=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;const x=new
 const stages=['lead','qualified','proposal','negotiation','won','lost'];
 const caseKinds=['general','commercial','contract','service','administrative'];
 const caseStatuses=['open','in_progress','on_hold','completed'];
-const appearanceDefaults={dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#eaf1ff',sidebarColor:'#10294b'};
+const appearanceDefaults={dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#f6f7fb',sidebarColor:'#16123a'};
 const appearanceFields=Object.keys(appearanceDefaults);
 const normalizeTheme=input=>{
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!appearanceFields.includes(k)))throw error('Invalid appearance');
@@ -31,7 +31,7 @@ function createTenant(catalog,input,id=uuid()){
  if(!suite||typeof input.name!=='string'||input.name.trim().length<2||!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(input.slug||''))throw error('Invalid tenant data');
  const selected=new Set(input.toolIds||catalog.tools.filter(t=>t.included).map(t=>t.id));
  if([...selected].some(code=>!catalog.tools.some(t=>t.id===code)))throw error('Invalid tenant data');
- return {id,appearance:{...appearanceDefaults},backgrounds:{dashboard:null,sidebar:null},uploads:[],slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#327ce7',secondaryColor:input.secondaryColor||'#55c1e5',timezone:'America/Mexico_City',logoUrl:null,
+ return {id,appearance:{...appearanceDefaults},backgrounds:{dashboard:null,sidebar:null},uploads:[],slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#7c5cfc',secondaryColor:input.secondaryColor||'#ec4899',timezone:'America/Mexico_City',logoUrl:null,
   tools:catalog.tools.map(t=>({...t,enabled:selected.has(t.id)})),
   members:[{id:'33333333-3333-4333-8333-333333333333',email:'superadmin@ejemplo.invalid',role:'owner',status:'active'}],
   clients:[],cases:[],caseEvents:[],caseDocumentMeta:{},entityLinks:[],deals:[],events:[],items:[],movements:[],generic:{}};

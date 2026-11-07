@@ -2,10 +2,10 @@
 // Images are served through authenticated tenant routes (or browser-only demo data).
 import {encodeSelectedFile} from './media-ui.js';
 export const appearanceDefaults=Object.freeze({
- dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#eaf1ff',sidebarColor:'#10294b'
+ dashboardPreset:'hubie',sidebarPreset:'midnight',dashboardColor:'#f6f7fb',sidebarColor:'#16123a'
 });
-const dashboardPresets=[['hubie','Azul Hubie'],['pearl','Marfil claro'],['silver','Plata suave'],['sand','Arena minimalista'],['custom','Color personalizado']];
-const sidebarPresets=[['midnight','Azul noche Hubie'],['steel','Acero azulado'],['platinum','Platino claro'],['graphite','Grafito'],['custom','Color personalizado']];
+const dashboardPresets=[['hubie','Morado Hubie'],['pearl','Marfil claro'],['silver','Plata suave'],['sand','Arena minimalista'],['custom','Color personalizado']];
+const sidebarPresets=[['midnight','Noche Hubie'],['steel','Acero azulado'],['platinum','Platino claro'],['graphite','Grafito'],['custom','Color personalizado']];
 const make=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
 const validColor=v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
 const validPhoto=url=>typeof url==='string'&&url.length<1500000&&(
@@ -16,8 +16,8 @@ const validPhoto=url=>typeof url==='string'&&url.length<1500000&&(
 export function cleanAppearance(theme={}){
  return {dashboardPreset:dashboardPresets.some(x=>x[0]===theme?.dashboardPreset)?theme.dashboardPreset:'hubie',
  sidebarPreset:sidebarPresets.some(x=>x[0]===theme?.sidebarPreset)?theme.sidebarPreset:'midnight',
- dashboardColor:validColor(theme?.dashboardColor)?theme.dashboardColor.toLowerCase():'#eaf1ff',
- sidebarColor:validColor(theme?.sidebarColor)?theme.sidebarColor.toLowerCase():'#10294b'};
+ dashboardColor:validColor(theme?.dashboardColor)?theme.dashboardColor.toLowerCase():'#f6f7fb',
+ sidebarColor:validColor(theme?.sidebarColor)?theme.sidebarColor.toLowerCase():'#16123a'};
 }
 const isLight=hex=>{
  const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
