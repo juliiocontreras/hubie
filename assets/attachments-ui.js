@@ -38,7 +38,7 @@ export function setupAttachments(ctx){
  const upload=el('button','Adjuntar archivo','btn btn-primary');upload.type='button';
  const list=el('div',undefined,'attachment-list'),message=el('p','','help');
  const filter=el('input');filter.type='search';filter.className='search';filter.placeholder='Buscar documento por nombre…';filter.setAttribute('aria-label','Buscar documentos');
- const hint=el('p',demoMode?'Modo demo: máximo 650 KB por archivo, datos locales temporales.':'Hasta 2 MB por archivo, máximo 12 archivos por registro. Descargas privadas.','help');
+ const hint=el('p',demoMode?'Modo demo: máximo 2 MB por archivo, datos locales temporales.':'Hasta 10 MB por archivo, máximo 12 archivos por registro. Descargas privadas.','help');
  fields.append(chooser);if(canWrite)fields.append(input,upload);
  const meta=el('div',undefined,'document-meta-controls');
  const docType=el('select');docType.className='search';docType.setAttribute('aria-label','Clasificación del documento');
@@ -189,7 +189,7 @@ export function setupAttachments(ctx){
   if(!file||!chooser.value){message.textContent='Selecciona un registro y un archivo.';return;}
   upload.disabled=true;message.textContent='Subiendo archivo…';
   try{
-   const data=await encodeSelectedFile(file,{maxBytes:demoMode?650000:2000000,types:docMime});
+   const data=await encodeSelectedFile(file,{maxBytes:demoMode?2000000:10000000,types:docMime});
    if(caseMode)Object.assign(data,{
     documentType:docType.value,expiresOn:expiry.value||null,
     ...(versionOf.value?{replaceDocumentId:versionOf.value}:{})

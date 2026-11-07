@@ -48,7 +48,7 @@ export async function encodeSelectedFile(file,{maxBytes=900000,types=['image/png
  if(!data||data.length>Math.ceil(maxBytes/3)*4+8)throw Error('Archivo inválido.');
  return {filename,mime,data};
 }
-export function displayBytes(bytes){return (Number(bytes)/1024).toFixed(Number(bytes)<1024*1024?0:1)+' KB';}
+export function displayBytes(bytes){const n=Number(bytes);return n>=1024*1024?(n/1024/1024).toFixed(1)+' MB':(n/1024).toFixed(n<1024*1024?0:1)+' KB';}
 export function downloadBlob(blob,filename){
  const url=URL.createObjectURL(blob),link=document.createElement('a');
  link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();

@@ -22,7 +22,7 @@ const makeBackgrounds=t=>({dashboard:t?.dashboard||null,sidebar:t?.sidebar||null
 const dataUrl=media=>'data:'+media.mime+';base64,'+media.data;
 const allowedMime=['image/png','image/jpeg','image/webp','application/pdf','text/plain','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const demoMedia=input=>{
- if(!allowedMime.includes(input?.mime)||typeof input?.data!=='string'||input.data.length>1500000||!/^[A-Za-z0-9+/=]+$/.test(input.data)||typeof input.filename!=='string')throw error('Invalid media');
+ if(!allowedMime.includes(input?.mime)||typeof input?.data!=='string'||input.data.length>2700000||!/^[A-Za-z0-9+/=]+$/.test(input.data)||typeof input.filename!=='string')throw error('Invalid media');
  return {id:uuid(),filename:input.filename.slice(0,120),mime:input.mime,data:input.data,size:Math.floor(input.data.length*.75)};
 };
 const initialId=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
@@ -203,7 +203,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
      downloadUrl:'/api/app/'+tenant.slug+'/attachments/'+file.id};
    })});
    if(method==='POST'){
-    const media=demoMedia(input);if(media.size>650000||items.length>=12)throw error('Storage quota exceeded');
+    const media=demoMedia(input);if(media.size>2000000||items.length>=12)throw error('Storage quota exceeded');
     const list={C001:tenant.clients,C002:tenant.deals,C003:tenant.cases.filter(c=>!c.archivedAt),C004:tenant.events,C005:tenant.items}[tool]||tenant.generic[tool]||[];
     if(!list.some(x=>x.id===recordId))throw error('Not found',404);
     let docId=null,version=1;

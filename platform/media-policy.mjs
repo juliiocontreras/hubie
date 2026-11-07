@@ -1,7 +1,7 @@
 // A small, constrained Turso-backed upload bridge for staging.
 // Never accept scriptable SVG/HTML, arbitrary URLs, or unbounded base64.
 export const MAX_BACKGROUND_BYTES=900_000;
-export const MAX_ATTACHMENT_BYTES=2_000_000;
+export const MAX_ATTACHMENT_BYTES=10_000_000;
 const imageTypes=['image/png','image/jpeg','image/webp'];
 const attachments=[...imageTypes,'application/pdf','text/plain','text/csv',
  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -11,7 +11,13 @@ export function validateMediaUpload(input,kind){
  const max=kind==='background'?MAX_BACKGROUND_BYTES:MAX_ATTACHMENT_BYTES;
  const mime=typeof input.mime==='string'?input.mime.trim().toLowerCase():'';
  if(!(kind==='background'?imageTypes:attachments).includes(mime))throw Error('Invalid media');
- if(typeof input.data!=='string'||input.data.length>Math.ceil(max/3)*4+8||! /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input.data))throw Error('Invalid media');
+ if(typeof input.data!=='string'||input.data.length>Math.ceil(max/3)*4+8||input.data.length%4!==0)throw Error('Invalid media');
+ // Linear base64 checks: the old grouped regex blew the stack on ~13M-char payloads,
+ // so a legit 10 MB upload crashed instead of validating. Round-trip below still
+ // enforces canonical base64.
+ if(/[^A-Za-z0-9+/=]/.test(input.data))throw Error('Invalid media');
+ const padAt=input.data.indexOf('=');
+ if(padAt!==-1&&padAt<input.data.length-2)throw Error('Invalid media');
  const buffer=Buffer.from(input.data,'base64');
  if(!buffer.length||buffer.length>max||buffer.toString('base64')!==input.data)throw Error('Invalid media');
  const head=buffer.subarray(0,20);

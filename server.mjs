@@ -171,7 +171,7 @@ createServer(async(req,res)=>{
     return processApi(req,res,async({token,body})=>req.method==='GET'?
       listAttachments(token,mediaAttachList[1],mediaAttachList[2],mediaAttachList[3]):
       {attachment:await addAttachment(token,mediaAttachList[1],mediaAttachList[2],mediaAttachList[3],body)},
-     {methods:['GET','POST'],maxBytes:2_800_000});
+     {methods:['GET','POST'],maxBytes:13_600_000});
   }
   const documentEditPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/case-documents\/([0-9a-f-]{36})$/);
   if(documentEditPath){

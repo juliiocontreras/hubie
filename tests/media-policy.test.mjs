@@ -14,7 +14,8 @@ test('rejects active files, spoofed images and oversized attachments',()=>{
  assert.throws(()=>validateMediaUpload({filename:'fondo.svg',mime:'image/svg+xml',data:png},'background'),/Invalid media/);
  assert.throws(()=>validateMediaUpload({filename:'malware.png',mime:'image/png',data:Buffer.from('<script>alert(1)</script>').toString('base64')},'background'),/Invalid media/);
  assert.throws(()=>validateMediaUpload({filename:'hack.html',mime:'text/html',data:pdf},'attachment'),/Invalid media/);
- assert.ok(MAX_ATTACHMENT_BYTES<=3*1024*1024);
+ assert.ok(MAX_ATTACHMENT_BYTES<=10*1024*1024);
+ assert.throws(()=>validateMediaUpload({filename:'grande.pdf',mime:'application/pdf',data:Buffer.concat([Buffer.from('%PDF-'),Buffer.alloc(10_000_000)]).toString('base64')},'attachment'),/Invalid media/);
 });
 test('accepts a pdf for document attachment and normalizes its filename',()=>{
  const out=validateMediaUpload({filename:'docs/../Solicitud.pdf',mime:'application/pdf',data:pdf},'attachment');
