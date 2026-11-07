@@ -251,3 +251,74 @@ h1,h2,h3,h4{line-height:1.15;font-weight:800;letter-spacing:-.02em}
   .footer-grid{grid-template-columns:1fr}
   section{padding:60px 0}
 }
+
+
+/* HUBIE 2026 — Technology Integral Business Hub visual upgrade */
+:root{--maxw:1200px;--header-h:78px;--ink:#12345f;--ink-soft:#5c7492;--ink-faint:#8395ac;--bg-soft:#edf6ff;--purple:#4368e9;--purple-deep:#2357cb;--blue:#247ff0;--green:#17bca6;--orange:#f78d45;--radius:22px;--radius-sm:14px;--radius-pill:999px;--shadow:0 18px 42px #145d9c18;--shadow-sm:0 8px 22px #145d9c16;--shadow-lg:0 30px 75px #1552a22a;--grad-brand:linear-gradient(115deg,#155ce6,#298df4 60%,#37d0e8);--grad-blue:linear-gradient(120deg,#0e5edb,#22b8e8)}
+body{background:radial-gradient(ellipse at 92% 10%,#d9f3ff 0,transparent 28%),linear-gradient(180deg,#f6faff,#fff 40%,#f2f8ff);color:var(--ink)}
+.site-header{background:#f8fbfff0;border-bottom:1px solid #dceafb;box-shadow:0 5px 24px #1b65a30d}
+.nav__link{transition:background .2s,color .2s,transform .2s}.nav__link:hover{transform:translateY(-2px);background:#e2f0ff}
+.hero{background:radial-gradient(ellipse at 80% 15%,#9edcff9e 0,transparent 44%),radial-gradient(ellipse at 3% 85%,#d7dcff 0,transparent 45%),linear-gradient(120deg,#f8fcff,#eaf5ff);isolation:isolate}
+.hero:before{opacity:.2;background-image:linear-gradient(#2788f417 1px,transparent 1px),linear-gradient(90deg,#2788f417 1px,transparent 1px);background-size:46px 46px}
+.hero:after{content:"";position:absolute;z-index:-1;right:-7%;top:10%;width:430px;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#52bdfc55,transparent 70%);filter:blur(15px);animation:hubie-glow 12s ease-in-out infinite alternate}
+@keyframes hubie-glow{to{transform:translate(-80px,80px) scale(1.2)}}
+.h-hero{color:#103465;letter-spacing:-.05em;line-height:1.06}
+.grad-text,.purple{background:linear-gradient(105deg,#1b64dc,#25c0df);background-clip:text;-webkit-background-clip:text;color:transparent}
+.btn,.btn--primary,.btn--blue,.btn--orange{position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s,background-position .4s;border-radius:14px}
+.btn--primary,.btn--blue{background:linear-gradient(110deg,#165ce4,#2c93f5,#35c7e5);background-size:180% 180%;box-shadow:0 12px 30px #176fe73d}
+.btn--primary:hover,.btn--blue:hover{background-position:100% 50%;box-shadow:0 18px 40px #176fe75a}
+.btn:focus-visible,.nav__link:focus-visible{outline:3px solid #35c7e5;outline-offset:3px}
+.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step,.giro-card,.form,.mock,.giro-list{border-color:#dceaf8;background:linear-gradient(155deg,#fff,#f5faff);box-shadow:0 10px 30px #175c9b0d;transition:transform .28s,box-shadow .28s,border-color .28s}
+.branch-card:hover,.rama:hover,.svc-card:hover,.why:hover,.tool:hover,.pillar:hover,.step:hover{transform:translateY(-5px);border-color:#9bcaf5;box-shadow:0 22px 45px #175c9b22}
+.orbit__center{box-shadow:0 20px 55px #237be84d;animation:hubie-float 6s ease-in-out infinite}
+.orbit__item{box-shadow:0 15px 35px #165ca727;animation:hubie-float 7s ease-in-out infinite alternate}
+@keyframes hubie-float{50%{translate:0 -9px}}
+.tag{background:#e2f1ff;color:#1769c5;border:1px solid #c4e4fc}
+.site-footer{background:linear-gradient(150deg,#eaf5ff,#f9fcff)}
+@media(prefers-reduced-motion:reduce){.hero:after,.orbit__center,.orbit__item{animation:none!important}.btn,.nav__link,.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step{transition:none!important}}
+
+/* Compact brand: reduce symbol and wordmark by one third */
+.site-header .logo__mark{width:20px;height:20px}
+.site-header .logo__type{font-size:15.33px}
+.site-header .logo{gap:7px}
+@media(max-width:700px){.site-header .logo__mark{width:20px;height:20px}.site-header .logo__type{font-size:15.33px}}
+
+
+/* Reference-led direction: editorial product framing, expressive geometry, blue depth. */
+.hero{margin:18px clamp(12px,2.4vw,42px) 0;border:10px solid #fff;border-radius:42px 42px 72px 42px;box-shadow:0 28px 65px #125d9c24;min-height:610px}
+.hero .hero__grid{position:relative;z-index:1;min-height:570px}
+.hero .container{max-width:1320px}
+.hero .orbit{border-radius:32% 26% 29% 35%;background:radial-gradient(circle at 40% 35%,#70d2ff,#2878da 48%,#114a9c 90%);box-shadow:inset 0 15px 45px #ffffff40,0 32px 60px #1251a448;max-width:470px;overflow:visible}
+.hero .orbit:before{content:"HUBIE";position:absolute;inset:33% auto auto 50%;transform:translate(-50%,-50%);font:900 clamp(75px,10vw,158px)/1 'Poppins',sans-serif;letter-spacing:-.11em;color:#ffffff20;pointer-events:none;z-index:0}
+.hero .orbit:after{content:"SUITES  /  TOOLS  /  CORE";position:absolute;bottom:28px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#ffffffb5;letter-spacing:.2em;font-size:10px;font-weight:800;z-index:0}
+.hero .orbit__svg{opacity:.5}
+.hero .orbit__item{border:1px solid #ffffffa6;background:#ffffffeb;backdrop-filter:blur(16px)}
+.hero .orbit__center{background:#fff;border:6px solid #ffffff75}
+.hero h1{font-size:clamp(39px,5.6vw,76px);letter-spacing:-.06em;max-width:690px}
+.hero .tag{letter-spacing:.09em}
+.hero .lead{font-size:clamp(16px,1.35vw,19px)}
+.site-header .logo__mark{width:20px;height:20px;flex-basis:20px}
+.site-header .logo__type{font-size:15.33px}
+.site-header .logo{gap:7px}
+@media(max-width:980px){.hero{min-height:0}.hero .hero__grid{min-height:0}.hero .orbit{max-width:420px;margin:36px auto}}
+@media(max-width:560px){.hero{margin:10px 9px 0;border-width:5px;border-radius:24px 24px 38px 24px}.hero .orbit{max-width:280px;aspect-ratio:1}.hero .orbit:before{font-size:75px}.hero .orbit:after{font-size:8px;bottom:12px}.hero .orbit__item{width:68px;height:68px}.hero .orbit__center{width:105px;height:105px}.hero h1{font-size:clamp(35px,10vw,52px)}}
+@media(prefers-reduced-motion:reduce){.hero .orbit__item,.hero .orbit__center{animation:none}}
+
+
+/* Unified conversion-focused navigation */
+.site-header{z-index:100;background:#f6fafff2}
+.hubie-nav{display:flex;align-items:center;gap:18px;min-height:76px}
+.hubie-nav__brand{display:inline-flex;align-items:center;gap:8px;flex:none;color:#123765;text-decoration:none;font:800 17px 'Poppins',sans-serif;letter-spacing:-.045em}
+.hubie-nav__symbol{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:linear-gradient(135deg,#1766e8,#37c4e6);color:#fff;font:800 26px/1 sans-serif;box-shadow:0 8px 20px #1878e83b}
+.hubie-nav__brand-dot{color:#26b8e4}
+.hubie-nav__links{display:flex;align-items:center;justify-content:center;gap:2px;flex:1;min-width:0}
+.hubie-nav__link{padding:10px 11px;border-radius:12px;font-size:13px;font-weight:700;white-space:nowrap;color:#4d6686;text-decoration:none;transition:background .2s,color .2s}
+.hubie-nav__link:hover,.hubie-nav__link.is-current{background:#e2f1ff;color:#145fc4}
+.hubie-nav__cta{display:inline-flex;align-items:center;gap:8px;padding:12px 15px;border-radius:13px;background:linear-gradient(110deg,#165de4,#2f9cf2);color:white!important;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap;box-shadow:0 10px 24px #216ee73d;transition:transform .2s,box-shadow .2s}
+.hubie-nav__cta:hover{transform:translateY(-2px);box-shadow:0 15px 28px #216ee75a}
+.hubie-nav__toggle{display:none;width:43px;height:43px;flex:none;border:1px solid #cfe4f9;border-radius:12px;background:white;cursor:pointer;padding:11px}
+.hubie-nav__toggle span{display:block;height:2px;margin:4px 0;border-radius:3px;background:#1558a6}
+.hubie-nav__toggle:focus-visible,.hubie-nav__link:focus-visible,.hubie-nav__cta:focus-visible{outline:3px solid #2ab7ec;outline-offset:3px}
+@media(max-width:980px){.hubie-nav{min-height:67px}.hubie-nav__links{display:none;position:absolute;top:calc(100% - 1px);left:12px;right:12px;flex-direction:column;align-items:stretch;gap:3px;background:#fffffffa;border:1px solid #d7e9fb;border-radius:0 0 20px 20px;padding:14px;box-shadow:0 24px 35px #123e7b25;max-height:calc(100vh - 88px);overflow:auto}.hubie-nav--open .hubie-nav__links{display:flex}.hubie-nav__link{padding:13px 16px;font-size:15px}.hubie-nav__toggle{display:block;margin-left:auto}.hubie-nav__cta{margin-left:auto}}
+@media(max-width:560px){.hubie-nav__cta{display:none}.hubie-nav__brand{font-size:16px}.hubie-nav__symbol{width:24px;height:24px}}
+@media(prefers-reduced-motion:reduce){.hubie-nav__link,.hubie-nav__cta{transition:none}}

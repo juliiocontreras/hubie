@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10244c"><meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="/madre/manifest.webmanifest">
+<link rel="stylesheet" href="/assets/pwa-console.css"><link rel="stylesheet" href="/assets/pwa-refined.css"><link rel="stylesheet" href="/assets/pwa-navigation.css"><title>Hubie Madre · Control de Suites</title></head>
+<body>
+<section id="login" class="login-page" hidden><div class="card">
+<img src="/assets/hubie-logo-official.png" alt="Hubie" width="155"><p class="eyebrow">Acceso exclusivo a Hubie Madre</p>
+<h1>Tu fábrica de <span style="color:#2b79d9">Suites.</span></h1><p class="subline">Gestiona organizaciones, herramientas, identidad y accesos en un solo lugar.</p>
+<p class="message" id="login-message"></p><div class="toolbar"><a id="google-entry" class="btn btn-primary" href="/api/auth/google/start">Entrar con Google</a><a class="btn" href="/madre/app.html?demo=1">Explorar PWA Madre (demo) ↗</a></div><p class="help">La demostración usa información ficticia, sin acceso a datos reales.</p>
+</div></section>
+<div class="demo-banner" id="demo-banner" hidden>VISTA DE DEMOSTRACIÓN · Datos ficticios guardados temporalmente en este navegador. No ingreses datos reales. <a href="/app/?demo=1">Abrir PWA cliente ↗</a></div><div class="shell" id="console" hidden>
+<aside class="sidebar"><a class="brand" href="/madre/app.html"><img src="/assets/hubie-logo-official.png" alt="Hubie"><strong style="font-size:10px;color:#b8d8f7">MADRE</strong></a><button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-expanded="false" aria-controls="admin-nav">☰ Menú</button>
+<div class="nav-label">Administración central</div><nav class="nav-stack" id="admin-nav" aria-label="Secciones de Hubie Madre">
+<button class="nav-item" data-view="overview">◈ &nbsp; Resumen</button>
+<button class="nav-item" data-view="companies">▦ &nbsp; Empresas</button>
+<button class="nav-item" data-view="create">✦ &nbsp; Crear Suite de cliente</button>
+<button class="nav-item" data-view="catalog">◫ &nbsp; Catálogo Suites y Tools</button>
+</nav><div class="nav-label">Administración</div><nav class="nav-stack">
+<button class="nav-item" data-view="detail">⚙ &nbsp; Configurar cliente</button><button class="nav-item" data-view="appearance">✧ &nbsp; Apariencia de Hubie Madre</button>
+<a class="nav-item" href="/app/">⇢ &nbsp; Abrir PWA de cliente</a>
+<button class="nav-item" id="logout">↪ &nbsp; Cerrar sesión</button>
+</nav></aside>
+<main class="workspace">
+<header class="topline premium-toolbar">
+ <span class="breadcrumb">HUBIE / MADRE / ADMINISTRACIÓN MULTITENANT</span>
+ <label class="premium-search" for="global-search"><span aria-hidden="true">⌕</span><input id="global-search" type="search" placeholder="Buscar empresa o Suite..." autocomplete="off" aria-label="Buscar empresa o Suite"></label>
+ <span class="pill premium-profile"><span aria-hidden="true">◉</span> Admin Global</span>
+</header>
+<section class="page-head premium-head">
+ <div><span class="eyebrow">PANEL ADMINISTRATIVO · HUBIE MADRE</span>
+ <h1 aria-label="Bienvenido a Hubie Madre">Bienvenido a <span>Hubie Madre</span></h1>
+ <p class="subline">Controla tus empresas, personaliza cada Suite y administra sus herramientas desde un mismo lugar.</p></div>
+ <button class="btn btn-primary btn-lg" data-view="create">＋ Crear nueva empresa</button>
+</section>
+<p class="message" id="feedback" role="status"></p>
+<section id="view-overview" class="section premium-overview">
+ <div class="cards premium-kpis">
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">▦</span><div><span class="stat-label">Empresas registradas</span><div class="stat-number" id="stat-companies">—</div><span class="help">Organizaciones independientes</span></div></article>
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">◈</span><div><span class="stat-label">Suites disponibles</span><div class="stat-number" id="stat-suites">—</div><span class="help">Catálogo oficial Hubie</span></div></article>
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">◫</span><div><span class="stat-label">Tools del catálogo</span><div class="stat-number" id="stat-tools">—</div><span class="help">Configurables por empresa</span></div></article>
+  <article class="stat premium-stat"><span class="premium-stat-icon" aria-hidden="true">✦</span><div><span class="stat-label">Herramientas Core</span><div class="stat-number" id="stat-core">—</div><span class="help">Disponibles como base</span></div></article>
+ </div>
+ <div class="madre-feature-grid">
+  <article class="card premium-panel"><div class="card-title"><h2>Empresas recientes</h2><button class="btn btn-link" data-view="companies">Ver todas ↗</button></div>
+   <div id="overview-companies" class="company-list"></div></article>
+  <article class="card premium-panel"><div class="card-title"><h2>Plantillas de Suites</h2><button class="btn btn-link" data-view="catalog">Ver catálogo ↗</button></div>
+   <p class="help">Cada cliente recibe una configuración propia.</p><div id="overview-suites" class="overview-suite-grid"></div></article>
+  <article class="card premium-panel"><div class="card-title"><h2>Tools de la plataforma</h2><button class="btn btn-link" data-view="catalog">Gestionar ↗</button></div>
+   <div id="overview-tools" class="aurora-list"></div></article>
+ </div>
+ <div class="madre-insights-grid">
+  <article class="card premium-panel"><div class="card-title"><div><h2>Distribución por Suite</h2><p class="help">Empresas registradas · datos actuales</p></div></div>
+    <div id="madre-suite-distribution" class="suite-distribution"><span class="help">Calculando distribución…</span></div></article>
+  <article class="card premium-action-panel"><span class="premium-action-icon">✧</span>
+   <span class="eyebrow">TU ESPACIO DE CONTROL</span><h2>Una identidad para cada empresa.</h2>
+   <p>Personaliza los fondos de Hubie Madre y configura cada Suite sin afectar los demás espacios.</p>
+   <div class="premium-action-links"><button class="btn btn-primary" data-view="appearance" id="madre-theme-quick">Personalizar fondos ↗</button>
+    <button class="btn" data-view="create">Crear Suite ↗</button></div></article>
+ </div>
+</section>
+<section id="view-companies" class="section" hidden><div class="card"><div class="card-title"><h2>Empresas y Suites asignadas</h2><button class="btn btn-primary" data-view="create">Nueva empresa</button></div><input class="search" id="filter-companies" placeholder="Buscar empresa o identificador" aria-label="Buscar empresas"><div class="company-list" id="companies"></div></div></section>
+<section id="view-create" class="section" hidden><div class="two-col">
+<div class="card"><h2>Crear Suite personalizada</h2><p class="help">Selecciona una Suite como punto de partida. Ajusta las herramientas sin alterar la plantilla original.</p>
+<form id="create-form" class="stack"><div class="field-grid"><div class="field"><label for="create-name">Empresa</label><input id="create-name" name="name" required minlength="2" maxlength="160"></div><div class="field"><label for="create-slug">Identificador único</label><input id="create-slug" name="slug" required pattern="[a-z0-9-]{3,63}" placeholder="mi-empresa"></div><div class="field field-wide"><label for="create-suite">Suite base</label><select id="create-suite" name="suiteId" required></select></div><div class="field"><label for="create-primary">Color principal</label><input type="color" id="create-primary" name="primaryColor" value="#327ce7"></div><div class="field"><label for="create-secondary">Color secundario</label><input type="color" id="create-secondary" name="secondaryColor" value="#55c1e5"></div></div>
+<p class="help">Al crear el cliente, tu usuario Super Admin recibe membresía inicial de propietario. Después podrás agregar sus colaboradores.</p><button type="submit" class="btn btn-primary">Crear empresa y configurar ↗</button></form></div>
+<div class="card"><div class="card-title"><h2>Tools para esta empresa</h2><button type="button" class="btn" id="reset-tools">Core por defecto</button></div><p class="help">Los módulos Core comienzan activos. Puedes marcar o desmarcar cualquier Tool. Los complementos tienen precio en el catálogo; habilitarlos no procesa un cobro.</p><div class="tool-grid" id="create-tools"></div></div></div></section>
+<section id="view-detail" class="section" hidden><div class="card"><div class="row-between"><div><span class="eyebrow">Configuración independiente</span><h2 id="detail-heading">Selecciona una empresa</h2><p id="detail-subtitle" class="help"></p></div><a class="btn btn-primary" id="detail-open" href="/app/">Abrir PWA →</a></div><div class="two-col">
+<form id="detail-form" class="stack"><div class="field-grid"><div class="field"><label>Nombre</label><input name="name" required></div><div class="field"><label>Nombre visible</label><input name="displayName" required></div><div class="field field-wide"><label>Suite base</label><select name="suiteId" id="detail-suite"></select></div><div class="field"><label>Color principal</label><input type="color" name="primaryColor"></div><div class="field"><label>Color secundario</label><input type="color" name="secondaryColor"></div><div class="field field-wide"><label>URL del logo oficial del cliente (HTTPS)</label><input name="logoUrl" type="url" placeholder="https://ejemplo.com/logo.png"></div><div class="field field-wide"><label>Estado</label><select name="status"><option value="active">Activa</option><option value="suspended">Suspendida</option></select></div></div><button class="btn btn-primary">Guardar configuración</button></form>
+<div class="stack"><div class="card-soft"><h3>Acceso del equipo</h3><p class="help">Usuarios autorizados por correo de Google; su información queda limitada a esta empresa.</p><div id="members" class="mini-list"></div><form id="member-form" class="field-grid"><div class="field"><label>Correo</label><input type="email" name="email" required placeholder="colaborador@empresa.com"></div><div class="field"><label>Permiso</label><select name="role"><option value="member">Colaborador</option><option value="admin">Administrador</option><option value="viewer">Solo lectura</option></select></div><button class="btn btn-primary" style="grid-column:1/-1">Autorizar usuario</button></form></div></div></div></div>
+<div class="card"><div class="card-title"><h2>Activar / desactivar herramientas</h2><span class="pill" id="detail-tools-total">—</span></div><p class="help">El cambio afecta a este cliente únicamente. Una Tool inactiva se oculta de su PWA y su API bloquea el acceso, conservando sus datos.</p><div class="tool-grid" id="detail-tools"></div></div><div class="card"><div id="tenant-appearance"></div></div></section>
+<section id="view-appearance" class="section" hidden><div class="card"><div id="platform-appearance"></div></div><p class="help">Esta configuración afecta solo a la PWA Madre; no cambia el estilo de los clientes.</p></section><section id="view-catalog" class="section" hidden><div class="card"><h2>Suites disponibles</h2><div id="catalog-suites" class="module-grid"></div></div><div class="card"><h2>Catálogo completo de Tools</h2><div id="catalog-tools" class="tool-grid"></div></div></section>
+<footer class="help" style="margin-top:30px">Hubie Madre · Operación privada · Los cambios se guardan en la base de datos Turso.</footer></main></div>
+<script src="/assets/admin-console.js" defer></script></body></html>
