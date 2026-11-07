@@ -6,8 +6,8 @@
   "start_url": "/madre/app.html",
   "scope": "/madre/",
   "display": "standalone",
-  "background_color": "#f2f6fb",
-  "theme_color": "#10244c",
+  "background_color": "#f6f7fb",
+  "theme_color": "#16123a",
   "icons": [
     {
       "src": "/assets/favicon.svg",
