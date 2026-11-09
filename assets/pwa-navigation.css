@@ -34,7 +34,16 @@ html,body{max-width:100%;overflow-x:clip}
 .nav-group-items .nav-item{font-size:13px;padding:10px 12px}
 .sidebar .nav-sub-label{margin-top:10px}
 .workspace{min-width:0;width:100%;padding-top:25px}
-.sidebar .brand strong{max-width:100px;overflow-wrap:anywhere}
+/* La marca no debe exprimir el nombre del tenant: el logo tiene tamaño fijo y el
+   nombre flexiona con el espacio restante, parte solo entre palabras y recorta
+   con elipsis si ni así cabe. Antes el strong tenía max-width:100px y
+   overflow-wrap:anywhere, así "COMERCIO DE DEMOSTRACIÓN" se partía a mitad
+   de palabra en una columna de ~50px. Con flex-basis:120px el nombre baja a
+   su propia línea (ancho completo del sidebar) cuando no cabe junto al logo. */
+.sidebar .brand{flex-wrap:wrap}
+.sidebar .brand img{flex:none}
+.sidebar .brand strong{flex:1;min-width:0;max-width:none;overflow-wrap:normal;word-break:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
+#brand-name{flex-basis:120px}
 .hubie-icon{width:18px;height:18px;display:inline-block;vertical-align:middle;stroke:currentColor}
 .company-icon .hubie-icon,.insight-mark .hubie-icon{width:21px;height:21px}
 /* Collapse long tool menus to category accordions instead of internal scroll regions. */

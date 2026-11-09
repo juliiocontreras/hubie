@@ -69,11 +69,35 @@ function companyRow(t){
  btn.addEventListener('click',()=>openDetail(t.id));
  return btn;
 }
+function renderSuiteDistribution(){
+ const host=$('madre-suite-distribution');if(!host)return;
+ host.replaceChildren();host.classList.add('pipeline-mini');
+ // El conteo vive aquí y no en platform/suite-distribution.mjs: /platform/*
+ // no se sirve al navegador (404 por diseño, lo comprueba el smoke test de CI),
+ // así que importar ese módulo dejaría el "Calculando distribución…" para
+ // siempre. La lógica es la misma: agrupar tenants por suiteId, con el nombre
+ // de la Suite del catálogo, ordenados por cantidad.
+ const names=new Map(suiteList().map(s=>[s.id,s.name]));
+ const counts=new Map();
+ for(const t of state.tenants){if(!t?.suiteId)continue;counts.set(t.suiteId,(counts.get(t.suiteId)||0)+1);}
+ const rows=[...counts].map(([id,count])=>({id,name:names.get(id)||id,count}))
+  .sort((a,b)=>b.count-a.count||a.id.localeCompare(b.id));
+ if(!rows.length){host.append(node('p','Aún no hay empresas registradas en ninguna Suite.','help'));return;}
+ const total=rows.reduce((sum,r)=>sum+r.count,0)||1;
+ for(const item of rows){
+  const row=node('div',undefined,'pipeline-mini-row');
+  const bar=node('span',undefined,'pipeline-mini-bar');
+  bar.style.setProperty('--bar-pct',Math.max(6,Math.round(item.count/total*100))+'%');
+  row.append(node('span',item.name),bar,node('strong',String(item.count)));
+  host.append(row);
+ }
+}
 function renderTenants(){
  $('stat-companies').textContent=state.tenants.length;
  $('stat-suites').textContent=suiteList().length;
  $('stat-tools').textContent=toolList().length;
  $('stat-core').textContent=toolList().filter(t=>t.included).length;
+ renderSuiteDistribution();
  const recent=$('overview-companies');recent.replaceChildren();
  for(const t of state.tenants.slice(0,5))recent.append(companyRow(t));
  if(!state.tenants.length)recent.append(node('div','Aún no hay empresas. Crea la primera desde Hubie Madre.','empty'));

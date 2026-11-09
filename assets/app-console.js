@@ -130,7 +130,11 @@ async function openOrganization(slug){
   $('appearance-nav').hidden=!['owner','admin'].includes(config.tenant.role);
   document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#7c5cfc');
   $('brand-name').textContent=config.tenant.displayName;
-  $('brand-logo').src=config.tenant.logoUrl||'/assets/hubie-logo-official.png';
+  // Un logo de tenant que falla (URL rota o archivo ausente) mostraba el icono
+  // de imagen rota en el sidebar; con el fallback vuelve al logo oficial.
+  const logo=$('brand-logo');
+  logo.onerror=()=>{logo.onerror=null;logo.src='/assets/hubie-logo-official.png';};
+  logo.src=config.tenant.logoUrl||'/assets/hubie-logo-official.png';
   $('brand-logo').alt=config.tenant.displayName;
   $('role').textContent=roles[config.tenant.role]||config.tenant.role;
   $('breadcrumb').textContent='HUBIE / '+config.tenant.slug.toUpperCase();
