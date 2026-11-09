@@ -1,7 +1,7 @@
 name: Hubie PWA Madre Tests
 on:
   push:
-    branches: [feat/pwa-madre-multitenant]
+    branches: [main, feat/pwa-madre-multitenant]
   pull_request:
     paths:
       - 'platform/**'
