@@ -32,6 +32,6 @@ test('tool cards cannot render a broken image, and a bad tenant logo falls back'
  const app = await readFile(new URL('../assets/app-console.js', import.meta.url), 'utf8');
  const home = app.slice(app.indexOf("const host=$('module-cards')"), app.indexOf('void loadHomeInsights'));
  assert.doesNotMatch(home, /<img|createElement\('img'\)/, 'module cards must not contain any img element');
- assert.match(app, /logo\.onerror=\(\)=>\{logo\.onerror=null;logo\.src='\/assets\/hubie-logo-official\.png';\}/,
+ assert.match(app, /logo\.onerror=\(\)=>\{logo\.onerror=null;logo\.src='\/assets\/hubie-logo-official\.png';logo\.classList\.add\('logo-official'\);\}/,
   'a tenant logo URL that fails must fall back to the official logo instead of a broken-image icon');
 });
