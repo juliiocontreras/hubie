@@ -1,7 +1,7 @@
 import {openRecords} from './app-records.js';
 import {closeOperationalModule} from './app-workflows.js';
 import {createAppearanceEditor,applyAppearance} from './appearance-ui.js';
-import {icon,toolIcon,decorateSidebar} from './ui-icons.js';
+import {icon,toolIcon,toolTint,decorateSidebar} from './ui-icons.js';
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const demoApi=async(path,options)=>(await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
@@ -37,7 +37,7 @@ function home(){
  for(const tool of config.tools){
   const b=elt('button',undefined,'module-card');b.type='button';
   const details=elt('span');details.append(elt('strong',tool.name),elt('small',tool.included?'Core incluido':tool.group));
-  const badge=elt('span',undefined,'company-icon');badge.append(toolIcon(tool.id));b.append(badge,details);
+  const badge=elt('span',undefined,'company-icon');badge.dataset.tint=toolTint(tool.id);badge.append(toolIcon(tool.id));b.append(badge,details);
   b.addEventListener('click',()=>showTool(tool.id));host.append(b);
  }
  void loadHomeInsights(config);
@@ -132,9 +132,14 @@ async function openOrganization(slug){
   $('brand-name').textContent=config.tenant.displayName;
   // Un logo de tenant que falla (URL rota o archivo ausente) mostraba el icono
   // de imagen rota en el sidebar; con el fallback vuelve al logo oficial.
+  // El logo oficial es tinta oscura: sobre el sidebar azul tinta solo se lee
+  // en blanco (tratamiento de marca.html), así que la clase logo-official se
+  // pone solo cuando el logo en uso es el oficial; un logo de tenant conserva
+  // sus propios colores.
   const logo=$('brand-logo');
-  logo.onerror=()=>{logo.onerror=null;logo.src='/assets/hubie-logo-official.png';};
+  logo.onerror=()=>{logo.onerror=null;logo.src='/assets/hubie-logo-official.png';logo.classList.add('logo-official');};
   logo.src=config.tenant.logoUrl||'/assets/hubie-logo-official.png';
+  logo.classList.toggle('logo-official',!config.tenant.logoUrl);
   $('brand-logo').alt=config.tenant.displayName;
   $('role').textContent=roles[config.tenant.role]||config.tenant.role;
   $('breadcrumb').textContent='HUBIE / '+config.tenant.slug.toUpperCase();

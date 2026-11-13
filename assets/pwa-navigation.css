@@ -239,3 +239,15 @@ html.has-sidebar-image .sidebar{
  .survey-question-row>.btn{grid-column:2;grid-row:3}
  .survey-invite-fields{grid-template-columns:1fr}
  .survey-overview,.survey-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ============================================================
+   MODERN DESIGN UPGRADE (2026-11-12) — visual-only additions.
+   Glass tool tiles + roomier module grid. The mobile-nav block above
+   (html.mobile-nav-open .shell{isolation:auto}, sidebar z-index 70)
+   is NOT touched.
+   ============================================================ */
+/* Module grid: a little more air between frosted cards. */
+.module-grid{gap:16px}
+/* Tool-option icon chip: soft pastel tile behind the line SVG. */
+.tool-option>.hubie-icon{flex:none;width:30px;height:30px;padding:5px;border-radius:10px;
+ background:#efeafe;color:#5b34f0;box-sizing:border-box}

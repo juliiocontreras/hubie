@@ -322,3 +322,135 @@ body{background:radial-gradient(ellipse at 92% 10%,#d9f3ff 0,transparent 28%),li
 @media(max-width:980px){.hubie-nav{min-height:67px}.hubie-nav__links{display:none;position:absolute;top:calc(100% - 1px);left:12px;right:12px;flex-direction:column;align-items:stretch;gap:3px;background:#fffffffa;border:1px solid #d7e9fb;border-radius:0 0 20px 20px;padding:14px;box-shadow:0 24px 35px #123e7b25;max-height:calc(100vh - 88px);overflow:auto}.hubie-nav--open .hubie-nav__links{display:flex}.hubie-nav__link{padding:13px 16px;font-size:15px}.hubie-nav__toggle{display:block;margin-left:auto}.hubie-nav__cta{margin-left:auto}}
 @media(max-width:560px){.hubie-nav__cta{display:none}.hubie-nav__brand{font-size:16px}.hubie-nav__symbol{width:24px;height:24px}}
 @media(prefers-reduced-motion:reduce){.hubie-nav__link,.hubie-nav__cta{transition:none}}
+
+
+/* ============================================================
+   MODERN DESIGN UPGRADE (2026-11-12) — home + productos.
+   Visual-only, appended last so it wins over the earlier layers.
+   Brand Book v1.0: Nunito 800/900, Ink #16123a, purple #7c5cfc,
+   pink #ec4899, gradient 135deg #7c5cfc→#a855f7→#ec4899, bg #f6f7fb,
+   20px cards. No visible scrollbars (scroll still works).
+   ============================================================ */
+:root{
+  --ink:#16123a;--ink-soft:#5b5872;--ink-faint:#8a87a3;--bg-soft:#f6f7fb;
+  --purple:#7c5cfc;--purple-deep:#5b34f0;--blue:#2f6bff;--green:#22c55e;--orange:#f97316;
+  --pink:#ec4899;--cyan:#22d3ee;
+  --font-sans:'Nunito',system-ui,sans-serif;
+  --grad-brand:linear-gradient(135deg,#7c5cfc 0%,#a855f7 45%,#ec4899 100%);
+  --grad-primary:linear-gradient(135deg,#7c5cfc 0%,#a855f7 45%,#ec4899 100%);
+  --grad-blue:linear-gradient(135deg,#7c5cfc 0%,#a855f7 45%,#ec4899 100%);
+  --radius:20px;
+  --shadow:0 16px 38px rgba(22,18,58,.09);
+  --shadow-sm:0 8px 22px rgba(22,18,58,.07);
+  --shadow-lg:0 30px 70px rgba(22,18,58,.14);
+}
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+html{scrollbar-width:none}
+body{
+  font-family:'Nunito',system-ui,sans-serif;color:var(--ink);
+  background:
+    radial-gradient(900px 420px at 92% 0%,rgba(124,92,252,.14),transparent 55%),
+    radial-gradient(760px 380px at 0% 30%,rgba(47,107,255,.10),transparent 55%),
+    radial-gradient(820px 420px at 55% 100%,rgba(236,72,153,.10),transparent 55%),
+    #f6f7fb;
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{font-family:'Nunito',system-ui,sans-serif;font-weight:900;letter-spacing:-.02em}
+.h-hero{font-size:clamp(38px,5.4vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1.05;color:#16123a}
+.h-sec{font-size:clamp(30px,3.6vw,44px);font-weight:900}
+.lead{color:#5b5872}
+.purple{color:var(--purple-deep)}
+.grad-text,.purple{background:var(--grad-brand);background-clip:text;-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent}
+/* Frosted-glass header. */
+.site-header{background:rgba(255,255,255,.82);backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid rgba(255,255,255,.9);box-shadow:0 8px 28px rgba(22,18,58,.06)}
+.nav__link{color:#5b5872}
+.nav__link:hover{background:#efeafe;color:#5b34f0}
+.nav__link.is-active{color:#5b34f0}
+.nav__link.is-active::after{background:var(--grad-brand)}
+/* Pill buttons with the signature gradient. */
+.btn{border-radius:999px}
+.btn--primary,.btn--blue{background:var(--grad-brand);background-size:100% 100%;
+  box-shadow:0 12px 30px rgba(124,92,252,.38)}
+.btn--primary:hover,.btn--blue:hover{background-position:0 0;box-shadow:0 18px 40px rgba(236,72,153,.35)}
+.btn--ghost{background:rgba(255,255,255,.85);border-color:#e3ddf9;color:#16123a}
+.btn--ghost:hover{border-color:#7c5cfc;color:#5b34f0}
+.tag{background:#efeafe;color:#5b34f0;border:1px solid #e3ddf9}
+.tag--pink{background:#fdeaf4;color:#d63384}
+.tag--blue{background:#e9f0ff;color:#2f6bff}
+.badge-nuevo{background:var(--grad-brand)}
+/* Hero: light gradient mesh, glass orbit in brand colours. */
+.hero{background:
+  radial-gradient(900px 420px at 85% 5%,rgba(124,92,252,.20),transparent 55%),
+  radial-gradient(700px 380px at 0% 90%,rgba(236,72,153,.16),transparent 55%),
+  radial-gradient(600px 340px at 60% 40%,rgba(47,107,255,.10),transparent 60%),
+  linear-gradient(120deg,#f6f7fb,#f3edff 60%,#fdf2f8);
+  box-shadow:0 28px 65px rgba(22,18,58,.10)}
+.hero:before{opacity:.12;background-image:linear-gradient(rgba(124,92,252,.16) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(124,92,252,.16) 1px,transparent 1px)}
+.hero:after{background:radial-gradient(circle,rgba(236,72,153,.30),transparent 70%)}
+.hero .orbit{background:radial-gradient(circle at 40% 35%,#a78bfa,#7c5cfc 48%,#5b34f0 90%);
+  box-shadow:inset 0 15px 45px rgba(255,255,255,.35),0 32px 60px rgba(91,52,240,.35)}
+.hero .orbit:before{font-family:'Nunito',system-ui,sans-serif}
+.hero .orbit__center{box-shadow:0 20px 55px rgba(91,52,240,.35)}
+.hero .orbit__item{border:1px solid rgba(255,255,255,.95);background:rgba(255,255,255,.92);
+  backdrop-filter:blur(12px);box-shadow:0 15px 35px rgba(22,18,58,.14)}
+.hero .orbit__item svg{color:#5b34f0}
+/* One pastel tint per orbit tool (DOM order: Agenda, Inventario, Cobros,
+   Reportes, Expedientes, Bots, Gastos, CRM). */
+.hero .orbit__item:nth-child(3){background:#e9f0ff}.hero .orbit__item:nth-child(3) svg{color:#2f6bff}
+.hero .orbit__item:nth-child(4){background:#e6fbf0}.hero .orbit__item:nth-child(4) svg{color:#0f9d6e}
+.hero .orbit__item:nth-child(5){background:#fdeaf4}.hero .orbit__item:nth-child(5) svg{color:#d63384}
+.hero .orbit__item:nth-child(6){background:#f3e8ff}.hero .orbit__item:nth-child(6) svg{color:#9333ea}
+.hero .orbit__item:nth-child(7){background:#e0f7f5}.hero .orbit__item:nth-child(7) svg{color:#0d9488}
+.hero .orbit__item:nth-child(8){background:#f1eafe}.hero .orbit__item:nth-child(8) svg{color:#7c3aed}
+.hero .orbit__item:nth-child(9){background:#fef3c7}.hero .orbit__item:nth-child(9) svg{color:#b45309}
+.hero .orbit__item:nth-child(10){background:#efeafe}.hero .orbit__item:nth-child(10) svg{color:#5b34f0}
+/* Frosted-glass cards, 20px radii. */
+.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step,.giro-card,.form,.mock,.giro-list,.cta-banner{
+  border:1px solid rgba(255,255,255,.9);
+  background:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.72));
+  backdrop-filter:blur(14px) saturate(130%);
+  box-shadow:0 12px 32px rgba(22,18,58,.07)}
+.branch-card,.rama,.svc-card,.why,.tool,.pillar,.step{border-radius:20px}
+.branch-card:hover,.rama:hover,.svc-card:hover,.why:hover,.tool:hover,.pillar:hover,.step:hover{
+  border-color:rgba(124,92,252,.45);box-shadow:0 22px 45px rgba(91,52,240,.14)}
+/* One pastel tinted icon tile per tool / branch. */
+.ic--purple{background:#efeafe;color:#5b34f0}
+.ic--pink{background:#fdeaf4;color:#d63384}
+.ic--blue{background:#e9f0ff;color:#2f6bff}
+.ic--green{background:#e6fbf0;color:#0f9d6e}
+.ic--orange{background:#fff0e6;color:#ea7a1f}
+.ic--cyan{background:#e2f8fc;color:#0891b2}
+.ic--lavender{background:#f3e8ff;color:#9333ea}
+.ic--teal{background:#e0f7f5;color:#0d9488}
+.benefit .ic,.step .ic,.channel .ic,.checklist .dot,.svc-card .dot{background:#efeafe;color:#5b34f0}
+.link-arrow{color:#5b34f0}
+/* Product mock: frosted glass, brand chips. */
+.mock{border-radius:20px}
+.mock__bar{background:#f3edff}
+.mock__hello{font-weight:900}
+.chip-ok{color:#0f9d6e;background:#e6fbf0}
+.mock__av{background:#efeafe;color:#5b34f0}
+.float-card{border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.92);
+  backdrop-filter:blur(12px);box-shadow:0 16px 36px rgba(22,18,58,.12)}
+/* CTA banner keeps the signature gradient; ghost button stays readable. */
+.cta-banner{background:var(--grad-brand);box-shadow:0 30px 70px rgba(124,92,252,.30)}
+.cta-banner .btn--ghost{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.5);color:#fff}
+.cta-banner .btn--ghost:hover{border-color:#fff;color:#fff}
+/* Footer: soft lavender, ink text. */
+.site-footer{background:linear-gradient(150deg,#f3edff,#f6f7fb);border-top:1px solid #eceaf6}
+.site-footer a:hover{color:#5b34f0}
+.socials a{color:#5b34f0}
+.socials a:hover{background:var(--grad-brand);color:#fff}
+/* Section backgrounds use the light base, not blue washes. */
+section[style*="--bg-soft"]{background:#f6f7fb}
+@media(max-width:560px){
+  .hero{border-radius:24px 24px 38px 24px}
+  .orbit__item{width:68px;height:68px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hero:after,.orbit__center,.orbit__item{animation:none!important}
+}

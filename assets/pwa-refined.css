@@ -244,3 +244,99 @@ h3{letter-spacing:-.02em}
 }
 @media(max-width:400px){.cards,.client-dashboard-kpis{grid-template-columns:1fr}.overview-suite-grid{grid-template-columns:1fr}.theme-preview-main{padding:13px 9px}.theme-preview{grid-template-columns:39% 1fr}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* ============================================================
+   MODERN DESIGN UPGRADE (2026-11-12) — glass + gradient mesh.
+   Visual-only: no layout, routing or permission changes.
+   Brand: Nunito 800/900, Ink #16123a, gradient #7c5cfc→#a855f7→#ec4899,
+   bg #f6f7fb, 20px cards. Mobile-nav fix + tenant presets untouched.
+   ============================================================ */
+/* Softer, richer gradient mesh behind everything (tenant presets still
+   override --dashboard-scene via [data-dashboard-preset]). */
+:root{
+ --dashboard-scene:
+  radial-gradient(circle at 88% -4%,rgba(124,92,252,.20),transparent 30%),
+  radial-gradient(circle at -6% 22%,rgba(47,107,255,.13),transparent 32%),
+  radial-gradient(circle at 30% 88%,rgba(236,72,153,.14),transparent 34%),
+  radial-gradient(circle at 72% 62%,rgba(168,85,247,.08),transparent 30%),
+  linear-gradient(145deg,#f6f7fb 0%,#f3edff 52%,#fdf2f8 100%);
+ --bg-card:rgba(255,255,255,.78);
+}
+/* No visible scrollbars anywhere in the PWA (scroll still works). */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+.sidebar{scrollbar-width:none}
+/* Frosted-glass cards: more translucent, softer border + shadow. */
+.card,.card-soft,.stat,.module-card,.record,.company,.tool-option,.line{
+ background:var(--bg-card);
+ border:1px solid rgba(255,255,255,.9);
+ box-shadow:0 14px 34px rgba(27,56,101,.07),inset 0 1px 0 rgba(255,255,255,.8);
+ backdrop-filter:blur(18px) saturate(130%);
+ -webkit-backdrop-filter:blur(18px) saturate(130%);
+}
+/* Bigger, bolder dashboard hierarchy. */
+.page-head h1,.login-page h1{font-size:clamp(34px,3.6vw,56px);font-weight:900;letter-spacing:-.025em}
+.page-head .subline{font-size:15px;color:#5b5872;max-width:640px}
+h2{font-weight:900}
+.card-title h2{font-size:clamp(19px,1.6vw,23px)}
+.stat-number{font-weight:900}
+.stat-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#5b5872}
+/* Pill buttons with the signature gradient. */
+.btn{border-radius:999px;padding:11px 20px}
+.btn-primary{background:var(--grad-brand);box-shadow:0 10px 26px rgba(124,92,252,.38)}
+.btn-primary:hover{box-shadow:0 14px 32px rgba(236,72,153,.32)}
+/* One pastel tinted tile per tool (data-tint set in app-console.js).
+   Line SVG icon inside, deep tone on a soft wash — never emoji. */
+.company-icon{width:46px;height:46px;border-radius:15px;font-size:21px;
+ background:linear-gradient(135deg,#fff,#efeafe 45%,#fdeaf4 75%,#e9e4ff);
+ color:#5b34f0;box-shadow:inset 0 1px 2px #fff,0 4px 12px rgba(91,52,240,.14)}
+.company-icon .hubie-icon{width:23px;height:23px}
+.company-icon[data-tint="crm"]{background:#efeafe;color:#5b34f0}
+.company-icon[data-tint="agenda"]{background:#e9f0ff;color:#2f6bff}
+.company-icon[data-tint="inventario"]{background:#e6fbf0;color:#0f9d6e}
+.company-icon[data-tint="cobros"]{background:#fdeaf4;color:#d63384}
+.company-icon[data-tint="vendedores"]{background:#fff0e6;color:#ea7a1f}
+.company-icon[data-tint="bots"]{background:#f1eafe;color:#7c3aed}
+.company-icon[data-tint="catalogos"]{background:#e2f8fc;color:#0891b2}
+.company-icon[data-tint="expedientes"]{background:#e0f7f5;color:#0d9488}
+.company-icon[data-tint="gastos"]{background:#fef3c7;color:#b45309}
+.company-icon[data-tint="reportes"]{background:#f3e8ff;color:#9333ea}
+/* Module cards: roomier tile, clearer title, softer lift. */
+.module-card{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:20px}
+.module-card strong{font-size:14px;font-weight:800}
+.module-card small{font-size:12px;color:#5b5872}
+.module-card:hover{transform:translateY(-4px)}
+/* Tool options in Madre: tinted icon chip behind the line SVG. */
+.compact-tool-grid .tool-option>.hubie-icon{width:30px;height:30px;padding:5px;border-radius:10px;
+ background:#efeafe;color:#5b34f0;box-sizing:border-box}
+/* Softer, clearer empty + loading states. */
+.empty{padding:34px 20px;background:rgba(255,255,255,.72);border:1px dashed #c9b8f5;
+ border-radius:20px;font-size:13px;line-height:1.6;backdrop-filter:blur(8px)}
+.aurora-list .help,.record-list .help{font-size:12.5px;color:#5b5872}
+#module-message{font-size:13px}
+/* Insight rows + KPI tiles get the same frosted treatment. */
+.aurora-row{background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.9);
+ backdrop-filter:blur(10px)}
+.insight-mark{width:38px;height:38px;border-radius:13px;
+ background:linear-gradient(135deg,#efeafe,#fdeaf4);color:#5b34f0}
+/* Madre premium stats: tinted icon tile instead of a bare glyph. */
+.premium-stat .premium-stat-icon{width:46px;height:46px;border-radius:15px;
+ background:linear-gradient(135deg,#efeafe,#fdeaf4);color:#5b34f0;
+ box-shadow:inset 0 1px 2px #fff,0 4px 12px rgba(91,52,240,.12)}
+.premium-stat .premium-stat-icon svg{width:23px;height:23px}
+.premium-stat{display:flex;align-items:flex-start;gap:14px}
+/* Cover: keep the signature gradient, soften the ring. */
+.cover{box-shadow:0 24px 44px rgba(124,92,252,.32)}
+.cover h2{font-weight:900}
+/* Official logo on the navy sidebar: the wordmark is dark ink, illegible on
+   #16123a. Brand-book treatment from marca.html (logo-dark): render it white
+   with filter:brightness(0) invert(1). Only for the OFFICIAL logo — a tenant
+   logo keeps its own colors, so the class is set only when the official logo
+   is in use (Madre: static class in madre/app.html; client: toggled in
+   app-console.js openOrganization, including the onerror fallback). */
+.sidebar .brand img.logo-official{filter:brightness(0) invert(1)}
+@media(max-width:760px){
+ .page-head h1{font-size:34px}
+ .module-card{padding:14px 15px}
+ .company-icon{width:44px;height:44px}
+}

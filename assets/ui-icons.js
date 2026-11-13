@@ -55,6 +55,20 @@ export function icon(name,size=18){
  return svg;
 }
 export const toolIcon=id=>icon(toolIcons[id]||'layers');
+// Pastel tint per tool (visual only): one soft hue per module family, used by
+// .company-icon[data-tint] in pwa-refined.css. Names follow the catalog:
+// CRM purple, Agenda blue, Inventario mint, Cobros pink, Vendedores orange,
+// Bots violet, Catálogos sky, Expedientes teal, Gastos amber, Reportes lavender.
+const toolTints={
+ C001:'crm',C002:'crm',C003:'expedientes',C004:'agenda',C005:'inventario',
+ C006:'catalogos',C007:'gastos',C008:'reportes',C009:'vendedores',C010:'bots',
+ T001:'crm',T002:'cobros',T003:'catalogos',T004:'agenda',T005:'reportes',
+ T006:'expedientes',T007:'catalogos',T008:'inventario',T009:'vendedores',
+ T010:'inventario',T011:'inventario',T012:'bots',T013:'cobros',T014:'cobros',
+ T015:'gastos',T016:'gastos',T017:'cobros',T018:'gastos',T019:'vendedores',
+ T020:'reportes',T021:'bots'
+};
+export const toolTint=id=>toolTints[id]||'crm';
 export function decorateSidebar(sidebar){
  if(!sidebar)return;
  const mapping={overview:'home',companies:'building',create:'plus',detail:'settings',appearance:'palette',catalog:'grid'};

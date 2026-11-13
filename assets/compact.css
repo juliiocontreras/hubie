@@ -143,3 +143,13 @@
 .hc-home-visual__images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .hc-home-visual__images img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;border-radius:16px;box-shadow:0 12px 25px #21598a18}
 @media(max-width:700px){.hc-image-story,.hc-home-visual__inner{grid-template-columns:1fr}.hc-image-story__copy{padding:10px}.hc-service-images{grid-template-columns:1fr}.hc-home-visual__images{gap:7px}}
+
+/* MODERN DESIGN UPGRADE (2026-11-12) — home visual section only.
+   Brand Book v1.0: Nunito, Ink #16123a, gradient #7c5cfc→#a855f7→#ec4899. */
+.hc-home-visual__inner h2{font-family:'Nunito',system-ui,sans-serif;font-weight:900;
+  letter-spacing:-.02em;color:#16123a}
+.hc-home-visual__inner p{color:#5b5872}
+.hc-home-visual__eyebrow{color:#5b34f0}
+.hc-home-visual__inner a{color:#5b34f0;font-weight:800}
+.hc-home-visual__images img{border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 16px 36px rgba(22,18,58,.10)}
