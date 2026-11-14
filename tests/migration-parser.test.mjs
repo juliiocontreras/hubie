@@ -43,5 +43,5 @@ test('server: /healthz reporta cuántas tablas hay, no solo ready/not-ready', as
  const server = await readFile('server.mjs', 'utf8');
  assert.match(server, /let tableCount=0/);
  assert.match(server, /tables:tableCount/);
- assert.match(server, /schemaReady=tableCount===34/);
+ assert.match(server, /schemaReady=tableCount===84/);
 });

@@ -1,0 +1,14 @@
+-- 025: Drop tenant_domains (dead table).
+-- Evidence (2026-11-13, dead-code front): tenant_domains is created in
+-- 003_identity.sql and referenced NOWHERE else in code, tests or live docs
+-- (only docs/MULTITENANT-AUDIT-2026-11-12.md §2.1/§14.14 mentions it as
+-- "created but without any use in code"). No endpoint, store, console or
+-- service worker reads or writes it; there is no custom-domain feature.
+-- 003_identity.sql is NOT edited: it already ran against live Turso, so the
+-- drop lives here as a new additive migration instead of rewriting history.
+-- DROP ... IF EXISTS keeps this idempotent and safe to re-run.
+-- NOTE (integration): server.mjs applyCoreSchema() has a hardcoded migration
+-- list (001-016); add '025_drop_tenant_domains.sql' there so the server
+-- applies this file. The /healthz table count (34) is unaffected:
+-- tenant_domains is not in the counted table list.
+DROP TABLE IF EXISTS tenant_domains;

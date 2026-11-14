@@ -28,8 +28,8 @@ export async function createTenant(input,actorId){
  return {id,slug:data.slug,name:data.name,suiteId:data.suiteId,enabledTools:data.toolIds};
 }
 export async function listTenants(){
- const r=await executeSql('SELECT o.id,o.slug,o.name,o.status,s.suite_id FROM organizations o LEFT JOIN tenant_settings s ON s.organization_id=o.id ORDER BY o.created_at DESC LIMIT 200');
- return rows(r).map(x=>({id:x[0],slug:x[1],name:x[2],status:x[3],suiteId:x[4]}));
+ const r=await executeSql("SELECT o.id,o.slug,o.name,o.status,s.suite_id,u.email FROM organizations o LEFT JOIN tenant_settings s ON s.organization_id=o.id LEFT JOIN memberships m ON m.organization_id=o.id AND m.role='owner' LEFT JOIN users u ON u.id=m.user_id ORDER BY o.created_at DESC LIMIT 200");
+ return rows(r).map(x=>({id:x[0],slug:x[1],name:x[2],status:x[3],suiteId:x[4],ownerEmail:x[5]??null}));
 }
 export async function getTenantAdmin(id){
  const org=rows(await executeSql('SELECT o.id,o.slug,o.name,o.status,s.suite_id,s.display_name,s.logo_url,s.primary_color,s.secondary_color,s.timezone FROM organizations o JOIN tenant_settings s ON s.organization_id=o.id WHERE o.id=?',[id]))[0];

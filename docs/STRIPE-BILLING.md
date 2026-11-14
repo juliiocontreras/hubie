@@ -40,9 +40,16 @@ configurado"` y la app sigue funcionando normal.
      (`tenant_subscriptions`, estado `active`), marca el anticipo como pagado
      (`tenant_payments` tipo `deposit`) y deja el saldo en parcialidades
      pendientes (`type='balance'`, `installment_number` 1..6).
-   - **Sin tenant** (checkout público desde el cotizador): la orden queda
-     `paid` y aparece en Madre como **pago recibido sin empresa**; Madre crea
-     la empresa y vincula el pago desde su ficha.
+   - **Sin tenant** (checkout público desde el cotizador): el webhook crea
+     la empresa con la suite de la cotización y deja como owner al cliente
+     que pagó (alta autoservicio, migración 018, `platform/onboarding-store.mjs`):
+     si el correo es nuevo se crea el usuario y se emite un enlace de
+     activación de un solo uso (24 h, solo se guarda su hash); si ya existe,
+     se vincula como owner. La orden queda `converted` con su
+     `organization_id` y la suscripción, el anticipo y el saldo se activan
+     igual que con tenant. Madre muestra el tenant nuevo con su owner y
+     puede reemitir el enlace de activación desde su ficha. Un segundo pago
+     del mismo cliente reutiliza su tenant, no crea otro.
 6. **Saldo**: se resuelve con **facturas de Stripe, una por parcialidad**,
    con vencimiento mensual (`scheduleBalanceInvoices` en
    `platform/billing-webhook.mjs`). Se crean como borrador y se finalizan para
@@ -65,6 +72,35 @@ configurado"` y la app sigue funcionando normal.
 - `invoice.payment_succeeded` → vuelve a `active` y limpia `past_due_since`.
 - `customer.subscription.deleted` → `cancelled`.
 
+## Barrido de gracia (sin cron dentro de la app)
+
+No hay ningún cron, worker ni temporizador dentro de Hubie/Render que
+suspenda solo: la suspensión materializada (`status='suspended'` en
+`tenant_subscriptions`) solo ocurre cuando algo la dispara. El barrido es
+`POST /api/admin/billing/sweep` (solo superadmin, misma sesión de Madre
+que `GET /api/admin/billing`), implementado en
+`sweepPastDueSuspensions()` (`platform/billing-store.mjs`): lista las
+suscripciones `past_due`, suspende las que llevan más de 3 días vencidas
+(`suspendIfGraceExpired`) y registra cada suspensión en `audit_events`
+(`action='billing.suspended_grace'`, `target_type='subscription'`,
+actor NULL porque lo ejecuta el barrido, no un usuario). Devuelve
+`{checked, suspended: [organizationIds], suspendedCount}`. Es idempotente:
+una segunda llamada ya no encuentra esas suscripciones en `past_due`.
+
+Llamarlo desde un cron externo (por ejemplo, el programador del
+proveedor de hosting o una tarea programada del equipo) una vez al día:
+
+```bash
+curl -X POST https://<dominio>/api/admin/billing/sweep \
+  -H "Origin: https://<dominio>" \
+  -H "Cookie: __Host-hubie_session=<sesión de superadmin vigente>"
+```
+
+La sesión es la cookie de Madre (`__Host-hubie_session`); caduca a las
+24 h, así que el cron externo debe renovarla iniciando sesión como
+superadmin antes de llamar al barrido (no hay token de servicio). Si la
+sesión caducó, el endpoint responde 401 y no suspende nada.
+
 La suspensión por impago vive en `tenant_subscriptions.status` y **NO toca
 `organizations.status`**: el resto de la app (login, membresías, tools) sigue
 leyendo su propio estado y el login del superadmin nunca se bloquea. El resto
@@ -79,6 +115,7 @@ de la app puede leer el flag con `isBillingSuspended(organizationId)` en
 | POST | `/api/stripe/webhook` | Stripe (firma HMAC). Sin claves → 503. Firma inválida → 400. Error interno → 500 (Stripe reintenta). |
 | GET | `/api/billing/status?slug=` | Sesión de tenant. Estado, próxima mensualidad, saldo pendiente. |
 | GET | `/api/admin/billing` | Superadmin. Empresas con estado de cobro + órdenes pagadas sin tenant. |
+| POST | `/api/admin/billing/sweep` | Superadmin. Barrido de gracia: suspende `past_due` con >3 días y audita. Sin cron interno; ver § "Barrido de gracia". |
 
 ## Tablas (migración 015)
 
@@ -111,7 +148,11 @@ prueba) apuntando a `https://<dominio>/api/stripe/webhook` con los eventos:
 - Flujo completo contra Stripe real en modo prueba (sesión mixta anticipo +
   suscripción, finalización de facturas de saldo, webhooks en vivo).
 - Confirmar con Julio el supuesto de IVA incluido.
-- Convertir una orden pagada sin tenant en tenant desde Madre (hoy la orden
-  se lista; la vinculación es manual).
+- El enlace de activación solo se muestra una vez (en el log del webhook y
+  al reemitirlo desde Madre): Hubie aún no tiene envío de correo, así que el
+  superadmin lo copia y se lo envía al cliente por fuera.
+- Convertir una orden pagada sin tenant en tenant desde Madre: ya no hace
+  falta en el flujo normal (el webhook lo hace solo); la lista de pagos sin
+  empresa solo queda para órdenes antiguas o fallidas.
 - Barrido periódico de gracia (hoy la suspensión se evalúa al leer el estado
   y al recibir fallos de pago; no hay cron que suspenda sin eventos).

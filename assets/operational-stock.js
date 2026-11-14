@@ -38,7 +38,13 @@ export async function renderStock(ctx){
    const card=container('record'),info=container('stack'),title=document.createElement('strong');
    title.textContent=item.sku+' · '+item.title;info.append(title);
    info.append(line('Stock actual: '+item.quantity+' · Mínimo: '+item.lowStock+' · '+(item.location||'Sin ubicación'),'help'));
-   if(item.isLow)info.append(line('⚠ Stock en nivel de alerta','message error'));
+   if(item.isLow)info.append(line('Stock en nivel de alerta','message error'));
+   for(const v of item.variants||[]){
+    info.append(line('Variante '+v.label+(v.sku?' · '+v.sku:'')+' · '+v.quantity+' uds. · '+(v.warehouse||'Sin almacén')+
+     (v.lot?' · Lote '+v.lot:'')+(v.expiresOn?' · Caduca '+v.expiresOn:'')+(v.supplier?' · Prov. '+v.supplier:'')+
+     (v.expired?' · CADUCADA':v.expiringSoon?' · Por caducar':''),'help'));
+   }
+   if(item.expiringVariants)info.append(line(item.expiringVariants+' variante(s) por caducar o caducadas','message error'));
    card.append(info);
    if(canWrite){
     const controls=container('stack');
@@ -50,23 +56,45 @@ export async function renderStock(ctx){
     };
     controls.append(edit);
     const move=document.createElement('form');move.className='toolbar';
+    const target=document.createElement('select');target.className='search';target.style.maxWidth='170px';
+    target.add(new Option('Total del artículo',''));
+    for(const v of item.variants||[])target.add(new Option('Variante: '+v.label,v.id));
     const kind=document.createElement('select');kind.className='search';kind.style.maxWidth='120px';
     kind.add(new Option('Entrada','in'));kind.add(new Option('Salida','out'));
     const qty=document.createElement('input');qty.type='number';qty.className='search';qty.style.maxWidth='100px';qty.min='1';qty.step='1';qty.placeholder='Unidades';qty.required=true;
     const note=document.createElement('input');note.className='search';note.style.maxWidth='150px';note.placeholder='Motivo (opcional)';note.maxLength=400;
     const submit=button('Registrar','btn btn-primary');submit.type='submit';
-    move.append(kind,qty,note,submit);
+    move.append(target,kind,qty,note,submit);
     move.addEventListener('submit',async e=>{
      e.preventDefault();submit.disabled=true;
      try{
       const amount=Number(qty.value);if(!Number.isSafeInteger(amount)||amount<=0)throw Error('Cantidad inválida.');
       const delta=kind.value==='in'?amount:-amount;
-      await ctx.write(path+'/'+item.id+'/movements','POST',{delta,note:note.value.trim()});
+      await ctx.write(path+'/'+item.id+'/movements','POST',{delta,note:note.value.trim(),variantId:target.value||null});
       ctx.notice((delta>0?'Entrada':'Salida')+' registrada para '+item.sku+'.');await reload();
      }catch(e){ctx.notice(e.message==='Insufficient stock'?'No hay suficientes unidades para esta salida.':'No se registró: '+e.message,true);}
      finally{submit.disabled=false;}
     },{signal:ctx.signal});
-    controls.append(move);card.append(controls);
+    controls.append(move);
+    const vform=document.createElement('form');vform.className='toolbar';
+    const vlabel=document.createElement('input');vlabel.className='search';vlabel.placeholder='Variante (talla / color / modelo)';vlabel.required=true;vlabel.maxLength=120;
+    const vsku=document.createElement('input');vsku.className='search';vsku.style.maxWidth='130px';vsku.placeholder='SKU variante';
+    const vwh=document.createElement('input');vwh.className='search';vwh.style.maxWidth='120px';vwh.placeholder='Almacén';vwh.value=item.location||'';
+    const vlot=document.createElement('input');vlot.className='search';vlot.style.maxWidth='100px';vlot.placeholder='Lote';
+    const vexp=document.createElement('input');vexp.type='date';vexp.className='search';vexp.style.maxWidth='140px';vexp.title='Caducidad';
+    const vsup=document.createElement('input');vsup.className='search';vsup.style.maxWidth='130px';vsup.placeholder='Proveedor';
+    const vadd=button('Agregar variante','btn');vadd.type='submit';
+    vform.append(vlabel,vsku,vwh,vlot,vexp,vsup,vadd);
+    vform.addEventListener('submit',async e=>{
+     e.preventDefault();vadd.disabled=true;
+     try{
+      await ctx.write(path+'/'+item.id+'/variants','POST',{label:vlabel.value.trim(),sku:vsku.value.trim()||null,
+       warehouse:vwh.value.trim(),lot:vlot.value.trim(),expiresOn:vexp.value||null,supplier:vsup.value.trim(),lowStock:0});
+      ctx.notice('Variante agregada. La orden de compra real se crea en T008 (Compras).');await reload();
+     }catch(ex){ctx.notice('No se agregó la variante: '+ex.message,true);}
+     finally{vadd.disabled=false;}
+    },{signal:ctx.signal});
+    controls.append(vform);card.append(controls);
    }
    list.append(card);
   }

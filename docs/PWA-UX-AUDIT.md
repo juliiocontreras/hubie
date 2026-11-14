@@ -34,7 +34,7 @@
 ## Protección de archivos y almacenamiento
 - Archivos no se guardan en disco efímero de Render ni se envían a terceros.
 - Turso staging: `pwa_media`, contenido codificado, autorización en GET/POST/DELETE, tipos MIME en allowlist, firmas PNG/JPEG/WEBP/PDF/ZIP verificadas, descarga forzada para adjuntos.
-- Máximo **900 KB** por imagen de fondo, **2 MB** por documento, hasta **12 adjuntos** por registro y cuota básica de **60 MB** por organización. Diseño conservador para pruebas; grandes ficheros requerirán un servicio de objetos dedicado (R2/S3) y análisis antimalware antes de producción.
+- Máximo **900 KB** por imagen de fondo, **10 MB** por documento (migración 017; antes 2 MB por el CHECK de 010_media.sql), hasta **12 adjuntos** por registro y cuota básica de **60 MB** por organización. Diseño conservador para pruebas; grandes ficheros requerirán un servicio de objetos dedicado (R2/S3) y análisis antimalware antes de producción.
 - Demo `?demo=1`: imágenes y archivos ficticios se almacenan localmente en `sessionStorage` y nunca se envían a Turso; límite conservador de **650 KB** por adjunto en demo. No subir documentos confidenciales a la demostración.
 - Respuestas privadas usan `Cache-Control: no-store` y se verifican sesión, pertenencia a empresa y Tool habilitada.
 

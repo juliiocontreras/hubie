@@ -30,7 +30,7 @@ test('server aplica la migración 015 y /healthz espera las 4 tablas nuevas', as
  for (const table of ['tenant_subscriptions', 'tenant_payments', 'stripe_webhook_events', 'billing_checkout_orders']) {
   assert.ok(server.includes(`'${table}'`), table);
  }
- assert.match(server, /===34/); // 24 base + 4 billing (015) + 6 commerce (016)
+ assert.match(server, /===84/); // 24 base + 4 billing (015) + 6 commerce (016) + 3 onboarding (018) + 1 notifications (020)
 });
 
 test('.env.example documenta Stripe en modo prueba sin valores reales', async () => {

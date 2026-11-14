@@ -26,3 +26,6 @@ next-env.d.ts
 
 # Deepwork
 .slim/deepwork/
+
+__pycache__/
+*.pyc

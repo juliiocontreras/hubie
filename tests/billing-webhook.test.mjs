@@ -37,20 +37,28 @@ test('sesión de checkout: modo subscription, anticipo one-time + mensualidad $9
  assert.throws(() => buildCheckoutSessionParams({quote: quote(), email: '', orderId: 'x', origin: 'https://x'}), /Invalid checkout/);
 });
 
-test('checkout completado sin tenant: orden pagada, pendiente de convertir en Madre', async () => {
+test('checkout completado sin tenant: alta autoservicio crea el tenant con el cliente como owner', async () => {
  const fake = seed();
  const {client} = mockStripe();
  await createCheckoutOrder({email: 'nuevo@demo.mx', quote: quote(), stripeSessionId: 'cs_1'}, depsOf(fake));
  const event = {id: 'evt_10', type: 'checkout.session.completed', data: {object: {id: 'cs_1', customer: 'cus_1', subscription: 'sub_1', metadata: {}}}};
  const result = await handleStripeEvent(event, {stripe: client, deps: depsOf(fake)});
  assert.equal(result.handled, true);
- assert.equal(result.pendingTenant, true);
- assert.equal(fake.tables.billing_checkout_orders[0].status, 'paid');
+ assert.equal(result.provisioned, true);
+ assert.equal(result.isNewUser, true);
+ assert.equal(result.setupTokenIssued, true);
+ assert.ok(result.organizationId);
+ assert.equal(fake.tables.billing_checkout_orders[0].status, 'converted');
+ assert.equal(fake.tables.billing_checkout_orders[0].organization_id, result.organizationId);
+ const member = fake.tables.memberships.find(m => m.organization_id === result.organizationId);
+ assert.equal(member.role, 'owner');
+ assert.equal(fake.tables.users.find(u => u.id === member.user_id).email, 'nuevo@demo.mx');
  assert.equal(fake.tables.stripe_webhook_events[0].processed_at, 'now');
  // Reintento del mismo evento: duplicado, no se vuelve a procesar.
  const again = await handleStripeEvent(event, {stripe: client, deps: depsOf(fake)});
  assert.equal(again.duplicate, true);
- assert.equal(fake.tables.billing_checkout_orders[0].status, 'paid');
+ assert.equal(fake.tables.organizations.length, 2); // demo-sa del seed + el nuevo
+ assert.equal(fake.tables.billing_checkout_orders[0].status, 'converted');
 });
 
 test('checkout completado con tenant: activa suscripción y programa el saldo en facturas', async () => {

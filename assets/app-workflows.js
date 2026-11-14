@@ -5,6 +5,18 @@ import {renderAgenda} from './operational-agenda.js';
 import {renderStock} from './operational-stock.js';
 import {renderSurveys} from './operational-surveys.js';
 import {renderQuotes,renderCatalog,renderExpenses,renderPayments,renderInvoices,renderReports} from './operational-commerce.js';
+import {renderChecklists} from './operational-checklists.js';
+import {renderTasks} from './operational-tasks.js';
+import {renderForms} from './operational-forms.js';
+import {renderDashboard} from './operational-dashboard.js';
+import {renderSuppliers,renderPurchases,renderWarehouses,renderCashbox,renderReceivables,renderPayables} from './operational-p1b.js';
+import {renderPortal} from './portal-p2.js';
+import {renderLoyalty} from './loyalty-p2.js';
+import {renderKanban} from './kanban-p2.js';
+import {renderSignatures} from './signatures-p2.js';
+import {renderLots} from './lots-p2.js';
+import {renderScanner} from './scanner-p2.js';
+import {renderCommissions} from './commissions-p2.js';
 
 let activeController=null;
 export function closeOperationalModule(){
@@ -45,6 +57,9 @@ export async function openOperationalModule(ctx){
  document.getElementById('add-record').hidden=true;
  const key=ctx.tool.id;
  const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:
-  key==='C006'?renderCatalog:key==='C007'?renderExpenses:key==='T013'?renderQuotes:key==='T014'?renderPayments:key==='T015'?renderInvoices:key==='T020'?renderReports:renderStock;
+  key==='C006'?renderCatalog:key==='C007'?renderExpenses:key==='T013'?renderQuotes:key==='T014'?renderPayments:key==='T015'?renderInvoices:key==='T020'?renderReports:
+  key==='C008'?renderDashboard:key==='T003'?renderChecklists:key==='T004'?renderTasks:key==='T007'?renderForms:
+  key==='T008'?renderPurchases:key==='T009'?renderSuppliers:key==='T010'?renderWarehouses:key==='T016'?renderCashbox:key==='T017'?renderReceivables:key==='T018'?renderPayables:
+  key==='T001'?renderPortal:key==='T002'?renderLoyalty:key==='T005'?renderKanban:key==='T006'?renderSignatures:key==='T011'?renderLots:key==='T012'?renderScanner:key==='T019'?renderCommissions:renderStock;
  await runner({...ctx,signal,search});
 }

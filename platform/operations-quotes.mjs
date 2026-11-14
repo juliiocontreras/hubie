@@ -9,12 +9,14 @@ const audit=(org,user,action,id)=>({sql:'INSERT INTO audit_events(id,organizatio
 const select=`SELECT q.id,q.client_id,q.client_name,q.title,q.notes,q.vat_rate,q.status,q.valid_until,
  q.subtotal_cents,q.vat_cents,q.total_cents,q.public_token,q.accepted_at,q.created_at,q.updated_at,
  COALESCE((SELECT SUM(amount_cents) FROM tenant_collections p WHERE p.organization_id=q.organization_id AND p.quote_id=q.id AND p.archived_at IS NULL),0),
- (SELECT COUNT(*) FROM tenant_quote_lines l WHERE l.organization_id=q.organization_id AND l.quote_id=q.id)
+ (SELECT COUNT(*) FROM tenant_quote_lines l WHERE l.organization_id=q.organization_id AND l.quote_id=q.id),
+ (SELECT l.deal_id FROM tenant_deal_quotes l WHERE l.organization_id=q.organization_id AND l.quote_id=q.id LIMIT 1)
  FROM tenant_quotes q`;
 const toQuote=r=>({id:r[0],clientId:r[1],clientName:r[2],title:r[3],notes:r[4],vatRate:r[5],status:r[6],
  validUntil:r[7]||null,subtotalCents:Number(r[8]),vatCents:Number(r[9]),totalCents:Number(r[10]),
  publicToken:r[11],acceptedAt:r[12]||null,createdAt:r[13],updatedAt:r[14],
- paidCents:Number(r[15]||0),balanceCents:Math.max(0,Number(r[10])-Number(r[15]||0)),linesCount:Number(r[16])});
+ paidCents:Number(r[15]||0),balanceCents:Math.max(0,Number(r[10])-Number(r[15]||0)),linesCount:Number(r[16]),
+ dealId:r[17]||null});
 const toLine=r=>({id:r[0],description:r[1],quantity:Number(r[2]),unitPriceCents:Number(r[3]),lineTotalCents:Number(r[4]),position:Number(r[5])});
 
 async function ensureClient(org,id){

@@ -48,6 +48,9 @@ export async function listBillingForAdmin(deps = {}) {
  const balances = rows(await db(deps).sql(
   "SELECT organization_id,SUM(amount_cents) AS total FROM tenant_payments WHERE type='balance' AND status='pending' GROUP BY organization_id"));
  const balanceByOrg = new Map(balances.map(b => [b[0], Number(b[1])]));
+ const owners = rows(await db(deps).sql(
+  "SELECT m.organization_id,u.email FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.role='owner'"));
+ const ownerByOrg = new Map(owners.map(o => [o[0], o[1]]));
  const orders = rows(await db(deps).sql(
   "SELECT id,email,suite_id,total_cents,deposit_cents,balance_cents,status,created_at FROM billing_checkout_orders WHERE status='paid' AND organization_id IS NULL ORDER BY created_at DESC"));
  return {
@@ -57,6 +60,7 @@ export async function listBillingForAdmin(deps = {}) {
    const effectiveStatus = statusAfterGrace(status, sub?.[4] ?? null);
    return {
     id: t[0], slug: t[1], name: t[2], suiteId: t[3] ?? null,
+    ownerEmail: ownerByOrg.get(t[0]) ?? null,
     billingStatus: effectiveStatus, billingStatusLabel: BILLING_STATUS_LABELS[effectiveStatus],
     monthlyFeeCents: sub ? Number(sub[2]) : 94900, currentPeriodEnd: sub?.[3] ?? null,
     pastDueSince: sub?.[4] ?? null, daysPastDue: daysPastDue(sub?.[4] ?? null),
@@ -161,4 +165,25 @@ export async function suspendIfGraceExpired(organizationId, now = new Date(), de
   "UPDATE tenant_subscriptions SET status='suspended',updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND status='past_due'",
   [organizationId]);
  return {organizationId, status: 'suspended', changed: true, pastDueSince};
+}
+// Barrido de gracia (P0, sin cron dentro de la app): pasa a 'suspended' las
+// suscripciones past_due con más de GRACE_DAYS_PAST_DUE días y lo registra
+// en audit_events (action billing.suspended_grace, actor NULL: lo ejecuta
+// el barrido, no un usuario). Lo llama POST /api/admin/billing/sweep, solo
+// superadmin; ver docs/STRIPE-BILLING.md para el cron externo.
+export async function sweepPastDueSuspensions(now = new Date(), deps = {}) {
+ const current = now instanceof Date ? now : new Date(now);
+ const subs = rows(await db(deps).sql(
+  "SELECT organization_id,past_due_since FROM tenant_subscriptions WHERE status='past_due'"));
+ const suspended = [];
+ for (const [organizationId] of subs) {
+  const result = await suspendIfGraceExpired(organizationId, current, deps);
+  if (result.changed) {
+   await db(deps).sql(
+    'INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id) VALUES(?,?,?,?,?,?)',
+    [randomUUID(), organizationId, null, 'billing.suspended_grace', 'subscription', organizationId]);
+   suspended.push(organizationId);
+  }
+ }
+ return {checked: subs.length, suspended, suspendedCount: suspended.length};
 }

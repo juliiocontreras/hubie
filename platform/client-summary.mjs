@@ -9,7 +9,7 @@ export async function getClientSummary(token,slug,clientId){
  if(!client)throw Error('Not found');
  const enabled=new Set(await getTenantTools(tenant.id));
  const data={client:{id:client[0],name:client[1],company:client[2],email:client[3],phone:client[4],status:client[5]},
-  deals:[],cases:[],appointments:[],counts:{deals:0,cases:0,appointments:0}};
+  deals:[],cases:[],appointments:[],quotes:[],counts:{deals:0,cases:0,appointments:0,quotes:0}};
  const operations=[];
  if(enabled.has('C002'))operations.push(executeSql(`SELECT d.id,d.title,d.stage,d.amount_cents,d.follow_up_at,COUNT(*) OVER() FROM tenant_crm_deals d
  JOIN tenant_deal_clients l ON l.organization_id=d.organization_id AND l.deal_id=d.id
@@ -22,6 +22,9 @@ export async function getClientSummary(token,slug,clientId){
  JOIN tenant_appointment_links l ON l.organization_id=e.organization_id AND l.appointment_id=e.id
  WHERE e.organization_id=? AND l.client_id=? ORDER BY e.starts_at DESC LIMIT 30`,[tenant.id,clientId])
   .then(r=>{const arr=rows(r);data.counts.appointments=Number(arr[0]?.[4]||0);data.appointments=arr.map(x=>({id:x[0],title:x[1],startsAt:x[2],status:x[3]}));}));
+ if(enabled.has('T013'))operations.push(executeSql(`SELECT id,title,status,total_cents,updated_at,COUNT(*) OVER() FROM tenant_quotes
+ WHERE organization_id=? AND client_id=? AND archived_at IS NULL ORDER BY updated_at DESC LIMIT 30`,[tenant.id,clientId])
+  .then(r=>{const arr=rows(r);data.counts.quotes=Number(arr[0]?.[5]||0);data.quotes=arr.map(x=>({id:x[0],title:x[1],status:x[2],totalCents:Number(x[3]),updatedAt:x[4]}));}));
  await Promise.all(operations);
  return data;
 }

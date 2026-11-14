@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {executeSql,executeBatch} from '../database.mjs';
 import {authorizeTool} from './records.mjs';
 import {normalizeCase,normalizeCaseUpdate,caseKinds,caseStatuses} from './cases-domain.mjs';
+import {checkMemberToolAccess} from './member-tools-p0.mjs';
 const rows=r=>r?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
 const changed=r=>Number(r?.rowsAffected??r?.affected_row_count??0)>0;
 const caseFields=`SELECT c.id,c.client_id,p.name,c.title,c.kind,c.status,c.notes,c.created_at,c.updated_at,
@@ -21,7 +22,8 @@ async function getCase(tenantId,id){
  return convert(record);
 }
 export async function listCases(token,slug){
- const {tenant}=await authorizeTool(token,slug,'C003');
+ const {tenant,session}=await authorizeTool(token,slug,'C003');
+ await checkMemberToolAccess(tenant.id,session.userId,session.role,'C003',false);
  const [cases,clients]=await Promise.all([
   executeSql(caseFields+' WHERE c.organization_id=? AND c.archived_at IS NULL ORDER BY c.updated_at DESC LIMIT 250',[tenant.id]),
   executeSql("SELECT id,name,company,email FROM tenant_client_profiles WHERE organization_id=? AND archived_at IS NULL ORDER BY name LIMIT 250",[tenant.id])
@@ -30,6 +32,7 @@ export async function listCases(token,slug){
 }
 export async function createCase(token,slug,input){
  const {tenant,session}=await authorizeTool(token,slug,'C003',true);
+ await checkMemberToolAccess(tenant.id,session.userId,session.role,'C003',true);
  const data=normalizeCase(input),id=randomUUID();
  const batch=[
   {sql:`INSERT INTO tenant_client_cases(organization_id,id,client_id,title,kind,status,notes,created_by)
@@ -46,6 +49,7 @@ export async function createCase(token,slug,input){
 }
 export async function updateCase(token,slug,id,input){
  const {tenant,session}=await authorizeTool(token,slug,'C003',true);
+ await checkMemberToolAccess(tenant.id,session.userId,session.role,'C003',true);
  const data=normalizeCaseUpdate(input);
  const result=await executeBatch([
   {sql:`UPDATE tenant_client_cases SET title=?,kind=?,status=?,notes=?,updated_at=CURRENT_TIMESTAMP
@@ -63,6 +67,7 @@ export async function updateCase(token,slug,id,input){
 }
 export async function archiveCase(token,slug,id){
  const {tenant,session}=await authorizeTool(token,slug,'C003',true);
+ await checkMemberToolAccess(tenant.id,session.userId,session.role,'C003',true);
  const result=await executeBatch([
   {sql:'UPDATE tenant_client_cases SET archived_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE organization_id=? AND id=? AND archived_at IS NULL',args:[tenant.id,id]},
   activity(tenant.id,id,session.userId,'archived','Expediente archivado'),
@@ -72,7 +77,8 @@ export async function archiveCase(token,slug,id){
  return {archived:true};
 }
 export async function caseHistory(token,slug,id){
- const {tenant}=await authorizeTool(token,slug,'C003');
+ const {tenant,session}=await authorizeTool(token,slug,'C003');
+ await checkMemberToolAccess(tenant.id,session.userId,session.role,'C003',false);
  const found=rows(await executeSql('SELECT id FROM tenant_client_cases WHERE organization_id=? AND id=? AND archived_at IS NULL',[tenant.id,id]));
  if(!found.length)throw Error('Not found');
  const result=await executeSql('SELECT id,action,description,created_at FROM tenant_case_events WHERE organization_id=? AND case_id=? ORDER BY created_at DESC,id DESC LIMIT 150',[tenant.id,id]);

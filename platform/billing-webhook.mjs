@@ -1,4 +1,5 @@
-import {recordWebhookEvent, markWebhookEventProcessed, findCheckoutOrderBySession, markCheckoutOrderPaid, activateTenantFromCheckout, applySubscriptionUpdate, applyPastDue, applyInvoicePaid, suspendIfGraceExpired} from './billing-store.mjs';
+import {recordWebhookEvent, markWebhookEventProcessed, findCheckoutOrderBySession, activateTenantFromCheckout, applySubscriptionUpdate, applyPastDue, applyInvoicePaid, suspendIfGraceExpired} from './billing-store.mjs';
+import {provisionTenantFromPaidOrder} from './onboarding-store.mjs';
 // Webhook y Checkout de Stripe (modo prueba, cuenta tapmkt).
 // El cliente de Stripe se inyecta (o se crea con la clave de entorno) para que
 // los tests usen un mock sin llamadas reales. NUNCA se llama a Stripe sin clave.
@@ -75,11 +76,17 @@ export async function scheduleBalanceInvoices(stripe, {customerId, installmentsC
 async function handleCheckoutCompleted(session, {stripe, deps}) {
  const order = await findCheckoutOrderBySession(session.id, deps);
  if (!order) return {ignored: true, reason: 'order not found'};
- const organizationId = session.metadata?.organization_id || order.organizationId || null;
+ let organizationId = session.metadata?.organization_id || order.organizationId || null;
  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
+ // Alta autoservicio (018): pago público sin tenant → se crea el tenant con
+ // la suite de la cotización y el cliente que pagó queda como owner. Si el
+ // correo es nuevo se emite un enlace de activación de un solo uso (24 h);
+ // el token en claro nunca se guarda ni se devuelve en la respuesta del
+ // webhook: Madre lo reemite desde la ficha del tenant.
+ let provisioned = null;
  if (!organizationId) {
-  await markCheckoutOrderPaid(order.id, customerId, deps);
-  return {orderId: order.id, status: 'paid', pendingTenant: true};
+  provisioned = await provisionTenantFromPaidOrder({order, deps});
+  organizationId = provisioned.organizationId;
  }
  let subscription = null;
  if (session.subscription && stripe?.subscriptions?.retrieve) {
@@ -91,7 +98,7 @@ async function handleCheckoutCompleted(session, {stripe, deps}) {
    customerId, installmentsCents: order.quote.installmentsCents, organizationId, orderId: order.id
   });
  }
- return activated;
+ return {...activated, ...(provisioned ? {provisioned: true, ownerUserId: provisioned.userId, isNewUser: provisioned.isNewUser, setupTokenIssued: Boolean(provisioned.setupToken), activationPath: provisioned.activationPath ?? null} : {})};
 }
 function subscriptionOrgId(subscription) {
  return subscription?.metadata?.organization_id || null;

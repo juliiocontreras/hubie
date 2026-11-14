@@ -31,9 +31,65 @@ export async function renderCases(ctx){
  statusFilter.add(new Option('Todos los estados',''));
  for(const [id,label]of states)statusFilter.add(new Option(label,id));
  filterRow.append(clientFilter,statusFilter);
+ // TOOLS P0: búsqueda de documentos en todos los expedientes y alerta de vencimientos.
+ const docSearchRow=container('toolbar');
+ const docSearchInput=make('input');docSearchInput.className='search';docSearchInput.type='search';
+ docSearchInput.placeholder='Buscar documentos por nombre, expediente o cliente…';
+ docSearchInput.setAttribute('aria-label','Buscar documentos en expedientes');
+ const docSearchButton=button('Buscar documentos','btn');
+ const docExpiringButton=button('Por vencer','btn');
+ const docResults=container('stack');docResults.hidden=true;
+ const expiryLabels={expired:'Vencido',soon:'Vence pronto',valid:'Vigente',none:'Sin vencimiento'};
+ async function renderDocResults(documents){
+  docResults.replaceChildren();docResults.hidden=false;
+  if(!documents.length){docResults.append(line('Ningún documento coincide con la búsqueda.','help'));return;}
+  for(const doc of documents){
+   const row=container('record'),info=container('stack');
+   info.append(make('strong',doc.filename||doc.documentType));
+   info.append(line(doc.caseTitle+' · '+doc.clientName+' · '+expiryLabels[doc.expiryStatus]+(doc.expiresOn?' · '+doc.expiresOn:''),'help'));
+   row.append(info);
+   const controls=container('record-actions');
+   const open=button('Ver expediente','btn');
+   open.addEventListener('click',()=>{
+    clientFilter.value=doc.clientId;ctx.search.value=doc.caseTitle;draw();
+    document.getElementById('record-list')?.scrollIntoView({block:'start'});
+   },{signal:ctx.signal});
+   controls.append(open);
+   if(canWrite){
+    const vis=make('select');vis.className='search';vis.setAttribute('aria-label','Visibilidad del documento');
+    vis.add(new Option('Equipo','team'));vis.add(new Option('Restringido','restricted'));vis.value=doc.visibility||'team';
+    vis.addEventListener('change',async()=>{
+     try{await ctx.write('/api/app/'+encodeURIComponent(ctx.config.tenant.slug)+'/case-documents/'+doc.documentId+'/visibility','PATCH',{visibility:vis.value});ctx.notice('Visibilidad actualizada.');}
+     catch(e){vis.value=doc.visibility||'team';ctx.notice('No se guardó: '+e.message,true);}
+    },{signal:ctx.signal});
+    controls.append(vis);
+   }
+   row.append(controls);docResults.append(row);
+  }
+ }
+ docSearchButton.addEventListener('click',async()=>{
+  docResults.replaceChildren(line('Buscando documentos…','help'));docResults.hidden=false;
+  try{
+   const result=await ctx.api(base+'/documents/search?q='+encodeURIComponent(docSearchInput.value.trim()));
+   if(ctx.signal.aborted)return;
+   await renderDocResults(result.documents||[]);
+  }catch(e){docResults.replaceChildren(line('No se pudo buscar: '+e.message,'error'));}
+ },{signal:ctx.signal});
+ docExpiringButton.addEventListener('click',async()=>{
+  docResults.replaceChildren(line('Consultando vencimientos…','help'));docResults.hidden=false;
+  try{
+   const result=await ctx.api(base+'/documents/expiring');
+   if(ctx.signal.aborted)return;
+   const all=[...(result.expired||[]),...(result.expiringSoon||[])];
+   docResults.replaceChildren();
+   docResults.append(line((result.counts?.expired||0)+' vencido(s) · '+(result.counts?.expiringSoon||0)+' por vencer en 30 días','group-label'));
+   await renderDocResults(all);
+  }catch(e){docResults.replaceChildren(line('No se pudo consultar: '+e.message,'error'));}
+ },{signal:ctx.signal});
+ docSearchRow.append(docSearchInput,docSearchButton,docExpiringButton);
  host.replaceChildren(summary);
  if(canWrite)host.append(editor);
- host.append(filterRow,list);
+ host.append(filterRow,docSearchRow,docResults,list);
  let cases=[],clients=[],editing=null,preferred=ctx.initialClientId||null;
  function draw(){
   if(ctx.signal.aborted)return;
@@ -75,6 +131,35 @@ export async function renderCases(ctx){
     }catch(error){historyHost.replaceChildren(line('No fue posible consultar el historial: '+error.message,'error'));}
    },{signal:ctx.signal});
    action.append(documents,history);
+   // TOOLS P0: vinculados del expediente (tratos, citas y cotizaciones del mismo cliente).
+   const linksButton=button('Vinculados','btn');
+   const linksHost=make('div',undefined,'case-history stack');linksHost.hidden=true;
+   linksButton.addEventListener('click',async()=>{
+    linksHost.hidden=!linksHost.hidden;if(linksHost.hidden)return;
+    linksHost.replaceChildren(line('Consultando vinculados…','help'));
+    try{
+     const linked=await ctx.api(base+'/'+c.id+'/links');if(ctx.signal.aborted)return;
+     linksHost.replaceChildren();
+     linksHost.append(line('Cliente: '+(linked.client?.name||'Sin cliente'),'group-label'));
+     for(const [name,tool,entries,detail] of [
+      ['Tratos','C002',linked.deals,e=>e.stage||''],
+      ['Citas','C004',linked.appointments,e=>e.status||''],
+      ['Cotizaciones','T013',linked.quotes,e=>e.status||'']]){
+      if(!ctx.config.tools.some(t=>t.id===tool))continue;
+      const block=make('div',undefined,'stack');block.append(line(name,'group-label'));
+      if(!entries?.length)block.append(line('Sin registros vinculados.','help'));
+      for(const entry of entries){
+       const row=container('client-360-row');
+       const text=container('stack');text.append(line(entry.title,'client-360-title'),line(detail(entry),'help'));
+       const open=button('Abrir','btn');
+       open.addEventListener('click',()=>ctx.navigateToTool?.(tool,{recordId:entry.id,clientId:c.clientId}),{signal:ctx.signal});
+       row.append(text,open);block.append(row);
+      }
+      linksHost.append(block);
+     }
+    }catch(error){linksHost.replaceChildren(line('No fue posible consultar vinculados: '+error.message,'error'));}
+   },{signal:ctx.signal});
+   action.append(linksButton);
    if(canWrite){
     const edit=button('Editar','btn');
     edit.addEventListener('click',()=>{
@@ -92,7 +177,7 @@ export async function renderCases(ctx){
     },{signal:ctx.signal});
     action.append(edit,archive);
    }
-   card.append(action,historyHost);list.append(card);
+   card.append(action,historyHost,linksHost);list.append(card);
   }
  }
  function reset(){

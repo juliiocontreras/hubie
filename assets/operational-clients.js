@@ -1,4 +1,5 @@
 import {field,line,button,container} from './app-workflows.js';
+import {createImportPanel,CLIENT_CSV_TEMPLATE} from './import-ui.js';
 const states=[['prospect','Prospecto'],['active','Activo'],['inactive','Inactivo']];
 const names=Object.fromEntries(states);
 export async function renderClients(ctx){
@@ -21,7 +22,58 @@ export async function renderClients(ctx){
  const actions=container('toolbar');actions.append(save,cancel);
  form.append(grid,actions);
  editor.append(line('Directorio de clientes y prospectos','group-label'),form);
+ if(canWrite){
+  const importPanel=createImportPanel({title:'Importar clientes desde CSV',description:'Columnas: Nombre, Empresa, Correo, Teléfono, Estado, Notas. También se reconocen encabezados en inglés (Name, Company, Email, Phone, Status, Notes). Los correos duplicados se omiten sin borrar nada.',
+   templateName:'hubie-clientes-plantilla.csv',templateText:CLIENT_CSV_TEMPLATE,accept:'.csv,text/csv',
+   notice:ctx.notice,
+   onSubmit:async csv=>{const data=await ctx.write(path+'/import','POST',{csv});await reload();return data;}});
+  editor.append(importPanel);
+ }
  host.replaceChildren(stats);if(canWrite)host.append(editor);host.append(list);
+ // TOOLS P0: deduplicación por email (la importación CSV la hace el frente
+ // import 017; aquí solo se revisan y fusionan duplicados ya registrados).
+ let duplicatesHost=null;
+ if(canWrite){
+  const dupBar=container('toolbar');
+  const dupButton=button('Revisar duplicados','btn');
+  duplicatesHost=container('stack');duplicatesHost.hidden=true;
+  dupButton.addEventListener('click',async()=>{
+   duplicatesHost.hidden=!duplicatesHost.hidden;
+   if(duplicatesHost.hidden)return;
+   duplicatesHost.replaceChildren(line('Buscando duplicados por correo…','help'));
+   try{
+    const result=await ctx.api(path+'/duplicates');if(ctx.signal.aborted)return;
+    duplicatesHost.replaceChildren();
+    if(!result.duplicates?.length){duplicatesHost.append(line('No hay clientes con el mismo correo.','help'));return;}
+    for(const group of result.duplicates){
+     const block=container('client-360-section');
+     block.append(line('Correo duplicado: '+group.email,'group-label'));
+     for(const candidate of group.clients){
+      const row=container('client-360-row');
+      const text=container('stack');
+      text.append(line(candidate.name,'client-360-title'),
+       line((candidate.relations?.deals||0)+' tratos · '+(candidate.relations?.cases||0)+' expedientes · '+(candidate.relations?.quotes||0)+' cotizaciones','help'));
+      row.append(text);
+      const others=group.clients.filter(x=>x.id!==candidate.id);
+      for(const other of others){
+       const merge=button('Fusionar en '+other.name,'btn');
+       merge.addEventListener('click',async()=>{
+        if(!confirm('¿Fusionar "'+candidate.name+'" en "'+other.name+'"? Sus tratos, citas, expedientes y cotizaciones pasan al cliente conservado y el duplicado se archiva. Esta acción queda auditada.'))return;
+        try{await ctx.api(path+'/'+other.id+'/merge',{method:'POST',body:JSON.stringify({mergedClientId:candidate.id,reason:'Duplicado por email'})});
+         ctx.notice('Clientes fusionados.');duplicatesHost.hidden=true;await reload();}
+        catch(e){ctx.notice('No se pudo fusionar: '+e.message,true);}
+       },{signal:ctx.signal});
+       row.append(merge);
+      }
+      block.append(row);
+     }
+     duplicatesHost.append(block);
+    }
+   }catch(err){duplicatesHost.replaceChildren(line('No se pudieron revisar duplicados: '+err.message,'error'));}
+  },{signal:ctx.signal});
+  dupBar.append(dupButton,line('Importación CSV: pendiente del módulo de importación (frente 017).','help'));
+  host.append(dupBar,duplicatesHost);
+ }
  let clients=[],editing=null;
  let focusRecord=ctx.initialRecordId||null;
  const reset=()=>{editing=null;form.reset();save.textContent='Guardar cliente';cancel.hidden=true;};
@@ -57,11 +109,11 @@ export async function renderClients(ctx){
      if(ctx.signal.aborted)return;
      summary.replaceChildren();
      const counters=container('client-360-stats');
-     for(const [name,num] of [['Oportunidades',data.counts?.deals||0],['Expedientes',data.counts?.cases||0],['Citas',data.counts?.appointments||0]]){
+     for(const [name,num] of [['Oportunidades',data.counts?.deals||0],['Expedientes',data.counts?.cases||0],['Citas',data.counts?.appointments||0],['Cotizaciones',data.counts?.quotes||0]]){
       const stat=container('client-360-count');stat.append(line(name,'help'),line(String(num),'stat-number'));counters.append(stat);
      }
      summary.append(counters);
-     const sets=[['Oportunidades','C002',data.deals],['Expedientes','C003',data.cases],['Citas','C004',data.appointments]];
+     const sets=[['Oportunidades','C002',data.deals],['Expedientes','C003',data.cases],['Citas','C004',data.appointments],['Cotizaciones','T013',data.quotes]];
      for(const [name,tool,entries] of sets){
       if(!ctx.config.tools.some(t=>t.id===tool))continue;
       const block=container('client-360-section');block.append(line(name,'group-label'));
@@ -74,6 +126,22 @@ export async function renderClients(ctx){
       }
       summary.append(block);
      }
+     // TOOLS P0: línea de tiempo con tratos, expedientes, citas, cotizaciones y eventos.
+     try{
+      const history=await ctx.api(path+'/'+c.id+'/timeline');if(ctx.signal.aborted)return;
+      const block=container('client-360-section');block.append(line('Línea de tiempo','group-label'));
+      const kindLabels={deal:'Trato',case:'Expediente',appointment:'Cita',quote:'Cotización',case_event:'Evento de expediente',client_event:'Evento de cliente'};
+      if(!history.timeline?.length)block.append(line('Sin actividad registrada.','help'));
+      for(const entry of (history.timeline||[]).slice(0,20)){
+       const row=container('client-360-row');
+       const text=container('stack');
+       text.append(line((kindLabels[entry.kind]||entry.kind)+': '+entry.title,'client-360-title'),line(entry.detail+' · '+new Date(entry.at).toLocaleString(),'help'));
+       const open=button('Abrir','btn');
+       open.addEventListener('click',()=>ctx.navigateToTool?.(entry.toolId,{recordId:entry.recordId,clientId:c.id}),{signal:ctx.signal});
+       row.append(text,open);block.append(row);
+      }
+      summary.append(block);
+     }catch(err){summary.append(line('No se pudo cargar la línea de tiempo: '+err.message,'error'));}
      if(!data.deals?.length&&!data.cases?.length&&!data.appointments?.length)
        summary.append(line('Al crear una oportunidad o cita desde esta ficha se vinculará automáticamente con este cliente.','help'));
     }catch(err){summary.replaceChildren(line('No se pudo cargar la ficha 360°: '+err.message,'error'));}

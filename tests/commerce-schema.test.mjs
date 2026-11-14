@@ -43,7 +43,7 @@ test('server applies migration 016, routes the commerce workflows and exports CS
  assert.match(server,/workflows\\?\/reports\\?\/export/);
  assert.match(server,/api\\?\/public\\?\/quotes\\?\//);
  assert.match(server,/tenant_quotes','tenant_quote_lines','tenant_catalog_items','tenant_expenses','tenant_collections','tenant_invoices'/);
- assert.match(server,/===34/); // 24 base + 4 billing (015) + 6 commerce (016)
+ assert.match(server,/===84/); // 24 base + 4 billing (015) + 6 commerce (016) + 3 onboarding (018) + 1 notifications (020)
  assert.doesNotMatch(server,/operations-quotes\.mjs.*stripe|stripe.*operations-quotes/i);
  const health=await readFile('turso/migrations/016_commerce.sql','utf8');
  assert.ok(health.length>1000);
@@ -63,7 +63,10 @@ test('client routes the six tools to the real operational UI, not the generic fo
   assert.match(workflows,new RegExp("key==='"+id+"'\\?"+fn));
  }
  const records=await readFile('assets/app-records.js','utf8');
- assert.match(records,/'C006','C007','T013','T014','T015','T020'/);
+ // P1-B amplió la lista con T008/T009/T010/T016/T017/T018; las seis
+ // originales siguen yendo a la UI operativa, ya no contiguas.
+ for(const id of ['C006','C007','T013','T014','T015','T020'])assert.match(records,new RegExp("'"+id+"'"));
+ assert.match(records,/'T008','T009','T010'/);
  const commerce=await readFile('assets/operational-commerce.js','utf8');
  for(const fn of ['renderQuotes','renderCatalog','renderExpenses','renderPayments','renderInvoices','renderReports']){
   assert.match(commerce,new RegExp('export async function '+fn));

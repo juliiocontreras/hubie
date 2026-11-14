@@ -8,7 +8,7 @@ const root=()=>'/api/app/'+encodeURIComponent(ctx.config.tenant.slug)+'/tools/'+
 const writable=()=>ctx.config.tenant.role!=='viewer'&&!['C008','C009'].includes(ctx.tool.id);
 // Etiqueta del CTA principal según la tool: que diga qué se crea, no solo
 // "Nuevo registro". Solo presentación; no cambia qué guarda el formulario.
-const newLabelFor=id=>({'T013':'＋ Nueva cotización','T014':'＋ Nuevo cobro','T015':'＋ Nueva factura','C006':'＋ Agregar al catálogo','C007':'＋ Nuevo gasto'}[id]||'＋ Nuevo registro');
+const newLabelFor=id=>({'T013':'＋ Nueva cotización','T014':'＋ Nuevo cobro','T015':'＋ Nueva factura','C006':'＋ Agregar al catálogo','C007':'＋ Nuevo gasto','T008':'＋ Nueva orden de compra','T009':'＋ Nuevo proveedor','T010':'＋ Nuevo almacén','T016':'＋ Abrir caja','T017':'＋ Nueva cuenta por cobrar','T018':'＋ Nueva cuenta por pagar'}[id]||'＋ Nuevo registro');
 // Estado vacío útil por tool: qué es, qué hacer y con qué botón. Sin el
 // botón, una lista vacía es un callejón sin salida.
 const emptyCopyFor=id=>({
@@ -17,9 +17,15 @@ const emptyCopyFor=id=>({
  T015:{title:'Aún no hay facturas',hint:'Registra la primera factura con RFC, cliente e importe.',cta:'＋ Nueva factura'},
  C006:{title:'Tu catálogo está vacío',hint:'Agrega el primer producto o servicio para cotizar más rápido.',cta:'＋ Agregar al catálogo'},
  C007:{title:'Aún no hay gastos',hint:'Registra el primer gasto para llevar el control de esta empresa.',cta:'＋ Nuevo gasto'},
+ T008:{title:'Aún no hay órdenes de compra',hint:'Crea la primera orden con proveedor y partidas; al recibirla sube el inventario.',cta:'＋ Nueva orden de compra'},
+ T009:{title:'Aún no hay proveedores',hint:'Registra el primer proveedor con contacto y condiciones de pago.',cta:'＋ Nuevo proveedor'},
+ T010:{title:'Aún no hay almacenes',hint:'Crea el primer almacén para llevar existencias por ubicación.',cta:'＋ Nuevo almacén'},
+ T016:{title:'Aún no hay cajas',hint:'Abre la primera caja con monto inicial y responsable.',cta:'＋ Abrir caja'},
+ T017:{title:'Aún no hay cuentas por cobrar',hint:'Abre la primera desde una cotización aceptada.',cta:'＋ Nueva cuenta por cobrar'},
+ T018:{title:'Aún no hay cuentas por pagar',hint:'Registra la primera con proveedor, total y vencimiento.',cta:'＋ Nueva cuenta por pagar'},
 }[id]||{title:'Aún no hay registros en '+ctx.tool.name,hint:'Crea el primero para empezar.',cta:'＋ Nuevo registro'});
 function render(){
- if(!ctx||['C001','C002','C003','C004','C005','C006','C007','T013','T014','T015','T020','T021'].includes(ctx.tool.id))return;
+ if(!ctx||['C001','C002','C003','C004','C005','C006','C007','T001','T002','T005','T006','T008','T009','T010','T011','T012','T013','T014','T015','T016','T017','T018','T019','T020','T021'].includes(ctx.tool.id))return;
  const host=$('record-list');host.replaceChildren();
  const q=$('record-search').value.toLowerCase().trim();
  const shown=records.filter(r=>(r.title+' '+Object.values(r.fields).join(' ')).toLowerCase().includes(q));
@@ -113,7 +119,7 @@ export async function openRecords(context){
  closeOperationalModule();
  ctx={...context,attachmentsPanel:context.tool.id==='T021'?null:setupAttachments(context)};
  if($('record-dialog').open)$('record-dialog').close();
- if(['C001','C002','C003','C004','C005','C006','C007','T013','T014','T015','T020','T021'].includes(ctx.tool.id))return openOperationalModule(ctx);
+ if(['C001','C002','C003','C004','C005','C006','C007','C008','T001','T002','T003','T004','T005','T006','T007','T008','T009','T010','T011','T012','T013','T014','T015','T016','T017','T018','T019','T020','T021'].includes(ctx.tool.id))return openOperationalModule(ctx);
  wire();editing=null;records=[];
  $('record-search').value='';
  $('add-record').textContent=newLabelFor(ctx.tool.id);

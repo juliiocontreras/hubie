@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal de clientes · Hubie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; }
+body { font-family: 'Nunito', system-ui, sans-serif; color: #16123a; background: #faf9ff; margin: 0; }
+main { max-width: 560px; margin: 0 auto; padding: 24px 16px 64px; }
+h1, h2, h3 { color: #16123a; }
+input, textarea { display: block; width: 100%; box-sizing: border-box; font: inherit; color: #16123a; border: 1px solid #d9d4f5; border-radius: 12px; padding: 12px; margin: 8px 0; background: #fff; }
+button { font: inherit; font-weight: 700; color: #fff; background: #7c5cfc; border: 0; border-radius: 999px; padding: 12px 20px; margin: 8px 8px 8px 0; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+a { color: #16123a; }
+p { line-height: 1.5; }
+</style>
+</head>
+<body>
+<main id="portal-root">
+<h1>Portal de clientes</h1>
+<p>Cargando el portal…</p>
+</main>
+<script type="module">
+import {renderPortalPage} from '/assets/portal-p2.js';
+renderPortalPage(document.getElementById('portal-root'));
+</script>
+</body>
+</html>

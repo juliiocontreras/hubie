@@ -1,12 +1,17 @@
 import {openRecords} from './app-records.js';
 import {closeOperationalModule} from './app-workflows.js';
 import {createAppearanceEditor,applyAppearance} from './appearance-ui.js';
+import {mountOnboardingGuide} from './onboarding.js';
 import {icon,toolIcon,toolTint,decorateSidebar} from './ui-icons.js';
+import {renderInvitations} from './invitations-ui.js';
+import {renderAudit} from './audit-ui.js';
+import {createGlobalSearch,bindSearchShortcut} from './search.js';
+import {createTenantNotificationCenter,bellIcon} from './notifications.js';
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const demoApi=async(path,options)=>(await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
 const elt=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
-let organizations=[],config=null,activeTool=null;
+let organizations=[],config=null,activeTool=null,searchBox=null,notificationCenter=null;
 async function api(path,options={}){
  if(demoMode)return demoApi(path,options);
  const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...options});
@@ -21,9 +26,9 @@ function head(title,desc){$('page-heading').textContent=title;$('page-descriptio
 function home(){
  closeMobileNav();
  closeOperationalModule();
- $('appearance').hidden=true;
+ $('appearance').hidden=true;$('migration').hidden=true;$('notifications-view').hidden=true;
  if(config)applyAppearance(config.appearance,document.documentElement,config.backgrounds);
- activeTool=null;$('home').hidden=false;$('module').hidden=true;$('add-record').hidden=true;$('billing').hidden=true;
+ activeTool=null;$('home').hidden=false;$('module').hidden=true;$('add-record').hidden=true;$('billing').hidden=true;$('team').hidden=true;$('history').hidden=true;
  $('suite-name').textContent=config.tenant.suiteName;
  head('Bienvenido a '+config.tenant.displayName,'Tu organización tiene '+config.tools.length+' herramientas habilitadas.');
  $('count-tools').textContent=config.tools.length;
@@ -45,22 +50,52 @@ function home(){
 async function showTool(id,options={}){
  closeMobileNav();
  const tool=config.tools.find(t=>t.id===id);if(!tool)return notice('La herramienta está desactivada.',true);
+ // C010 ya no es un formulario genérico: su vista ES el centro de
+ // notificaciones del tenant (assets/notifications.js).
+ if(id==='C010')return showNotifications();
  applyAppearance(config.appearance,document.documentElement,config.backgrounds);
- activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;$('billing').hidden=true;
+ activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;$('billing').hidden=true;$('migration').hidden=true;$('team').hidden=true;$('history').hidden=true;$('notifications-view').hidden=true;
  document.querySelector('[data-home]').removeAttribute('aria-current');
  $('appearance-nav').removeAttribute('aria-current');
+ $('migration-nav').removeAttribute('aria-current');
  document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-current',b.dataset.tool===id?'page':'false'));
  $('suite-name').textContent=config.tenant.suiteName+' / '+tool.group;
  head(tool.name,'Información exclusiva de '+config.tenant.displayName);
  await openRecords({tool,config,api,write,elt,notice,initialClientId:options.clientId||null,initialRecordId:options.recordId||null,initialDealId:options.dealId||null,navigateToTool:(id,options)=>showTool(id,options)});
 }
+function navigateToSearchResult(item){
+ let url=null;
+ try{url=new URL(item.link,location.origin);}catch{return;}
+ if(url.searchParams.get('view')==='billing')return showBilling();
+ const tool=url.searchParams.get('tool'),record=url.searchParams.get('record');
+ if(!tool||!record)return;
+ const options={};
+ if(tool==='C001')options.clientId=record;
+ else if(tool==='C002')options.dealId=record;
+ else options.recordId=record;
+ void showTool(tool,options);
+}
+async function showNotifications(){
+ closeMobileNav();
+ closeOperationalModule();
+ activeTool=config.tools.find(t=>t.id==='C010')||null;
+ $('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=true;$('add-record').hidden=true;$('notifications-view').hidden=false;
+ document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
+ document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('appearance-nav').removeAttribute('aria-current');
+ head('Notificaciones','Avisos de '+config.tenant.displayName);
+ $('notifications-unread-pill').textContent='Cargando…';
+ const data=await notificationCenter?.refresh();
+ if(data)$('notifications-unread-pill').textContent=data.unread+' sin leer';
+}
 function showAppearance(){
  closeMobileNav();
  if(!config||!['owner','admin'].includes(config.tenant.role))return notice('Solo el propietario o administrador puede editar la apariencia.',true);
  closeOperationalModule();
- activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=false;$('billing').hidden=true;$('add-record').hidden=true;
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=false;$('billing').hidden=true;$('add-record').hidden=true;$('migration').hidden=true;$('team').hidden=true;$('history').hidden=true;$('notifications-view').hidden=true;
  document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
  document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('migration-nav').removeAttribute('aria-current');
  $('appearance-nav').setAttribute('aria-current','page');
  head('Personalizar tu Suite','Selecciona el fondo del dashboard y del menú lateral sin modificar otras empresas.');
  const route='/api/app/'+encodeURIComponent(config.tenant.slug)+'/media/';
@@ -89,10 +124,11 @@ async function showBilling(){
  closeMobileNav();
  if(!config)return;
  closeOperationalModule();
- activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=false;$('add-record').hidden=true;
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=false;$('add-record').hidden=true;$('migration').hidden=true;$('team').hidden=true;$('history').hidden=true;$('notifications-view').hidden=true;
  document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
  document.querySelector('[data-home]').removeAttribute('aria-current');
  $('appearance-nav').removeAttribute('aria-current');
+ $('migration-nav').removeAttribute('aria-current');
  $('billing-nav').setAttribute('aria-current','page');
  head('Mi suscripción','Estado de cobro de '+config.tenant.displayName);
  try{
@@ -110,6 +146,76 @@ async function showBilling(){
   $('billing-status-pill').textContent='No disponible';
   const host=$('billing-details');host.replaceChildren();host.append(elt('p','No se pudo cargar tu estado de cobro: '+e.message,'help'));
  }
+}
+async function showMigration(){
+ closeMobileNav();
+ if(!config||!['owner','admin'].includes(config.tenant.role))return notice('Solo el propietario o administrador puede migrar datos.',true);
+ closeOperationalModule();
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=true;$('migration').hidden=false;$('team').hidden=true;$('history').hidden=true;$('add-record').hidden=true;
+ document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
+ document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('appearance-nav').removeAttribute('aria-current');
+ $('migration-nav').setAttribute('aria-current','page');
+ head('Migración de datos','Importa clientes, catálogo, cotizaciones y gastos desde un archivo JSON.');
+ const {createMigrationPanel}=await import('./import-ui.js');
+ const host=$('migration-panel');host.replaceChildren();
+ host.append(createMigrationPanel({
+  notice,
+  onSubmit:async payload=>write('/api/app/'+encodeURIComponent(config.tenant.slug)+'/migration','POST',payload)
+ }));
+}
+async function showTeam(){
+ closeMobileNav();
+ if(!config||!['owner','admin'].includes(config.tenant.role))return notice('Solo el propietario o administrador puede gestionar el equipo.',true);
+ closeOperationalModule();
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=true;$('team').hidden=false;$('history').hidden=true;$('migration').hidden=true;$('add-record').hidden=true;
+ document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
+ document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('appearance-nav').removeAttribute('aria-current');
+ $('billing-nav').removeAttribute('aria-current');
+ $('history-nav').removeAttribute('aria-current');
+ $('team-nav').setAttribute('aria-current','page');
+ head('Equipo','Miembros e invitaciones de '+config.tenant.displayName);
+ $('team-role-pill').textContent=roles[config.tenant.role]||config.tenant.role;
+ const membersHost=$('team-members');membersHost.replaceChildren();
+ const members=config.members||[];
+ if(!members.length)membersHost.append(elt('p','Los miembros se autorizan desde Hubie Madre.','help'));
+ for(const m of members){const row=elt('div',undefined,'line');const d=elt('div');d.append(elt('strong',m.email),elt('small',roles[m.role]||m.role));row.append(d);membersHost.append(row);}
+ try{
+  const slug=encodeURIComponent(config.tenant.slug);
+  const data=await api('/api/app/'+slug+'/invitations');
+  const refresh=async()=>{const fresh=await api('/api/app/'+slug+'/invitations');return {invitations:fresh.invitations};};
+  renderInvitations($('team-invitations'),{invitations:data.invitations,emailConfigured:data.emailConfigured,canManage:true},{
+   onInvite:async payload=>{const r=await write('/api/app/'+slug+'/invitations','POST',payload);const f=await refresh();return {...f,lastInvite:r,message:r.emailSent?'Invitación enviada a '+r.invitation.email+'.':'Enlace listo para compartir (correo no configurado).'};},
+   onRevoke:async invId=>{await api('/api/app/'+slug+'/invitations/'+invId,{method:'DELETE'});const f=await refresh();return {...f,message:'Invitación revocada.'};},
+   onResend:async invId=>{const r=await write('/api/app/'+slug+'/invitations/'+invId+'/resend','POST',{});const f=await refresh();return {...f,lastInvite:r,message:r.emailSent?'Invitación reenviada a '+r.invitation.email+'.':'Enlace nuevo listo para compartir (correo no configurado).'};}
+  });
+ }catch(e){$('team-invitations').replaceChildren(elt('p','No se pudieron cargar las invitaciones: '+e.message,'help'));}
+}
+async function showHistory(filters={}){
+ closeMobileNav();
+ if(!config)return;
+ closeOperationalModule();
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=true;$('team').hidden=true;$('history').hidden=false;$('migration').hidden=true;$('add-record').hidden=true;
+ document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
+ document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('appearance-nav').removeAttribute('aria-current');
+ $('billing-nav').removeAttribute('aria-current');
+ $('team-nav').removeAttribute('aria-current');
+ $('history-nav').setAttribute('aria-current','page');
+ head('Historial','Actividad de '+config.tenant.displayName);
+ try{
+  const slug=encodeURIComponent(config.tenant.slug);
+  const query=new URLSearchParams();
+  if(filters.action)query.set('action',filters.action);
+  if(filters.actor)query.set('actor',filters.actor);
+  if(filters.from)query.set('from',filters.from);
+  if(filters.to)query.set('to',filters.to);
+  if(filters.limit)query.set('limit',String(filters.limit));
+  const data=await api('/api/app/'+slug+'/audit'+(query.toString()?'?'+query.toString():''));
+  renderAudit($('history-list'),{events:data.events,actions:data.actions,tenants:null,filters},{onFilter:next=>void showHistory(next)});
+ }catch(e){$('history-list').replaceChildren(elt('p','No se pudo cargar el historial: '+e.message,'help'));}
+
 }
 function closeMobileNav(){
  document.documentElement.classList.remove('mobile-nav-open');
@@ -152,8 +258,17 @@ async function openOrganization(slug){
  try{
   config=await api('/api/app/'+encodeURIComponent(slug)+'/config');
   config.backgrounds=config.backgrounds||{dashboard:null,sidebar:null};
+  // TOOLS P0 (C009): un permiso 'none' por módulo oculta la Tool en el menú;
+  // el servidor la bloquea igualmente (checkMemberToolAccess).
+  try{
+   const mine=await api('/api/app/'+encodeURIComponent(slug)+'/member-tools');
+   if(mine?.access)config.tools=config.tools.filter(t=>mine.access[t.id]!=='none');
+  }catch{/* Sin permisos por miembro, manda el rol. */}
   applyAppearance(config.appearance,document.documentElement,config.backgrounds);
   $('appearance-nav').hidden=!['owner','admin'].includes(config.tenant.role);
+  $('migration-nav').hidden=!['owner','admin'].includes(config.tenant.role);
+  $('team-nav').hidden=!['owner','admin'].includes(config.tenant.role);
+  $('history-nav').hidden=false;
   $('billing-nav').hidden=false;
   document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#7c5cfc');
   $('brand-name').textContent=config.tenant.displayName;
@@ -173,6 +288,21 @@ async function openOrganization(slug){
   $('tenant-select').value=slug;
   const u=new URL(location.href);u.searchParams.set('tenant',slug);history.replaceState({},'',u);
   nav();home();notice('');
+  // Guía de primer uso (018): tarjeta en el inicio + Soporte en "Mi cuenta".
+  mountOnboardingGuide({api,write,getConfig:()=>config,notice,showTool,showBilling,showAppearance});
+  // Búsqueda global (/, Ctrl+K) y campana de notificaciones del tenant.
+  const searchInput=$('global-search-input');
+  searchInput.dataset.slug=slug;
+  if(!searchBox){
+   searchBox=createGlobalSearch({input:searchInput,resultsHost:$('global-search-results'),api,onNavigate:navigateToSearchResult});
+   bindSearchShortcut(searchInput);
+  }
+  $('notifications-bell-icon').replaceChildren(bellIcon());
+  if(!notificationCenter){
+   notificationCenter=createTenantNotificationCenter({api,getSlug:()=>config.tenant.slug,badge:$('notifications-badge'),viewHost:$('notifications-center'),onNavigate:navigateToSearchResult});
+  }
+  void notificationCenter.refresh();
+
  }catch(e){notice('No se pudo abrir la empresa: '+e.message,true);}
 }
 const currency=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(Number(n||0)/100);
@@ -277,7 +407,11 @@ async function init(){
  }
  $('tenant-select').addEventListener('change',e=>openOrganization(e.target.value));
  document.querySelector('[data-home]').addEventListener('click',home);
+ $('notifications-bell').addEventListener('click',()=>void showNotifications());
  $('appearance-nav').addEventListener('click',showAppearance);
+ $('migration-nav').addEventListener('click',showMigration);
+ $('team-nav').addEventListener('click',showTeam);
+ $('history-nav').addEventListener('click',()=>showHistory());
  $('billing-nav').addEventListener('click',showBilling);
  for(const [id,tool] of [['insight-open-crm','C002'],['insight-open-clients','C001'],['insight-open-agenda','C004'],['insight-open-stock','C005']])$(''+id).addEventListener('click',()=>showTool(tool));
  $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/app/';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});

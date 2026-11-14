@@ -6,14 +6,155 @@ const ok = (rows = [], affected = 0) => ({rows: rows.map(cells), affected_row_co
 export function createFakeDb(seed = {}) {
  const tables = {
   organizations: seed.organizations ?? [],
+  users: seed.users ?? [],
+  memberships: seed.memberships ?? [],
   tenant_settings: seed.tenant_settings ?? [],
+  tenant_tools: [],
+  audit_events: [],
   tenant_subscriptions: seed.tenant_subscriptions ?? [],
   tenant_payments: seed.tenant_payments ?? [],
   stripe_webhook_events: [],
-  billing_checkout_orders: seed.orders ?? []
+  billing_checkout_orders: seed.orders ?? [],
+  tenant_onboarding: [],
+  tenant_setup_tokens: [],
+  tenant_demo_seed: [],
+  tenant_client_profiles: seed.clients ?? [],
+  tenant_catalog_items: seed.catalogItems ?? [],
+  tenant_quotes: seed.quotes ?? [],
+  tenant_quote_lines: []
  };
  const subRow = s => [s.stripe_customer_id ?? null, s.stripe_subscription_id ?? null, s.status, s.monthly_fee_cents, s.current_period_end ?? null, s.past_due_since ?? null];
  async function executeSql(sql, args = []) {
+  if (sql.startsWith('SELECT id,email FROM users WHERE email=?')) {
+   const u = tables.users.find(x => x.email === args[0]);
+   return ok(u ? [[u.id, u.email]] : []);
+  }
+  if (sql.startsWith('INSERT INTO users(id,email)')) {
+   tables.users.push({id: args[0], email: args[1]});
+   return ok([], 1);
+  }
+  if (sql.startsWith("SELECT organization_id FROM memberships WHERE user_id=? AND role='owner'")) {
+   const m = tables.memberships.find(x => x.user_id === args[0] && x.role === 'owner' && x.status === 'active');
+   return ok(m ? [[m.organization_id]] : []);
+  }
+  if (sql.startsWith('SELECT m.organization_id,u.email FROM memberships')) {
+   return ok(tables.memberships.filter(m => m.role === 'owner')
+    .map(m => [m.organization_id, tables.users.find(u => u.id === m.user_id)?.email ?? null]));
+  }
+  if (sql.startsWith('INSERT INTO organizations(id,slug,name)')) {
+   tables.organizations.push({id: args[0], slug: args[1], name: args[2], status: 'active', created_at: 'now'});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO tenant_settings(organization_id,suite_id')) {
+   tables.tenant_settings.push({organization_id: args[0], suite_id: args[1], display_name: args[2], primary_color: args[3], secondary_color: args[4]});
+   return ok([], 1);
+  }
+  if (sql.startsWith("INSERT INTO memberships(organization_id,user_id,role,status) VALUES(?,?,'owner','active')")) {
+   tables.memberships.push({organization_id: args[0], user_id: args[1], role: 'owner', status: 'active'});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO tenant_tools(organization_id,tool_id,enabled)')) {
+   tables.tenant_tools.push({organization_id: args[0], tool_id: args[1], enabled: args[2]});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO audit_events(id,organization_id,actor_user_id,action,target_type,target_id)')) {
+   tables.audit_events.push({id: args[0], organization_id: args[1], actor_user_id: args[2], action: args[3], target_type: args[4], target_id: args[5]});
+   return ok([], 1);
+  }
+  if (sql.startsWith('UPDATE tenant_setup_tokens SET consumed_at=? WHERE organization_id=?')) {
+   let n = 0;
+   for (const t of tables.tenant_setup_tokens.filter(t => t.organization_id === args[1] && t.user_id === args[2] && !t.consumed_at)) {t.consumed_at = args[0]; n++;}
+   return ok([], n);
+  }
+  if (sql.startsWith('INSERT INTO tenant_setup_tokens')) {
+   tables.tenant_setup_tokens.push({id: args[0], organization_id: args[1], user_id: args[2], email: args[3], token_hash: args[4], purpose: args[5], expires_at: args[6], consumed_at: null, created_at: 'now'});
+   return ok([], 1);
+  }
+  if (sql.startsWith('SELECT id,organization_id,user_id,email,token_hash,expires_at,consumed_at FROM tenant_setup_tokens')) {
+   const t = tables.tenant_setup_tokens.find(x => x.token_hash === args[0]);
+   return ok(t ? [[t.id, t.organization_id, t.user_id, t.email, t.token_hash, t.expires_at, t.consumed_at]] : []);
+  }
+  if (sql.startsWith('UPDATE tenant_setup_tokens SET consumed_at=? WHERE token_hash=?')) {
+   const t = tables.tenant_setup_tokens.find(x => x.token_hash === args[1] && !x.consumed_at);
+   if (t) t.consumed_at = args[0];
+   return ok([], t ? 1 : 0);
+  }
+  if (sql.startsWith('SELECT step_key FROM tenant_onboarding')) {
+   return ok(tables.tenant_onboarding.filter(s => s.organization_id === args[0] && s.user_id === args[1]).map(s => [s.step_key]));
+  }
+  if (sql.startsWith('SELECT COUNT(*) FROM tenant_client_profiles')) {
+   return ok([[tables.tenant_client_profiles.filter(c => c.organization_id === args[0] && !c.archived_at).length]]);
+  }
+  if (sql.startsWith('SELECT COUNT(*) FROM tenant_catalog_items')) {
+   return ok([[tables.tenant_catalog_items.filter(c => c.organization_id === args[0] && c.active === 1).length]]);
+  }
+  if (sql.startsWith('SELECT COUNT(*) FROM tenant_quotes')) {
+   return ok([[tables.tenant_quotes.filter(q => q.organization_id === args[0] && !q.archived_at).length]]);
+  }
+  if (sql.startsWith("SELECT COUNT(*) FROM memberships WHERE organization_id=?")) {
+   return ok([[tables.memberships.filter(m => m.organization_id === args[0] && m.status === 'active').length]]);
+  }
+  if (sql.startsWith('SELECT COUNT(*) FROM tenant_subscriptions')) {
+   return ok([[tables.tenant_subscriptions.filter(s => s.organization_id === args[0]).length]]);
+  }
+  if (sql.startsWith('SELECT entity_type,entity_id FROM tenant_demo_seed')) {
+   return ok(tables.tenant_demo_seed.filter(s => s.organization_id === args[0]).map(s => [s.entity_type, s.entity_id]));
+  }
+  if (sql.startsWith('INSERT INTO tenant_onboarding')) {
+   const found = tables.tenant_onboarding.find(s => s.organization_id === args[0] && s.user_id === args[1] && s.step_key === args[2]);
+   if (!found) tables.tenant_onboarding.push({organization_id: args[0], user_id: args[1], step_key: args[2], completed_at: 'now'});
+   return ok([], 1);
+  }
+  if (sql.startsWith('DELETE FROM tenant_onboarding')) {
+   const before = tables.tenant_onboarding.length;
+   tables.tenant_onboarding = tables.tenant_onboarding.filter(s => !(s.organization_id === args[0] && s.user_id === args[1]));
+   return ok([], before - tables.tenant_onboarding.length);
+  }
+  if (sql.startsWith('INSERT INTO tenant_client_profiles')) {
+   tables.tenant_client_profiles.push({organization_id: args[0], id: args[1], name: args[2], company: args[3], email: args[4], phone: args[5], status: args[6], notes: args[7], created_by: args[8], archived_at: null});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO tenant_catalog_items')) {
+   tables.tenant_catalog_items.push({organization_id: args[0], id: args[1], sku: args[2], name: args[3], description: args[4], price_cents: args[5], category: args[6], active: args[7], created_by: args[8], archived_at: null});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO tenant_quotes')) {
+   tables.tenant_quotes.push({organization_id: args[0], id: args[1], client_id: args[2], client_name: args[3], title: args[4], notes: args[5], vat_rate: args[6], status: args[7], valid_until: args[8], subtotal_cents: args[9], vat_cents: args[10], total_cents: args[11], public_token: args[12], created_by: args[13], archived_at: null});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO tenant_quote_lines')) {
+   tables.tenant_quote_lines.push({organization_id: args[0], quote_id: args[1], id: args[2], description: args[3], quantity: args[4], unit_price_cents: args[5], line_total_cents: args[6], position: args[7]});
+   return ok([], 1);
+  }
+  if (sql.startsWith('INSERT INTO tenant_demo_seed')) {
+   tables.tenant_demo_seed.push({organization_id: args[0], entity_type: args[1], entity_id: args[2], created_by: args[3]});
+   return ok([], 1);
+  }
+  if (sql.startsWith('DELETE FROM tenant_quote_lines')) {
+   const before = tables.tenant_quote_lines.length;
+   tables.tenant_quote_lines = tables.tenant_quote_lines.filter(l => !(l.organization_id === args[0] && l.quote_id === args[1]));
+   return ok([], before - tables.tenant_quote_lines.length);
+  }
+  if (sql.startsWith('DELETE FROM tenant_quotes')) {
+   const before = tables.tenant_quotes.length;
+   tables.tenant_quotes = tables.tenant_quotes.filter(q => !(q.organization_id === args[0] && q.id === args[1]));
+   return ok([], before - tables.tenant_quotes.length);
+  }
+  if (sql.startsWith('DELETE FROM tenant_catalog_items')) {
+   const before = tables.tenant_catalog_items.length;
+   tables.tenant_catalog_items = tables.tenant_catalog_items.filter(c => !(c.organization_id === args[0] && c.id === args[1]));
+   return ok([], before - tables.tenant_catalog_items.length);
+  }
+  if (sql.startsWith('DELETE FROM tenant_client_profiles')) {
+   const before = tables.tenant_client_profiles.length;
+   tables.tenant_client_profiles = tables.tenant_client_profiles.filter(c => !(c.organization_id === args[0] && c.id === args[1]));
+   return ok([], before - tables.tenant_client_profiles.length);
+  }
+  if (sql.startsWith('DELETE FROM tenant_demo_seed')) {
+   const before = tables.tenant_demo_seed.length;
+   tables.tenant_demo_seed = tables.tenant_demo_seed.filter(s => s.organization_id !== args[0]);
+   return ok([], before - tables.tenant_demo_seed.length);
+  }
   if (sql.startsWith('SELECT id FROM organizations WHERE slug=?')) {
    const org = tables.organizations.find(o => o.slug === args[0]);
    return ok(org ? [[org.id]] : []);
@@ -98,6 +239,14 @@ export function createFakeDb(seed = {}) {
    const s = tables.tenant_subscriptions.find(x => x.organization_id === args[0] && x.status === 'past_due');
    if (s) s.status = 'suspended';
    return ok([], s ? 1 : 0);
+  }
+  if (sql.startsWith("SELECT organization_id,past_due_since FROM tenant_subscriptions WHERE status='past_due'")) {
+   return ok(tables.tenant_subscriptions.filter(s => s.status === 'past_due')
+    .map(s => [s.organization_id, s.past_due_since ?? null]));
+  }
+  if (sql.startsWith('INSERT INTO audit_events')) {
+   tables.audit_events.push({id: args[0], organization_id: args[1], actor_user_id: args[2], action: args[3], target_type: args[4], target_id: args[5]});
+   return ok([], 1);
   }
   if (sql.startsWith('SELECT id FROM tenant_payments WHERE stripe_invoice_id=?')) {
    const p = tables.tenant_payments.find(x => x.stripe_invoice_id === args[0]);

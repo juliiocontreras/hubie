@@ -3,6 +3,8 @@
 // Marca Hubie: Nunito, tinta #16123a, morado #7c5cfc, rosa #ec4899.
 // Sin emojis como iconografía, sin letras como iconos, sin barras visibles.
 import {field,line,money,button,container} from './app-workflows.js';
+import {createImportPanel,CATALOG_CSV_TEMPLATE} from './import-ui.js';
+import {renderExpenseBudgetsPanel} from './operational-p1b.js';
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const baseFor=(ctx,module)=>'/api/app/'+encodeURIComponent(ctx.config.tenant.slug)+'/workflows/'+module;
 const canWrite=ctx=>ctx.config.tenant.role!=='viewer';
@@ -310,6 +312,12 @@ export async function renderCatalog(ctx){
  const actions=container('toolbar');actions.append(save,cancel);form.append(actions);
  editor.append(line('Catálogo · fichas con precio, categoría y foto','group-label'),form,
   line('La foto se adjunta abajo, en “Archivos adjuntos”: sube una imagen por ficha (máx. 10 MB).','help'));
+ if(canWrite(ctx)){
+  editor.append(createImportPanel({title:'Importar catálogo desde CSV',description:'Columnas: SKU, Nombre, Descripción, Precio, Categoría. También se reconocen encabezados en inglés (SKU, Name, Description, Price, Category). Los SKU duplicados se omiten sin borrar nada.',
+   templateName:'hubie-catalogo-plantilla.csv',templateText:CATALOG_CSV_TEMPLATE,accept:'.csv,text/csv',
+   notice:ctx.notice,
+   onSubmit:async csv=>{const data=await ctx.write(path+'/import','POST',{csv});await reload();return data;}}));
+ }
  host.replaceChildren(stats);if(canWrite(ctx))host.append(editor);host.append(list);
  let items=[],categories=[],editing=null,categoryFilter='',showInactive=false;
  const reset=()=>{editing=null;form.reset();fields.category.input.value='General';activeInput.checked=true;save.textContent='Agregar al catálogo';cancel.hidden=true;};
@@ -403,7 +411,8 @@ export async function renderExpenses(ctx){
   amount:field('expense-amount','Monto MXN','number'),
   occurredOn:field('expense-date','Fecha','date'),
   category:field('expense-category','Categoría','select',categories),
-  vendor:field('expense-vendor','Proveedor')
+  vendor:field('expense-vendor','Proveedor'),
+  supplier:field('expense-supplier','Proveedor registrado','select',[])
  };
  fields.description.input.required=true;fields.amount.input.required=true;
  fields.amount.input.min='0.01';fields.amount.input.step='0.01';fields.occurredOn.input.value=today();
@@ -414,15 +423,20 @@ export async function renderExpenses(ctx){
  const actions=container('toolbar');actions.append(save,cancel);form.append(actions);
  editor.append(line('Control de gastos · comprobante adjunto por gasto','group-label'),form,
   line('El comprobante (foto o PDF) se adjunta abajo, en “Archivos adjuntos”, eligiendo el gasto. Máx. 10 MB por archivo.','help'));
- host.replaceChildren(stats);if(canWrite(ctx))host.append(editor);host.append(list);
- let expenses=[],summary=null,editing=null,from='',to='',categoryFilter='';
+ const budgetsPanel=container('card-soft');
+ host.replaceChildren(stats);if(canWrite(ctx))host.append(editor);host.append(list,budgetsPanel);
+ void renderExpenseBudgetsPanel(ctx,budgetsPanel).catch(e=>ctx.notice(e.message,true));
+ let expenses=[],summary=null,editing=null,from='',to='',categoryFilter='',suppliers=[];
  const reset=()=>{editing=null;form.reset();fields.occurredOn.input.value=today();save.textContent='Registrar gasto';cancel.hidden=true;};
  cancel.addEventListener('click',reset,{signal:ctx.signal});
  async function reload(){
   const params=new URLSearchParams();
   if(from)params.set('from',from);if(to)params.set('to',to);if(categoryFilter)params.set('category',categoryFilter);
   const data=await ctx.api(path+(params.toString()?'?'+params.toString():''));if(ctx.signal.aborted)return;
-  expenses=data.expenses||[];summary=data.summary||null;
+  expenses=data.expenses||[];summary=data.summary||null;suppliers=data.suppliers||[];
+  fields.supplier.input.replaceChildren();
+  fields.supplier.input.add(new Option('Sin proveedor registrado',''));
+  for(const s of suppliers)fields.supplier.input.add(new Option(s.name,s.id));
   draw();ctx.attachmentsPanel?.update(expenses.map(e=>({id:e.id,title:e.description+' · '+mxn(e.amountCents)})));
  }
  function draw(){
@@ -460,7 +474,7 @@ export async function renderExpenses(ctx){
    const card=container('record'),info=container('stack');
    const title=document.createElement('strong');title.textContent=e.description;info.append(title);
    info.append(line(fmtDate(e.occurredOn)+' · '+(categories.find(c=>c[0]===e.category)||[])[1]+' · '+money(e.amountCents),'help'));
-   info.append(line((e.vendor?'Proveedor: '+e.vendor+' · ':'')+(e.receiptCount?'Comprobante adjunto ('+e.receiptCount+')':'Sin comprobante'),'help'));
+   info.append(line((e.supplierName?'Proveedor: '+e.supplierName+' · ':e.vendor?'Proveedor: '+e.vendor+' · ':'')+(e.receiptCount?'Comprobante adjunto ('+e.receiptCount+')':'Sin comprobante'),'help'));
    card.append(info);
    if(canWrite(ctx)){
     const buttons=container('record-actions');
@@ -469,6 +483,7 @@ export async function renderExpenses(ctx){
      editing=e.id;
      fields.description.input.value=e.description;fields.amount.input.value=String(e.amountCents/100);
      fields.occurredOn.input.value=e.occurredOn;fields.category.input.value=e.category;fields.vendor.input.value=e.vendor;
+     fields.supplier.input.value=e.supplierId||'';
      save.textContent='Guardar cambios';cancel.hidden=false;fields.description.input.focus();
     },{signal:ctx.signal});
     const archive=button('Eliminar','btn btn-danger');
@@ -486,7 +501,8 @@ export async function renderExpenses(ctx){
   event.preventDefault();save.disabled=true;
   try{
    const body={description:fields.description.input.value.trim(),amountCents:pesosToCents(fields.amount.input.value),
-    occurredOn:fields.occurredOn.input.value,category:fields.category.input.value,vendor:fields.vendor.input.value.trim()};
+    occurredOn:fields.occurredOn.input.value,category:fields.category.input.value,vendor:fields.vendor.input.value.trim(),
+    supplierId:fields.supplier.input.value||null};
    await ctx.write(path+(editing?'/'+editing:''),editing?'PATCH':'POST',body);
    ctx.notice('Gasto registrado.');reset();await reload();
   }catch(e){ctx.notice('No se guardó: '+e.message,true);}

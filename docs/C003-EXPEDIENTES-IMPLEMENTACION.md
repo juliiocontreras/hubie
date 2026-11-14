@@ -55,7 +55,7 @@
 
 **Compatibilidad:** los adjuntos C003 antiguos sin clasificación siguen visibles. Al agregarles una nueva versión, se crea su grupo lógico y se incorpora el archivo original como versión 1. Otros módulos de adjuntos conservan la interfaz y esquema anteriores.
 
-**Seguridad y límites:** siguen aplicando autenticación por Tool, tenant, permisos owner/admin/member y lectura para viewer; límites de 12 versiones por expediente, 2 MB por archivo, cuota básica de 60 MB/empresa; archivos archivados no se sirven públicamente. Se registra el cambio de metadatos en la línea de tiempo del caso. No existen todavía permisos individuales por documento ni avisos programados, cifrado propio por documento o escaneo antimalware; no cargar documentos sensibles en staging.
+**Seguridad y límites:** siguen aplicando autenticación por Tool, tenant, permisos owner/admin/member y lectura para viewer; límites de 12 versiones por expediente, 10 MB por archivo (migración 017; antes 2 MB por el CHECK de 010_media.sql), cuota básica de 60 MB/empresa; archivos archivados no se sirven públicamente. Se registra el cambio de metadatos en la línea de tiempo del caso. No existen todavía permisos individuales por documento ni avisos programados, cifrado propio por documento o escaneo antimalware; no cargar documentos sensibles en staging.
 
 **Pruebas:** `tests/case-document-domain.test.mjs`, `tests/demo-case-document-versions.test.mjs` y `tests/test_case_documents.py`. Confirman metadatos válidos, aislamiento entre empresas, vigencia, revisiones recuperables sin sobrescritura, FK compuestas e idempotencia de migración.
 

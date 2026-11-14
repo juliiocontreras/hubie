@@ -2,8 +2,8 @@
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 const demoApi=async(path,options)=> (await import('./demo-backend.js')).demoRequest(path,options);
 const $=id=>document.getElementById(id);
-const state={catalog:null,tenants:[],selected:null,detail:null,platformAppearance:null,platformBackgrounds:{dashboard:null,sidebar:null}};
-let themeUI=null,iconUI=null;
+const state={catalog:null,tenants:[],selected:null,detail:null,platformAppearance:null,platformBackgrounds:{dashboard:null,sidebar:null},auditFilters:{}};
+let themeUI=null,iconUI=null,invitationsUI=null,auditUI=null;
 const money=n=>n==null?'A cotizar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
 function node(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
 // Estado vacío con acción: título + qué hacer + un botón que lo resuelve.
@@ -30,6 +30,8 @@ function screen(view){
  for(const s of document.querySelectorAll('[id^="view-"]'))s.hidden=s.id!=='view-'+view;
  for(const b of document.querySelectorAll('[data-view]'))b.setAttribute('aria-current',b.dataset.view===view?'page':'false');
  if(view==='billing')void renderBilling();
+ if(view==='audit')void loadAudit(state.auditFilters||{});
+ if(view==='notifications')void renderAdminNotifications();
  window.scrollTo({top:0,behavior:'instant'});
 }
 const toolList=()=>state.catalog.tools;
@@ -74,7 +76,7 @@ function renderCatalog(){
 }
 function companyRow(t){
  const btn=node('button',undefined,'company');btn.type='button';
- const meta=node('div',undefined,'company-meta');meta.append(node('strong',t.name),node('small',t.slug+' · '+(suiteList().find(s=>s.id===t.suiteId)?.name||t.suiteId||'Sin Suite')));
+ const meta=node('div',undefined,'company-meta');meta.append(node('strong',t.name),node('small',t.slug+' · '+(suiteList().find(s=>s.id===t.suiteId)?.name||t.suiteId||'Sin Suite')+(t.ownerEmail?' · Propietario: '+t.ownerEmail:'')));
  const status=node('span',t.status==='active'?'Activa':'Suspendida','status'+(t.status==='active'?'':' off'));
  const badge=node('span',undefined,'company-icon');badge.append(iconUI.icon('building'));btn.append(badge,meta,status);
  btn.addEventListener('click',()=>openDetail(t.id));
@@ -137,6 +139,47 @@ function filterCompanies(){
  for(const t of found)host.append(companyRow(t));
  if(!found.length)host.append(emptyAction('No se encontraron empresas','Ninguna empresa coincide con ese texto. Prueba con otro término o limpia la búsqueda.','Limpiar búsqueda',()=>{$('filter-companies').value='';filterCompanies();}));
 }
+// Buscador de empresas de Madre (servidor): nombre, slug o correo del owner,
+// con estado de cobro. Con menos de 2 caracteres vuelve al filtro local.
+let tenantSearchTimer=null;
+async function searchTenantsServer(q){
+ const host=$('companies');host.replaceChildren();
+ host.append(node('div','Buscando empresas…','empty'));
+ try{
+  const data=await api('/api/admin/tenants/search?q='+encodeURIComponent(q));
+  host.replaceChildren();
+  for(const t of data.tenants){
+   const row=node('div',undefined,'aurora-row');
+   const meta=node('span',undefined,'insight-meta');
+   meta.append(node('strong',t.name),node('small',t.slug+(t.ownerEmail?' · '+t.ownerEmail:'')));
+   const pill=node('span',t.billingStatusLabel||t.billingStatus,'status'+(t.billingStatus==='active'?'':' off'));
+   const open=node('button','Ver empresa','btn');open.type='button';open.addEventListener('click',()=>openDetail(t.id));
+   row.append(meta,pill,open);host.append(row);
+  }
+  if(!data.tenants.length)host.append(emptyAction('No se encontraron empresas','Ninguna empresa coincide con ese texto, ni por nombre, identificador o correo del propietario.','Limpiar búsqueda',()=>{$('filter-companies').value='';$('global-search').value='';filterCompanies();}));
+ }catch(e){
+  host.replaceChildren();
+  host.append(node('div','No se pudo buscar en el servidor: '+e.message+'. Se muestra el filtro local.','empty'));
+  filterCompanies();
+ }
+}
+// Centro de notificaciones de Madre: avisos de todas las empresas.
+let adminNotificationsCenter=null;
+async function renderAdminNotifications(){
+ if(!adminNotificationsCenter){
+  const {createAdminNotificationCenter}=await import('./notifications.js');
+  adminNotificationsCenter=createAdminNotificationCenter({
+   api,host:$('admin-notifications'),generateButton:$('generate-notifications'),
+   onNavigate:item=>{if(item.tenantSlug)openDetail(item.organizationId);}
+  });
+ }
+ const data=await adminNotificationsCenter.refresh();
+ if(data){
+  $('admin-notifications-pill').textContent=data.unread+' sin leer';
+  const badge=$('admin-notifications-badge');
+  badge.hidden=!data.unread;badge.textContent=String(data.unread>99?'99+':data.unread);
+ }
+}
 async function loadTenants(){state.tenants=(await api('/api/admin/tenants')).tenants;renderTenants();}
 async function renderBilling(){
  const host=$('billing-companies'),ordersHost=$('billing-orders');
@@ -147,7 +190,7 @@ async function renderBilling(){
   for(const t of data.tenants){
    const row=node('div',undefined,'aurora-row');
    const meta=node('span',undefined,'insight-meta');
-   meta.append(node('strong',t.name),node('small',(t.suiteId||'Sin suite')+' · '+(t.billingStatusLabel||t.billingStatus)+(t.balancePendingCents?' · Saldo pendiente '+money(t.balancePendingCents):'')+(t.daysPastDue?' · '+t.daysPastDue+' días vencido':'')));
+   meta.append(node('strong',t.name),node('small',(t.suiteId||'Sin suite')+' · '+(t.billingStatusLabel||t.billingStatus)+(t.ownerEmail?' · Propietario: '+t.ownerEmail:'')+(t.balancePendingCents?' · Saldo pendiente '+money(t.balancePendingCents):'')+(t.daysPastDue?' · '+t.daysPastDue+' días vencido':'')));
    const pill=node('span',t.billingStatusLabel||t.billingStatus,'status'+(t.billingStatus==='active'?'':' off'));
    const open=node('button','Ver empresa','btn');open.type='button';open.addEventListener('click',()=>openDetail(t.id));
    row.append(meta,pill,open);host.append(row);
@@ -167,10 +210,49 @@ async function renderBilling(){
 }
 function renderMembers(items){
  const host=$('members');host.replaceChildren();
+ // TOOLS P0 (C009): permisos por módulo y por miembro. Las invitaciones por
+ // correo las hace el frente invites (019); mientras tanto el alta directa
+ // autoriza el acceso y el miembro entra con Google.
+ host.append(node('p','Invitaciones por correo: pendiente del módulo de invitaciones (frente 019). El alta directa de abajo autoriza el acceso; el miembro entra con Google.','help'));
+ const p0tools=['C001','C002','C003','C004','C005','C006','C007','T013','T014','T015','T020'];
+ const p0labels={C001:'Clientes',C002:'CRM',C003:'Expedientes',C004:'Agenda',C005:'Inventario',C006:'Catálogo',C007:'Gastos',T013:'Cotizaciones',T014:'Cobros',T015:'Facturación',T020:'Reportes'};
  for(const m of items){
   const line=node('div',undefined,'line'),detail=node('div');
   detail.append(node('strong',m.email),node('small',m.role+' · '+(m.status==='active'?'Acceso activo':'Acceso suspendido')));
   line.append(detail);
+  const perms=node('button','Permisos por módulo','btn');perms.type='button';
+  const permsHost=node('div',undefined,'stack');permsHost.hidden=true;
+  perms.addEventListener('click',async()=>{
+   permsHost.hidden=!permsHost.hidden;if(permsHost.hidden)return;
+   permsHost.replaceChildren(node('p','Consultando permisos…','help'));
+   try{
+    const tenantId=state.selected;
+    const data=await api('/api/admin/tenants/'+tenantId+'/members/'+m.id+'/tools');
+    const current=data.members.find(x=>x.id===m.id)?.tools||{};
+    permsHost.replaceChildren();
+    const selects={};
+    for(const tool of p0tools){
+     const row=node('div',undefined,'line');
+     row.append(node('span',p0labels[tool]||tool));
+     const select=document.createElement('select');select.className='search';
+     select.add(new Option('Sin acceso','none'));select.add(new Option('Lectura','read'));select.add(new Option('Escritura','write'));
+     select.value=current[tool]||'write';selects[tool]=select;
+     row.append(select);permsHost.append(row);
+    }
+    const save=node('button','Guardar permisos','btn btn-primary');save.type='button';
+    save.addEventListener('click',async()=>{
+     save.disabled=true;
+     try{
+      const tools=Object.fromEntries(Object.entries(selects).map(([tool,select])=>[tool,select.value]));
+      await write('/api/admin/tenants/'+tenantId+'/members/'+m.id+'/tools','PUT',{tools});
+      notice('Permisos por módulo actualizados para '+m.email+'.');
+     }catch(e){notice('No se pudieron guardar los permisos: '+e.message,true);}
+     finally{save.disabled=false;}
+    });
+    permsHost.append(save,node('p','Sin cambios guardados, manda el permiso del rol (viewer: lectura; member/admin/owner: escritura).','help'));
+   }catch(e){permsHost.replaceChildren(node('p','No se pudieron consultar los permisos: '+e.message,'error'));}
+  });
+  line.append(perms);
   if(m.role!=='owner'){
    const btn=node('button',m.status==='active'?'Suspender acceso':'Reactivar','btn'+(m.status==='active'?' btn-danger':''));
    btn.type='button';
@@ -186,12 +268,56 @@ function renderMembers(items){
     finally{btn.disabled=false;}
    });
    line.append(btn);
-  }else line.append(node('span','Propietario protegido','status'));
-  host.append(line);
+  }else{
+   line.append(node('span','Propietario protegido','status'));
+   // Alta autoservicio (018): Madre reemite el enlace de activación de un
+   // solo uso (24 h) para el owner. En la demo no hay enlaces reales.
+   const act=node('button','Generar enlace de activación','btn');act.type='button';
+   act.addEventListener('click',async()=>{
+    if(demoMode)return notice('La demostración no emite enlaces de activación reales.');
+    act.disabled=true;
+    try{
+     const link=await write('/api/admin/tenants/'+state.selected+'/activation-link','POST',{});
+     const out=node('div',undefined,'line');
+     const input=document.createElement('input');input.readOnly=true;input.value=link.activationUrl;input.setAttribute('aria-label','Enlace de activación de un solo uso');input.style.flex='1';
+     const copy=node('button','Copiar','btn');copy.type='button';
+     copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(link.activationUrl);notice('Enlace copiado. Envíalo al cliente: es de un solo uso y caduca en 24 h.');}catch{input.select();notice('Copia el enlace del campo: es de un solo uso y caduca en 24 h.');}});
+     out.append(input,copy);host.append(out);
+     notice('Enlace de activación generado para '+link.email+': un solo uso, caduca el '+new Date(link.expiresAt).toLocaleString('es-MX')+'.');
+    }catch(e){notice('No se pudo generar el enlace: '+e.message,true);}
+    finally{act.disabled=false;}
+   });
+   line.append(act);
+  }
+  host.append(line,permsHost);
+
  }
  if(!items.length)host.append(node('p','Aún no hay miembros. Autoriza el primer correo con el formulario de abajo.','help'));
 }
 async function loadMembers(id){renderMembers((await api('/api/admin/tenants/'+id+'/members')).members);}
+async function loadInvitations(id){
+ const data=await api('/api/admin/tenants/'+id+'/invitations');
+ const refresh=async()=>{const fresh=await api('/api/admin/tenants/'+id+'/invitations');return {invitations:fresh.invitations};};
+ invitationsUI.renderInvitations($('invitations'),{invitations:data.invitations,emailConfigured:data.emailConfigured,canManage:true},{
+  onInvite:async payload=>{const r=await write('/api/admin/tenants/'+id+'/invitations','POST',payload);const f=await refresh();return {...f,lastInvite:r,message:r.emailSent?'Invitación enviada a '+r.invitation.email+'.':'Enlace listo para compartir (correo no configurado).'};},
+  onRevoke:async invId=>{await api('/api/admin/tenants/'+id+'/invitations/'+invId,{method:'DELETE'});const f=await refresh();return {...f,message:'Invitación revocada.'};},
+  onResend:async invId=>{const r=await write('/api/admin/tenants/'+id+'/invitations/'+invId+'/resend','POST',{});const f=await refresh();return {...f,lastInvite:r,message:r.emailSent?'Invitación reenviada a '+r.invitation.email+'.':'Enlace nuevo listo para compartir (correo no configurado).'};}
+ });
+}
+async function loadAudit(filters={}){
+ state.auditFilters=filters;
+ try{
+ const query=new URLSearchParams();
+ if(filters.tenant)query.set('tenant',filters.tenant);
+ if(filters.action)query.set('action',filters.action);
+ if(filters.actor)query.set('actor',filters.actor);
+ if(filters.from)query.set('from',filters.from);
+ if(filters.to)query.set('to',filters.to);
+ if(filters.limit)query.set('limit',String(filters.limit));
+ const data=await api('/api/admin/audit'+(query.toString()?'?'+query.toString():''));
+ auditUI.renderAudit($('audit-list'),{events:data.events,actions:data.actions,tenants:state.tenants,filters},{onFilter:next=>void loadAudit(next)});
+ }catch(e){notice('No se pudo cargar la auditoría: '+e.message,true);}
+}
 function renderDetail(t){
  state.detail=t;$('detail-heading').textContent=t.name;
  const bgPath='/api/admin/tenants/'+t.id+'/media/';
@@ -241,10 +367,29 @@ function renderDetail(t){
   const summary=node('summary',group+' · '+rows.length+' Tools','tool-group-title');
   const grid=node('div',undefined,'tool-grid compact-tool-grid');grid.append(...rows);section.append(summary,grid);host.append(section);
  }
+ // Importación de datos para esta empresa (P0, E004): CSV de clientes y de
+ // catálogo, y migración JSON completa. El servidor valida, deduplica por
+ // email/SKU dentro del tenant y devuelve el resumen con errores por fila.
+ void renderAdminImport(t);
+}
+async function renderAdminImport(t){
+ const host=$('detail-import');if(!host)return;
+ const {createImportPanel,createMigrationPanel,CLIENT_CSV_TEMPLATE,CATALOG_CSV_TEMPLATE}=await import('./import-ui.js');
+ host.replaceChildren();
+ host.append(node('h3','Importar datos a '+t.name));
+ host.append(node('p','Los archivos se importan solo a esta empresa. Los correos y SKU duplicados se omiten; las filas con error se reportan sin cancelar el resto.','help'));
+ const post=(kind,body)=>write('/api/admin/tenants/'+t.id+'/import','POST',{kind,...body});
+ host.append(createImportPanel({title:'Importar clientes desde CSV',description:'Columnas: Nombre, Empresa, Correo, Teléfono, Estado, Notas. También se reconocen encabezados en inglés.',
+  templateName:'hubie-clientes-plantilla.csv',templateText:CLIENT_CSV_TEMPLATE,accept:'.csv,text/csv',notice,
+  onSubmit:async csv=>post('clients',{csv})}));
+ host.append(createImportPanel({title:'Importar catálogo desde CSV',description:'Columnas: SKU, Nombre, Descripción, Precio, Categoría. También se reconocen encabezados en inglés.',
+  templateName:'hubie-catalogo-plantilla.csv',templateText:CATALOG_CSV_TEMPLATE,accept:'.csv,text/csv',notice,
+  onSubmit:async csv=>post('catalog',{csv})}));
+ host.append(createMigrationPanel({notice,onSubmit:async payload=>post('migration',{payload})}));
 }
 async function openDetail(id){
  state.selected=id;screen('detail');$('detail-heading').textContent='Cargando empresa…';
- try{const [t,m]=await Promise.all([api('/api/admin/tenants/'+id),api('/api/admin/tenants/'+id+'/members')]);renderDetail(t.tenant);renderMembers(m.members);}
+ try{const [t,m]=await Promise.all([api('/api/admin/tenants/'+id),api('/api/admin/tenants/'+id+'/members')]);renderDetail(t.tenant);renderMembers(m.members);await loadInvitations(id).catch(e=>notice('No se pudieron cargar las invitaciones: '+e.message,true));}
  catch(e){notice('No fue posible cargar la empresa: '+e.message,true);}
 }
 async function createCompany(ev){
@@ -289,7 +434,11 @@ function initEvents(){
  const search=$('global-search');
  search?.addEventListener('input',()=>{
   $('filter-companies').value=search.value;
-  filterCompanies();if(search.value.trim())screen('companies');
+  const q=search.value.trim();
+  if(q)screen('companies');
+  clearTimeout(tenantSearchTimer);
+  if(q.length>=2)tenantSearchTimer=setTimeout(()=>void searchTenantsServer(q),300);
+  else filterCompanies();
  });
  document.querySelectorAll('.sidebar [data-view]').forEach(btn=>btn.addEventListener('click',()=>{
   closeMobileNav();
@@ -306,7 +455,7 @@ function initEvents(){
  $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/madre/app.html';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
 }
 async function init(){
- [themeUI,iconUI]=await Promise.all([import('./appearance-ui.js'),import('./ui-icons.js')]);
+ [themeUI,iconUI,invitationsUI,auditUI]=await Promise.all([import('./appearance-ui.js'),import('./ui-icons.js'),import('./invitations-ui.js'),import('./audit-ui.js')]);
  if(demoMode){
   $('demo-banner').hidden=false;
   document.querySelector('.sidebar a[href="/app/"]').href='/app/?demo=1';
