@@ -22,17 +22,21 @@ test('firma de webhook inválida se rechaza; válida construye el evento', () =>
  assert.equal(event.id, 'evt_1');
 });
 
-test('sesión de checkout: modo subscription, anticipo one-time + mensualidad $949', () => {
+test('sesión de checkout: modo subscription, anticipo one-time + mensualidad $949 + IVA', () => {
  const params = buildCheckoutSessionParams({quote: quote(), email: 'cliente@demo.mx', organizationId: orgId, orderId: 'ord-1', origin: 'https://hubie.test'});
  assert.equal(params.mode, 'subscription');
  assert.equal(params.customer_email, 'cliente@demo.mx');
  assert.equal(params.line_items.length, 2);
- assert.equal(params.line_items[0].price_data.unit_amount, 495000);
+ assert.equal(params.line_items[0].price_data.unit_amount, 574200);
  assert.equal(params.line_items[0].price_data.currency, 'mxn');
- assert.equal(params.line_items[1].price_data.unit_amount, 94900);
+ assert.match(params.line_items[0].price_data.product_data.name, /IVA incluido/);
+ assert.equal(params.line_items[1].price_data.unit_amount, 110084);
  assert.equal(params.line_items[1].price_data.recurring.interval, 'month');
+ assert.match(params.line_items[1].price_data.product_data.name, /IVA incluido/);
  assert.equal(params.metadata.organization_id, orgId);
- assert.equal(params.metadata.deposit_cents, '495000');
+ assert.equal(params.metadata.deposit_cents, '574200');
+ assert.equal(params.metadata.subtotal_cents, '990000');
+ assert.equal(params.metadata.vat_cents, '158400');
  assert.match(params.success_url, /checkout=ok/);
  assert.throws(() => buildCheckoutSessionParams({quote: quote(), email: '', orderId: 'x', origin: 'https://x'}), /Invalid checkout/);
 });

@@ -22,14 +22,16 @@ export function buildCheckoutSessionParams({quote, email, organizationId = null,
   mode: 'subscription',
   customer_email: email,
   line_items: [
-   {price_data: {currency: 'mxn', product_data: {name: `Anticipo 50% — ${quote.suiteName}`}, unit_amount: quote.depositCents}, quantity: 1},
-   {price_data: {currency: 'mxn', recurring: {interval: 'month'}, product_data: {name: 'Mensualidad de plataforma Hubie'}, unit_amount: quote.monthlyFeeCents}, quantity: 1}
+   {price_data: {currency: 'mxn', product_data: {name: `Anticipo 50% — ${quote.suiteName} (IVA incluido)`}, unit_amount: quote.depositCents}, quantity: 1},
+   {price_data: {currency: 'mxn', recurring: {interval: 'month'}, product_data: {name: 'Mensualidad de plataforma Hubie (IVA incluido)'}, unit_amount: quote.monthlyFeeCents}, quantity: 1}
   ],
   success_url: `${origin}/precios.html?checkout=ok&session_id={CHECKOUT_SESSION_ID}`,
   cancel_url: `${origin}/precios.html?checkout=cancelado`,
   metadata: {
    order_id: orderId, organization_id: organizationId ?? '',
    suite_id: quote.suiteId, total_cents: String(quote.setupTotalCents),
+   subtotal_cents: String(quote.setupSubtotalCents ?? quote.setupTotalCents),
+   vat_cents: String(quote.setupVatCents ?? 0),
    deposit_cents: String(quote.depositCents), balance_cents: String(quote.balanceCents),
    balance_installments: String(quote.balanceInstallments), monthly_fee_cents: String(quote.monthlyFeeCents)
   }

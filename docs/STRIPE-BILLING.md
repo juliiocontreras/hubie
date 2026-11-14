@@ -12,10 +12,14 @@ configurado"` y la app sigue funcionando normal.
 - **Saldo 50% en hasta 6 pagos** (`catalog.rules.maxBalanceInstallments`).
 - **Mensualidad de plataforma $949 MXN/mes parejo** para las 10 suites
   (`catalog.rules.monthlyPlatformFee = 949`), por mantenimiento + updates.
-- **Supuesto (a confirmar/corregir por Julio): los precios del catálogo son
-  finales con IVA incluido**, como en Jobia. Está como constante
-  `PRICES_INCLUDE_TAX` en `platform/billing-domain.mjs`; si cambia, solo
-  cambia ahí y aquí. Los montos se guardan en centavos (`*_cents`).
+- **IVA (decidido por Julio 2026-11-14): los precios del catálogo son BASE
+  SIN IVA; se agrega IVA 16% al cobrar.** La cotización desglosa subtotal,
+  IVA y total (`setupSubtotalCents`, `setupVatCents`, `setupTotalCents` en
+  `platform/billing-domain.mjs`, constante `VAT_RATE = 0.16`,
+  `PRICES_INCLUDE_TAX = false`). El anticipo, el saldo y la mensualidad se
+  calculan sobre el total CON IVA: mensualidad real $1,100.84/mes; los
+  conceptos en Stripe van etiquetados "(IVA incluido)". Los montos se guardan
+  en centavos (`*_cents`).
 
 ## Flujo
 
@@ -26,11 +30,13 @@ configurado"` y la app sigue funcionando normal.
    `quoteCheckout`), crea la sesión de Stripe y guarda la orden en
    `billing_checkout_orders` (estado `pending`).
 3. La sesión es **modo `subscription` con line items mixtos**: Stripe acepta
-   un price one-time (el anticipo) junto al recurring de $949/mes en la misma
-   sesión; el anticipo se cobra en la primera factura. **Variante de respaldo**
-   si en modo prueba Stripe lo rechazara: sesión `subscription` solo con la
-   mensualidad + sesión `payment` (o Payment Link) separada para el anticipo.
-   Pendiente de verificar contra Stripe real.
+   un price one-time (el anticipo) junto al recurring de $949/mes + IVA en la
+   misma sesión; el anticipo se cobra en la primera factura. **Verificado
+   contra Stripe real en modo prueba 2026-11-14** (sesión `cs_test_b0YdH6…`,
+   anticipo $5,742 + saldo $5,742 + mensualidad $1,100.84, sin pagar).
+   **Variante de respaldo** si Stripe lo rechazara algún día: sesión
+   `subscription` solo con la mensualidad + sesión `payment` (o Payment Link)
+   separada para el anticipo.
 4. `POST /api/stripe/webhook` verifica la firma con `STRIPE_WEBHOOK_SECRET`
    (`stripe.webhooks.constructEvent`) y registra cada evento en
    `stripe_webhook_events` (`stripe_event_id` UNIQUE: el reintento de Stripe
@@ -143,11 +149,11 @@ prueba) apuntando a `https://<dominio>/api/stripe/webhook` con los eventos:
 `customer.subscription.deleted`, `invoice.payment_succeeded`,
 `invoice.payment_failed`.
 
-## Pendiente (no probado sin clave de prueba)
+## Pendiente (no probado sin pago real)
 
-- Flujo completo contra Stripe real en modo prueba (sesión mixta anticipo +
-  suscripción, finalización de facturas de saldo, webhooks en vivo).
-- Confirmar con Julio el supuesto de IVA incluido.
+- Flujo completo tras un pago real en modo prueba (finalización de facturas
+  de saldo, webhooks en vivo con cobro). La sesión mixta y el webhook ya se
+  verificaron en modo prueba 2026-11-14; falta el cobro real de prueba.
 - El enlace de activación solo se muestra una vez (en el log del webhook y
   al reemitirlo desde Madre): Hubie aún no tiene envío de correo, así que el
   superadmin lo copia y se lo envía al cliente por fuera.

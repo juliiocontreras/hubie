@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {executeSql, executeBatch} from '../database.mjs';
-import {statusAfterGrace, daysPastDue, BILLING_STATUS_LABELS} from './billing-domain.mjs';
+import {statusAfterGrace, daysPastDue, BILLING_STATUS_LABELS, MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS} from './billing-domain.mjs';
 // Persistencia de cobro (migración 015). Scope por tenant en todo.
 // Las funciones aceptan deps {executeSql, executeBatch} para poder probarlas
 // con una base falsa; en producción usan Turso. La suspensión por impago vive
@@ -26,13 +26,13 @@ export async function getBillingStatus(organizationId, deps = {}) {
  return {
   organizationId, status, effectiveStatus, statusLabel: BILLING_STATUS_LABELS[effectiveStatus],
   stripeCustomerId: sub?.[0] ?? null, stripeSubscriptionId: sub?.[1] ?? null,
-  monthlyFeeCents: sub ? Number(sub[3]) : 94900,
+  monthlyFeeCents: sub ? Number(sub[3]) : MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS,
   currentPeriodEnd: sub?.[4] ?? null, pastDueSince,
   daysPastDue: daysPastDue(pastDueSince),
   balancePendingCents: balance.reduce((sum, p) => sum + Number(p[1]), 0),
   balanceInstallmentsPending: balance.length,
   nextBalanceDueAt: balance.map(p => p[5]).filter(Boolean).sort()[0] ?? null,
-  nextMonthlyChargeCents: effectiveStatus === 'active' || effectiveStatus === 'past_due' ? Number(sub?.[3] ?? 94900) : 0
+  nextMonthlyChargeCents: effectiveStatus === 'active' || effectiveStatus === 'past_due' ? Number(sub?.[3] ?? MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS) : 0
  };
 }
 export async function isBillingSuspended(organizationId, deps = {}) {
@@ -62,7 +62,7 @@ export async function listBillingForAdmin(deps = {}) {
     id: t[0], slug: t[1], name: t[2], suiteId: t[3] ?? null,
     ownerEmail: ownerByOrg.get(t[0]) ?? null,
     billingStatus: effectiveStatus, billingStatusLabel: BILLING_STATUS_LABELS[effectiveStatus],
-    monthlyFeeCents: sub ? Number(sub[2]) : 94900, currentPeriodEnd: sub?.[3] ?? null,
+    monthlyFeeCents: sub ? Number(sub[2]) : MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS, currentPeriodEnd: sub?.[3] ?? null,
     pastDueSince: sub?.[4] ?? null, daysPastDue: daysPastDue(sub?.[4] ?? null),
     balancePendingCents: balanceByOrg.get(t[0]) ?? 0
    };
@@ -124,7 +124,7 @@ export async function applySubscriptionUpdate({organizationId, stripeSubscriptio
  if (!Number(r?.affected_row_count ?? r?.rowsAffected ?? 0)) {
   await db(deps).sql(
    'INSERT INTO tenant_subscriptions(organization_id,id,stripe_customer_id,stripe_subscription_id,status,monthly_fee_cents,current_period_end) VALUES(?,?,?,?,?,?,?)',
-   [organizationId, randomUUID(), null, stripeSubscriptionId, status, 94900, periodEnd]);
+   [organizationId, randomUUID(), null, stripeSubscriptionId, status, MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS, periodEnd]);
  }
  return {organizationId, stripeSubscriptionId, status};
 }

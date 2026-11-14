@@ -2,18 +2,22 @@ import {catalog, getSuite, getTool} from './catalog.mjs';
 // Cobro Stripe — modelo híbrido decidido por Julio 2026-11-13:
 // pago único de configuración (suite + tools + extras, anticipo 50% + saldo en
 // hasta 6 pagos) + mensualidad de plataforma $949 MXN/mes parejo, 10 suites.
-// SUPUESTO (a confirmar/corregir por Julio): los precios del catálogo son
-// finales con IVA incluido, como en Jobia. Si cambia, solo cambia esta
-// constante y la documentación; los montos en centavos no dependen de ella.
-// Regla de gracia: past_due 3 días -> suspendido (docs/STRIPE-BILLING.md).
+// IVA DECIDIDO por Julio 2026-11-14: los precios del catálogo son BASE SIN
+// IVA; se agrega IVA 16% al cobrar. El anticipo, el saldo y la mensualidad se
+// calculan sobre el total CON IVA; la cotización desglosa subtotal, IVA y
+// total para que el cliente lo vea. Regla de gracia: past_due 3 días ->
+// suspendido (docs/STRIPE-BILLING.md).
 // Este módulo es lógica pura: nunca confía en montos del cliente, siempre
 // revalida contra assets/catalog.json. Sin acceso a red ni a base de datos.
 export const MONTHLY_PLATFORM_FEE_MXN = catalog.rules.monthlyPlatformFee;
 export const MONTHLY_PLATFORM_FEE_CENTS = MONTHLY_PLATFORM_FEE_MXN * 100;
+export const VAT_RATE = 0.16;
+export const MONTHLY_PLATFORM_FEE_VAT_CENTS = Math.round(MONTHLY_PLATFORM_FEE_CENTS * VAT_RATE);
+export const MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS = MONTHLY_PLATFORM_FEE_CENTS + MONTHLY_PLATFORM_FEE_VAT_CENTS;
 export const DEPOSIT_RATE = catalog.rules.depositRate;
 export const MAX_BALANCE_INSTALLMENTS = catalog.rules.maxBalanceInstallments;
 export const GRACE_DAYS_PAST_DUE = 3;
-export const PRICES_INCLUDE_TAX = true;
+export const PRICES_INCLUDE_TAX = false;
 export const BILLING_STATUSES = ['none', 'trialing', 'active', 'past_due', 'suspended', 'cancelled'];
 export const BILLING_STATUS_LABELS = {
  none: 'Sin suscripción', trialing: 'En prueba', active: 'Al corriente',
@@ -55,14 +59,20 @@ export function quoteCheckout(input = {}) {
   extras.push({id: extra.id, name: extra.name, quantity, unitPriceCents: toCents(extra.price), totalCents: toCents(extra.price) * quantity});
   setupTotalCents += toCents(extra.price) * quantity;
  }
+ // Precios base sin IVA: el IVA 16% se agrega al total que se cobra.
+ const setupSubtotalCents = setupTotalCents;
+ const setupVatCents = Math.round(setupSubtotalCents * VAT_RATE);
+ setupTotalCents = setupSubtotalCents + setupVatCents;
  const depositCents = Math.round(setupTotalCents * DEPOSIT_RATE);
  const balanceCents = setupTotalCents - depositCents;
  return {
   suiteId: suite.id, suiteName: suite.name, toolIds: [...toolIds], tools, extras,
-  setupTotalCents, depositCents, balanceCents,
-  monthlyFeeCents: MONTHLY_PLATFORM_FEE_CENTS,
+  setupSubtotalCents, setupVatCents, setupTotalCents, depositCents, balanceCents,
+  monthlyFeeSubtotalCents: MONTHLY_PLATFORM_FEE_CENTS,
+  monthlyFeeVatCents: MONTHLY_PLATFORM_FEE_VAT_CENTS,
+  monthlyFeeCents: MONTHLY_PLATFORM_FEE_WITH_TAX_CENTS,
   balanceInstallments: installments, installmentsCents: splitBalance(balanceCents, installments),
-  currency: 'MXN', pricesIncludeTax: PRICES_INCLUDE_TAX
+  currency: 'MXN', pricesIncludeTax: PRICES_INCLUDE_TAX, vatRate: VAT_RATE
  };
 }
 export function daysPastDue(pastDueSince, now = new Date()) {

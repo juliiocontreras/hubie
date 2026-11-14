@@ -137,7 +137,7 @@ async function showBilling(){
   const host=$('billing-details');host.replaceChildren();
   const row=(label,value)=>{const r=elt('div',undefined,'aurora-row');const m=elt('span',undefined,'insight-meta');m.append(elt('strong',label),elt('small',value));r.append(m);host.append(r);};
   row('Estado',s.statusLabel||s.effectiveStatus);
-  row('Mensualidad de plataforma',currency(s.monthlyFeeCents)+' / mes');
+  row('Mensualidad de plataforma (IVA incluido)',currency(s.monthlyFeeCents)+' / mes');
   if(s.currentPeriodEnd)row('Periodo actual termina',new Date(s.currentPeriodEnd).toLocaleDateString('es-MX'));
   if(s.balancePendingCents)row('Saldo pendiente',currency(s.balancePendingCents)+' en '+s.balanceInstallmentsPending+' parcialidades'+(s.nextBalanceDueAt?' · próximo '+new Date(s.nextBalanceDueAt).toLocaleDateString('es-MX'):''));
   if(s.daysPastDue)row('Días de atraso',s.daysPastDue+' (gracia de 3 días antes de la suspensión)');

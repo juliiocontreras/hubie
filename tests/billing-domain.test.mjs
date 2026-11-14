@@ -2,27 +2,35 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {quoteCheckout, splitBalance, statusAfterGrace, daysPastDue, formatMoneyCents, validateCheckoutEmail, MONTHLY_PLATFORM_FEE_CENTS, GRACE_DAYS_PAST_DUE, PRICES_INCLUDE_TAX} from '../platform/billing-domain.mjs';
 
-test('cotización base S001: anticipo 50%, saldo 50%, mensualidad $949', () => {
+test('cotización base S001: precios sin IVA, IVA 16% agregado; anticipo 50%, saldo 50%, mensualidad $949 + IVA', () => {
  const q = quoteCheckout({suiteId: 'S001'});
- assert.equal(q.setupTotalCents, 990000);
- assert.equal(q.depositCents, 495000);
- assert.equal(q.balanceCents, 495000);
- assert.equal(q.monthlyFeeCents, 94900);
+ // Base $9,900 + IVA 16% ($1,584) = $11,484 con IVA.
+ assert.equal(q.setupSubtotalCents, 990000);
+ assert.equal(q.setupVatCents, 158400);
+ assert.equal(q.setupTotalCents, 1148400);
+ assert.equal(q.depositCents, 574200);
+ assert.equal(q.balanceCents, 574200);
+ assert.equal(q.monthlyFeeSubtotalCents, 94900);
+ assert.equal(q.monthlyFeeVatCents, 15184);
+ assert.equal(q.monthlyFeeCents, 110084);
  assert.equal(MONTHLY_PLATFORM_FEE_CENTS, 94900);
  assert.equal(q.currency, 'MXN');
- assert.equal(q.pricesIncludeTax, true);
- assert.equal(PRICES_INCLUDE_TAX, true);
- assert.deepEqual(q.installmentsCents, [82500, 82500, 82500, 82500, 82500, 82500]);
+ assert.equal(q.pricesIncludeTax, false);
+ assert.equal(PRICES_INCLUDE_TAX, false);
+ assert.equal(q.vatRate, 0.16);
+ assert.deepEqual(q.installmentsCents, [95700, 95700, 95700, 95700, 95700, 95700]);
  assert.equal(q.installmentsCents.reduce((a, b) => a + b, 0), q.balanceCents);
 });
 
 test('cotización con tools y extras suma solo precios del catálogo', () => {
  const q = quoteCheckout({suiteId: 'S001', toolIds: ['T001'], extras: [{id: 'E001', quantity: 2}], balanceInstallments: 3});
- // 9900 + 4900 + 2*990 = 16780 MXN
- assert.equal(q.setupTotalCents, 1678000);
- assert.equal(q.depositCents, 839000);
- assert.equal(q.balanceCents, 839000);
- assert.deepEqual(q.installmentsCents, [279666, 279666, 279668]);
+ // Base 9900 + 4900 + 2*990 = 16780 MXN; IVA 16% = 2684.80; total con IVA 19464.80
+ assert.equal(q.setupSubtotalCents, 1678000);
+ assert.equal(q.setupVatCents, 268480);
+ assert.equal(q.setupTotalCents, 1946480);
+ assert.equal(q.depositCents, 973240);
+ assert.equal(q.balanceCents, 973240);
+ assert.deepEqual(q.installmentsCents, [324413, 324413, 324414]);
  assert.equal(q.installmentsCents.reduce((a, b) => a + b, 0), q.balanceCents);
  assert.equal(q.extras[0].totalCents, 198000);
 });
@@ -41,7 +49,7 @@ test('cotización rechaza montos que no vienen del catálogo', () => {
   {suiteId: 'S001', balanceInstallments: 2.5}
  ]) assert.throws(() => quoteCheckout(bad), /Invalid checkout/);
  // Un tool Core incluido no suma nada aunque se pase explícito.
- assert.equal(quoteCheckout({suiteId: 'S001', toolIds: ['C001']}).setupTotalCents, 990000);
+ assert.equal(quoteCheckout({suiteId: 'S001', toolIds: ['C001']}).setupTotalCents, 1148400);
 });
 
 test('saldo en parcialidades: el resto va a la última y la suma cuadra', () => {

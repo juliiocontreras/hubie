@@ -12,7 +12,7 @@ const depsOf = fake => ({executeSql: fake.executeSql, executeBatch: fake.execute
 const quote = () => quoteCheckout({suiteId: 'S001'});
 const order = (email = 'cliente@demo.mx') => ({
  id: 'ord-1', email, suiteId: 'S001', quote: quote(), totalCents: quote().setupTotalCents,
- depositCents: quote().depositCents, balanceCents: quote().balanceCents, monthlyFeeCents: 94900,
+ depositCents: quote().depositCents, balanceCents: quote().balanceCents, monthlyFeeCents: quote().monthlyFeeCents,
  stripeSessionId: 'cs_1', organizationId: null, status: 'pending'
 });
 const now = new Date('2026-11-13T12:00:00.000Z');

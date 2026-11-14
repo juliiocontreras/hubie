@@ -590,8 +590,8 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
     return send({appearance:tenant.appearance});
   }
   if(p==='/api/admin/catalog'&&method==='GET')return emit({catalog});
-  if(p==='/api/admin/billing'&&method==='GET')return emit({tenants:state.tenants.map(t=>({id:t.id,slug:t.slug,name:t.name,suiteId:t.suiteId,billingStatus:'active',billingStatusLabel:'Al corriente',monthlyFeeCents:94900,currentPeriodEnd:null,pastDueSince:null,daysPastDue:0,balancePendingCents:0})),pendingOrders:[]});
-  if(p.startsWith('/api/billing/status')&&method==='GET')return emit({organizationId:'demo',status:'active',effectiveStatus:'active',statusLabel:'Al corriente',monthlyFeeCents:94900,currentPeriodEnd:null,pastDueSince:null,daysPastDue:0,balancePendingCents:0,balanceInstallmentsPending:0,nextBalanceDueAt:null,nextMonthlyChargeCents:94900});
+  if(p==='/api/admin/billing'&&method==='GET')return emit({tenants:state.tenants.map(t=>({id:t.id,slug:t.slug,name:t.name,suiteId:t.suiteId,billingStatus:'active',billingStatusLabel:'Al corriente',monthlyFeeCents:110084,currentPeriodEnd:null,pastDueSince:null,daysPastDue:0,balancePendingCents:0})),pendingOrders:[]});
+  if(p.startsWith('/api/billing/status')&&method==='GET')return emit({organizationId:'demo',status:'active',effectiveStatus:'active',statusLabel:'Al corriente',monthlyFeeCents:110084,currentPeriodEnd:null,pastDueSince:null,daysPastDue:0,balancePendingCents:0,balanceInstallmentsPending:0,nextBalanceDueAt:null,nextMonthlyChargeCents:110084});
   if(p==='/api/admin/tenants'){
    if(method==='GET')return emit({tenants:state.tenants.map(({id,slug,name,status,suiteId})=>({id,slug,name,status,suiteId}))});
    if(method==='POST'){

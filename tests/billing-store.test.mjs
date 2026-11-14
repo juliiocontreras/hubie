@@ -11,12 +11,12 @@ const seed = () => createFakeDb({
 });
 const depsOf = fake => ({executeSql: fake.executeSql, executeBatch: fake.executeBatch});
 
-test('sin suscripción: estado none, mensualidad $949, sin saldo', async () => {
+test('sin suscripción: estado none, mensualidad $949 + IVA ($1,100.84), sin saldo', async () => {
  const fake = seed();
  const status = await getBillingStatus(orgId, depsOf(fake));
  assert.equal(status.status, 'none');
  assert.equal(status.effectiveStatus, 'none');
- assert.equal(status.monthlyFeeCents, 94900);
+ assert.equal(status.monthlyFeeCents, 110084);
  assert.equal(status.balancePendingCents, 0);
  assert.equal(await isBillingSuspended(orgId, depsOf(fake)), false);
 });
