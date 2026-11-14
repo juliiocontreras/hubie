@@ -2,7 +2,7 @@ import { isSameOrigin } from './platform/public-origin.mjs';
 import {configurationStatus} from './platform/setup-health.mjs';
 import {seedQaCompanyIfRequested} from './platform/staging-qa-seed.mjs';
 import {listSurveys,createSurvey,setSurveyStatus,createSurveyInvitation,surveyReport,publicSurvey,submitSurvey} from './platform/satisfaction-store.mjs';
-import {sqlStatements} from './platform/migration-parser.mjs';
+import {sqlStatements,executableStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, databaseConfigured, executeSql } from './database.mjs';
 import { resolveTenant } from './tenant.mjs';
 import { quoteCheckout, validateCheckoutEmail, validateOrganizationId } from './platform/billing-domain.mjs';
@@ -61,10 +61,22 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
+ const failures=[];
  for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
-  for(const statement of sqlStatements(sql))await executeSql(statement);
+  const statements=executableStatements(sql);
+  for(let i=0;i<statements.length;i++){
+   try{await executeSql(statements[i]);}
+   catch(error){
+    // Best-effort: one rejected statement must not abort the other 90, and the
+    // Render log must name the exact file/statement instead of a bare error code.
+    const snippet=statements[i].slice(0,120).replace(/\s+/g,' ');
+    console.error(`Migration failed: ${migration} #${i}: ${snippet} :: ${error?.message||error} (${error?.code||error?.name||'unknown'})`);
+    failures.push(migration+' #'+i);
+   }
+  }
  }
+ if(failures.length)console.error('Migration failures: '+failures.join(', ')+'; /healthz reports the table count');
  const result=await executeSql("SELECT COUNT(*) AS total FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','organization_invitations','audit_events')");
  const count=Number(result?.rows?.[0]?.[0]?.value??0);
  if(count!==5)throw new Error('Core schema verification failed');
@@ -459,17 +471,19 @@ createServer(async(req,res)=>{
   if(pathname==='/healthz'){
     const db=await databaseHealth();
     let schemaReady=false;
+    let tableCount=0;
     if(db.status==='connected'){
       try{
         const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions','tenant_deal_clients','tenant_appointment_links','tenant_entity_links','tenant_surveys','tenant_survey_invitations','tenant_survey_responses','tenant_subscriptions','tenant_payments','stripe_webhook_events','billing_checkout_orders','tenant_quotes','tenant_quote_lines','tenant_catalog_items','tenant_expenses','tenant_collections','tenant_invoices')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===34;
+        tableCount=Number(result?.rows?.[0]?.[0]?.value??0);
+        schemaReady=tableCount===34;
       }catch{schemaReady=false;}
     }
     const setup=configurationStatus();
     const ready=await migrationsReady;
     const healthy=db.status==='connected'&&schemaReady&&ready&&setup.readyForLive;
     res.writeHead(healthy?200:503,{'content-type':'application/json','cache-control':'no-store'});
-    res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,schema:schemaReady?'ready':'not-ready',setup,...(db.reason?{reason:db.reason}:{})}));
+    res.end(JSON.stringify({status:healthy?'ok':'degraded',service:'hubie-dev',database:db.status,schema:schemaReady?'ready':'not-ready',tables:tableCount,setup,...(db.reason?{reason:db.reason}:{})}));
     return;
   }
   if(decodedProtected(pathname)){res.writeHead(404);res.end('Not found');return;}
@@ -492,6 +506,7 @@ createServer(async(req,res)=>{
 }).listen(port,'0.0.0.0',()=>console.log('Hubie listening on '+port));
 migrationsReady=applyCoreSchema().then(async()=>{
   if(!configurationStatus().databaseConfigured)return false;
-  await seedQaCompanyIfRequested();
+  try{await seedQaCompanyIfRequested();}
+  catch(error){console.error('QA fixture failed:',error?.message||error,'('+(error?.code||error?.name||'unknown')+')');return false;}
   return true;
- }).catch(error=>{console.error('Core migration / QA fixture failed:',error?.code||error?.name||'unknown');return false;});
+ }).catch(error=>{console.error('Core migration failed:',error?.message||error,'('+(error?.code||error?.name||'unknown')+')');return false;});
