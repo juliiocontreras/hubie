@@ -6,13 +6,43 @@ let ctx=null,records=[],editing=null,initialized=false;
 function notify(msg,error=false){ctx.notice(msg,error);}
 const root=()=>'/api/app/'+encodeURIComponent(ctx.config.tenant.slug)+'/tools/'+ctx.tool.id+'/records';
 const writable=()=>ctx.config.tenant.role!=='viewer'&&!['C008','C009'].includes(ctx.tool.id);
+// Etiqueta del CTA principal según la tool: que diga qué se crea, no solo
+// "Nuevo registro". Solo presentación; no cambia qué guarda el formulario.
+const newLabelFor=id=>({'T013':'＋ Nueva cotización','T014':'＋ Nuevo cobro','T015':'＋ Nueva factura','C006':'＋ Agregar al catálogo','C007':'＋ Nuevo gasto'}[id]||'＋ Nuevo registro');
+// Estado vacío útil por tool: qué es, qué hacer y con qué botón. Sin el
+// botón, una lista vacía es un callejón sin salida.
+const emptyCopyFor=id=>({
+ T013:{title:'Aún no hay cotizaciones',hint:'Crea la primera cotización con cliente, importe y vigencia, y envíala a tu cliente.',cta:'＋ Nueva cotización'},
+ T014:{title:'Aún no hay cobros',hint:'Registra el primer cobro para llevar el control de pagos de esta empresa.',cta:'＋ Nuevo cobro'},
+ T015:{title:'Aún no hay facturas',hint:'Registra la primera factura con RFC, cliente e importe.',cta:'＋ Nueva factura'},
+ C006:{title:'Tu catálogo está vacío',hint:'Agrega el primer producto o servicio para cotizar más rápido.',cta:'＋ Agregar al catálogo'},
+ C007:{title:'Aún no hay gastos',hint:'Registra el primer gasto para llevar el control de esta empresa.',cta:'＋ Nuevo gasto'},
+}[id]||{title:'Aún no hay registros en '+ctx.tool.name,hint:'Crea el primero para empezar.',cta:'＋ Nuevo registro'});
 function render(){
- if(!ctx||['C001','C002','C003','C004','C005','T021'].includes(ctx.tool.id))return;
+ if(!ctx||['C001','C002','C003','C004','C005','C006','C007','T013','T014','T015','T020','T021'].includes(ctx.tool.id))return;
  const host=$('record-list');host.replaceChildren();
  const q=$('record-search').value.toLowerCase().trim();
  const shown=records.filter(r=>(r.title+' '+Object.values(r.fields).join(' ')).toLowerCase().includes(q));
  $('record-count').textContent=shown.length+' registros';
- if(!shown.length){host.append(ctx.elt('div','No hay registros por mostrar.','empty'));return;}
+ if(!shown.length){
+  // Búsqueda sin resultados: no es una lista vacía, es un filtro sin coincidencias.
+  if(records.length){
+   const wrap=ctx.elt('div',undefined,'empty empty-state');
+   wrap.append(ctx.elt('strong','Sin resultados para tu búsqueda'),ctx.elt('p','Ningún registro coincide con ese texto. Prueba con otro término o limpia la búsqueda.','help'));
+   const clear=ctx.elt('button','Limpiar búsqueda','btn');clear.type='button';
+   clear.addEventListener('click',()=>{$('record-search').value='';render();});
+   wrap.append(clear);host.append(wrap);return;
+  }
+  const copy=emptyCopyFor(ctx.tool.id);
+  const wrap=ctx.elt('div',undefined,'empty empty-state');
+  wrap.append(ctx.elt('strong',copy.title),ctx.elt('p',copy.hint,'help'));
+  if(writable()){
+   const cta=ctx.elt('button',copy.cta,'btn btn-primary');cta.type='button';
+   cta.addEventListener('click',()=>openDialog());
+   wrap.append(cta);
+  }
+  host.append(wrap);return;
+ }
  for(const record of shown){
   const article=ctx.elt('article',undefined,'record');
   const main=ctx.elt('div');main.append(ctx.elt('strong',record.title),ctx.elt('small','Estado: '+record.status));
@@ -83,11 +113,20 @@ export async function openRecords(context){
  closeOperationalModule();
  ctx={...context,attachmentsPanel:context.tool.id==='T021'?null:setupAttachments(context)};
  if($('record-dialog').open)$('record-dialog').close();
- if(['C001','C002','C003','C004','C005','T021'].includes(ctx.tool.id))return openOperationalModule(ctx);
+ if(['C001','C002','C003','C004','C005','C006','C007','T013','T014','T015','T020','T021'].includes(ctx.tool.id))return openOperationalModule(ctx);
  wire();editing=null;records=[];
  $('record-search').value='';
+ $('add-record').textContent=newLabelFor(ctx.tool.id);
  $('add-record').hidden=!writable();
  $('module-message').textContent=hintFor(ctx.tool.id);
  $('record-list').replaceChildren(ctx.elt('div','Cargando…','empty'));
- try{await refresh();}catch(e){notify('No fue posible cargar el módulo: '+e.message,true);$('record-list').replaceChildren(ctx.elt('div','No se pudo consultar este módulo.','empty'));}
+ try{await refresh();}catch(e){
+  notify('No fue posible cargar el módulo: '+e.message,true);
+  const host=$('record-list');host.replaceChildren();
+  const wrap=ctx.elt('div',undefined,'empty empty-state');
+  wrap.append(ctx.elt('strong','No se pudo consultar este módulo'),ctx.elt('p','Revisa tu conexión e inténtalo de nuevo. Tus datos no se vieron afectados.','help'));
+  const retry=ctx.elt('button','Reintentar','btn btn-primary');retry.type='button';
+  retry.addEventListener('click',()=>openRecords(ctx));
+  wrap.append(retry);host.append(wrap);
+ }
 }

@@ -15,6 +15,7 @@
 <div class="nav-label">Administración central</div><nav class="nav-stack" id="admin-nav" aria-label="Secciones de Hubie Madre">
 <button class="nav-item" data-view="overview">◈ &nbsp; Resumen</button>
 <button class="nav-item" data-view="companies">▦ &nbsp; Empresas</button>
+<button class="nav-item" data-view="billing">▤ &nbsp; Cobros y suscripciones</button>
 <button class="nav-item" data-view="create">✦ &nbsp; Crear Suite de cliente</button>
 <button class="nav-item" data-view="catalog">◫ &nbsp; Catálogo Suites y Tools</button>
 </nav><div class="nav-label">Administración</div><nav class="nav-stack">
@@ -61,6 +62,7 @@
  </div>
 </section>
 <section id="view-companies" class="section" hidden><div class="card"><div class="card-title"><h2>Empresas y Suites asignadas</h2><button class="btn btn-primary" data-view="create">Nueva empresa</button></div><input class="search" id="filter-companies" placeholder="Buscar empresa o identificador" aria-label="Buscar empresas"><div class="company-list" id="companies"></div></div></section>
+<section id="view-billing" class="section" hidden><div class="card"><div class="card-title"><h2>Cobros y suscripciones</h2><span class="pill" id="billing-summary">—</span></div><p class="help">Mensualidad de plataforma $949 MXN/mes. Pago vencido 3 días → suspendido. La suspensión por impago no bloquea el acceso de Madre.</p><div id="billing-companies" class="company-list"></div></div><div class="card"><div class="card-title"><h2>Pagos recibidos sin empresa</h2><span class="pill">Convertir en tenant</span></div><p class="help">Checkouts pagados desde el cotizador que aún no tienen empresa asignada. Crea la empresa desde «Crear Suite de cliente» y vincula el pago desde su ficha.</p><div id="billing-orders" class="company-list"></div></div></section>
 <section id="view-create" class="section" hidden><div class="two-col">
 <div class="card"><h2>Crear Suite personalizada</h2><p class="help">Selecciona una Suite como punto de partida. Ajusta las herramientas sin alterar la plantilla original.</p>
 <form id="create-form" class="stack"><div class="field-grid"><div class="field"><label for="create-name">Empresa</label><input id="create-name" name="name" required minlength="2" maxlength="160"></div><div class="field"><label for="create-slug">Identificador único</label><input id="create-slug" name="slug" required pattern="[a-z0-9-]{3,63}" placeholder="mi-empresa"></div><div class="field field-wide"><label for="create-suite">Suite base</label><select id="create-suite" name="suiteId" required></select></div><div class="field"><label for="create-primary">Color principal</label><input type="color" id="create-primary" name="primaryColor" value="#7c5cfc"></div><div class="field"><label for="create-secondary">Color secundario</label><input type="color" id="create-secondary" name="secondaryColor" value="#ec4899"></div></div>

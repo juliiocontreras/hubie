@@ -4,6 +4,7 @@ import {renderCrm} from './operational-crm.js';
 import {renderAgenda} from './operational-agenda.js';
 import {renderStock} from './operational-stock.js';
 import {renderSurveys} from './operational-surveys.js';
+import {renderQuotes,renderCatalog,renderExpenses,renderPayments,renderInvoices,renderReports} from './operational-commerce.js';
 
 let activeController=null;
 export function closeOperationalModule(){
@@ -43,6 +44,7 @@ export async function openOperationalModule(ctx){
  search.value='';
  document.getElementById('add-record').hidden=true;
  const key=ctx.tool.id;
- const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:renderStock;
+ const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:
+  key==='C006'?renderCatalog:key==='C007'?renderExpenses:key==='T013'?renderQuotes:key==='T014'?renderPayments:key==='T015'?renderInvoices:key==='T020'?renderReports:renderStock;
  await runner({...ctx,signal,search});
 }

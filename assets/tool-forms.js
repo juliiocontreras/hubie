@@ -30,11 +30,14 @@ const blueprints={
  T020:'periodo|Período|text;indicador|Indicador|text;valor|Valor|number'
 };
 const integrations={
+ C006:'Fichas reales con precio, categoría y foto adjunta; activa o desactiva sin borrar.',
+ C007:'Gastos reales con fecha, categoría y comprobante adjunto; totales por categoría y mes.',
  T006:'El registro documenta el estado. No aplica una firma electrónica real.',
  T012:'Registro de códigos. El uso de la cámara y la impresión están pendientes de integración.',
- T014:'Registro de cobros. No se cobra dinero a través de Hubie.',
- T015:'Borrador administrativo. No emite CFDI ni conecta con SAT/PAC.',
- T020:'Registro de indicadores. La analítica avanzada está pendiente de desarrollo.'
+ T013:'Cotización real con partidas, IVA y aceptación del cliente por enlace.',
+ T014:'Cobro manual registrado fuera de Hubie. No se cobra dinero a través de Hubie ni usa Stripe.',
+ T015:'Factura administrativa sin CFDI (pendiente PAC). No timbra ante el SAT.',
+ T020:'Resumen mensual y exportación CSV real de clientes, cotizaciones, cobros y gastos.'
 };
 export function fieldsFor(toolId){
  const raw=blueprints[toolId]||'detalle|Detalle|textarea';

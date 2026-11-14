@@ -23,7 +23,7 @@ function home(){
  closeOperationalModule();
  $('appearance').hidden=true;
  if(config)applyAppearance(config.appearance,document.documentElement,config.backgrounds);
- activeTool=null;$('home').hidden=false;$('module').hidden=true;$('add-record').hidden=true;
+ activeTool=null;$('home').hidden=false;$('module').hidden=true;$('add-record').hidden=true;$('billing').hidden=true;
  $('suite-name').textContent=config.tenant.suiteName;
  head('Bienvenido a '+config.tenant.displayName,'Tu organización tiene '+config.tools.length+' herramientas habilitadas.');
  $('count-tools').textContent=config.tools.length;
@@ -46,7 +46,7 @@ async function showTool(id,options={}){
  closeMobileNav();
  const tool=config.tools.find(t=>t.id===id);if(!tool)return notice('La herramienta está desactivada.',true);
  applyAppearance(config.appearance,document.documentElement,config.backgrounds);
- activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;
+ activeTool=tool;$('home').hidden=true;$('module').hidden=false;$('appearance').hidden=true;$('billing').hidden=true;
  document.querySelector('[data-home]').removeAttribute('aria-current');
  $('appearance-nav').removeAttribute('aria-current');
  document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-current',b.dataset.tool===id?'page':'false'));
@@ -58,7 +58,7 @@ function showAppearance(){
  closeMobileNav();
  if(!config||!['owner','admin'].includes(config.tenant.role))return notice('Solo el propietario o administrador puede editar la apariencia.',true);
  closeOperationalModule();
- activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=false;$('add-record').hidden=true;
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=false;$('billing').hidden=true;$('add-record').hidden=true;
  document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
  document.querySelector('[data-home]').removeAttribute('aria-current');
  $('appearance-nav').setAttribute('aria-current','page');
@@ -85,6 +85,32 @@ function showAppearance(){
   }
  });
 }
+async function showBilling(){
+ closeMobileNav();
+ if(!config)return;
+ closeOperationalModule();
+ activeTool=null;$('home').hidden=true;$('module').hidden=true;$('appearance').hidden=true;$('billing').hidden=false;$('add-record').hidden=true;
+ document.querySelectorAll('[data-tool]').forEach(n=>n.removeAttribute('aria-current'));
+ document.querySelector('[data-home]').removeAttribute('aria-current');
+ $('appearance-nav').removeAttribute('aria-current');
+ $('billing-nav').setAttribute('aria-current','page');
+ head('Mi suscripción','Estado de cobro de '+config.tenant.displayName);
+ try{
+  const s=await api('/api/billing/status?slug='+encodeURIComponent(config.tenant.slug));
+  $('billing-status-pill').textContent=s.statusLabel||s.effectiveStatus;
+  const host=$('billing-details');host.replaceChildren();
+  const row=(label,value)=>{const r=elt('div',undefined,'aurora-row');const m=elt('span',undefined,'insight-meta');m.append(elt('strong',label),elt('small',value));r.append(m);host.append(r);};
+  row('Estado',s.statusLabel||s.effectiveStatus);
+  row('Mensualidad de plataforma',currency(s.monthlyFeeCents)+' / mes');
+  if(s.currentPeriodEnd)row('Periodo actual termina',new Date(s.currentPeriodEnd).toLocaleDateString('es-MX'));
+  if(s.balancePendingCents)row('Saldo pendiente',currency(s.balancePendingCents)+' en '+s.balanceInstallmentsPending+' parcialidades'+(s.nextBalanceDueAt?' · próximo '+new Date(s.nextBalanceDueAt).toLocaleDateString('es-MX'):''));
+  if(s.daysPastDue)row('Días de atraso',s.daysPastDue+' (gracia de 3 días antes de la suspensión)');
+  if(s.effectiveStatus==='none')row('Sin suscripción','Aún no hay un pago registrado para esta empresa.');
+ }catch(e){
+  $('billing-status-pill').textContent='No disponible';
+  const host=$('billing-details');host.replaceChildren();host.append(elt('p','No se pudo cargar tu estado de cobro: '+e.message,'help'));
+ }
+}
 function closeMobileNav(){
  document.documentElement.classList.remove('mobile-nav-open');
  const button=$('sidebar-toggle');if(button){button.setAttribute('aria-expanded','false');button.textContent='☰ Menú';}
@@ -97,7 +123,7 @@ function toolButton(tool){
 }
 function nav(){
  const host=$('tools-nav');host.replaceChildren();
- const featured=new Set(['C001','C002','C004','C005']);
+ const featured=new Set(['C001','C002','C004','C005','T013']);
  const active=config.tools.filter(t=>featured.has(t.id));
  if(active.length){
   const label=elt('div','Accesos rápidos','nav-label nav-sub-label');host.append(label);
@@ -128,6 +154,7 @@ async function openOrganization(slug){
   config.backgrounds=config.backgrounds||{dashboard:null,sidebar:null};
   applyAppearance(config.appearance,document.documentElement,config.backgrounds);
   $('appearance-nav').hidden=!['owner','admin'].includes(config.tenant.role);
+  $('billing-nav').hidden=false;
   document.documentElement.style.setProperty('--blue',config.tenant.primaryColor||'#7c5cfc');
   $('brand-name').textContent=config.tenant.displayName;
   // Un logo de tenant que falla (URL rota o archivo ausente) mostraba el icono
@@ -184,11 +211,16 @@ async function loadHomeInsights(current){
   btn.hidden=!enabled.has(item.id);
  }
  $('home-quick-actions').replaceChildren();
- for(const [tool,label] of [['C001','Nuevo cliente'],['C004','Nueva cita'],['C005','Agregar producto']]){
+ // La acción principal es crear: Cotizaciones abre el diálogo de alta en un
+ // solo toque (showTool + clic en el CTA de la página). El resto abre su módulo.
+ for(const [tool,label,primary,direct] of [['T013','Nueva cotización',true,true],['C001','Nuevo cliente'],['C004','Nueva cita'],['C005','Agregar producto']]){
   if(!enabled.has(tool)||current.tenant.role==='viewer')continue;
-  const button=elt('button',label,'btn'+(tool==='C001'?' btn-primary':''));
+  const button=elt('button',label,'btn'+(primary?' btn-primary':''));
   button.prepend(toolIcon(tool));
-  button.type='button';button.addEventListener('click',()=>showTool(tool));$('home-quick-actions').append(button);
+  button.type='button';
+  if(direct)button.addEventListener('click',async()=>{await showTool(tool);const first=document.querySelector('#op-quote-title');if(first){first.focus();first.scrollIntoView({block:'nearest'});}else $('add-record').click();});
+  else button.addEventListener('click',()=>showTool(tool));
+  $('home-quick-actions').append(button);
  }
  if(!kpi.children.length)kpi.append(elt('p','No hay módulos operativos activados.','help'));
  const available=info.filter(item=>enabled.has(item.id));
@@ -246,6 +278,7 @@ async function init(){
  $('tenant-select').addEventListener('change',e=>openOrganization(e.target.value));
  document.querySelector('[data-home]').addEventListener('click',home);
  $('appearance-nav').addEventListener('click',showAppearance);
+ $('billing-nav').addEventListener('click',showBilling);
  for(const [id,tool] of [['insight-open-crm','C002'],['insight-open-clients','C001'],['insight-open-agenda','C004'],['insight-open-stock','C005']])$(''+id).addEventListener('click',()=>showTool(tool));
  $('logout').addEventListener('click',async()=>{if(demoMode){location.href='/app/';return;}await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload();});
  try{

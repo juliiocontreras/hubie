@@ -153,3 +153,36 @@
 .hc-home-visual__inner a{color:#5b34f0;font-weight:800}
 .hc-home-visual__images img{border:1px solid rgba(255,255,255,.9);
   box-shadow:0 16px 36px rgba(22,18,58,.10)}
+
+/* ============================================================
+   DESIGN FLOW (2026-11-13) — el cotizador (.hc-*) usa la marca
+   Hubie (Nunito, Ink #16123a, gradiente firma), no el tema azul
+   anterior (Inter/Outfit, #1674ca, gradientes azules). Solo
+   presentación: sin cambios en quote.js ni en el catálogo.
+   ============================================================ */
+.hc{font-family:'Nunito',system-ui,sans-serif;background:#f6f7fb;color:#16123a}
+.hc h1,.hc h2,.hc h3{font-family:'Nunito',system-ui,sans-serif}
+.hc-kicker{color:#5b34f0}
+.hc-intro h1 em{font-style:normal;background:linear-gradient(135deg,#7c5cfc 0%,#a855f7 45%,#ec4899 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+.hc-intro p{color:#5b5872}
+.hc-stage{background:radial-gradient(circle at 85% 20%,rgba(236,72,153,.28),transparent 38%),linear-gradient(125deg,#16123a,#3b2a8f 70%,#7c5cfc);color:#fff}
+.hc-stage p{color:#e9e4ff}
+.hc-stage .hc-kicker{color:#e9e4ff}
+.hc-float{color:#5b34f0}
+.hc-suite{color:#16123a}
+.hc-suite small{color:#5b5872}
+.hc-suite__icon{background:#efeafe;color:#5b34f0}
+.hc-pill i{color:#5b34f0}
+.hc-cta{background:linear-gradient(135deg,#7c5cfc 0%,#a855f7 45%,#ec4899 100%);box-shadow:0 12px 27px rgba(124,92,252,.38)}
+.hc-cta--light{background:#efeafe;color:#5b34f0!important;box-shadow:none}
+.hc-choice:has(input:checked){border-color:#7c5cfc;background:#efeafe}
+.hc-choice input{accent-color:#7c5cfc}
+.hc-filter button[aria-pressed=true]{background:#7c5cfc;color:#fff}
+.hc-quote__summary{background:linear-gradient(145deg,#16123a,#3b2a8f 65%,#7c5cfc)}
+.hc-quote__summary .hc-kicker{color:#e9e4ff}
+.hc-quote__summary p{color:#e9e4ff}
+.hc-quote__summary .hc-cta{background:#fff;color:#5b34f0!important}
+.hc-price{font-family:'Nunito',system-ui,sans-serif}
+.hc-quote__summary h2{font-family:'Nunito',system-ui,sans-serif}
+.hc-suite b{font-family:'Nunito',system-ui,sans-serif}
+.hc-copy{border-color:rgba(255,255,255,.4)}

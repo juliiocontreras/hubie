@@ -34,7 +34,8 @@ function createTenant(catalog,input,id=uuid()){
  return {id,appearance:{...appearanceDefaults},backgrounds:{dashboard:null,sidebar:null},uploads:[],slug:input.slug,name:input.name.trim(),displayName:input.name.trim(),suiteId:input.suiteId,status:'active',primaryColor:input.primaryColor||'#7c5cfc',secondaryColor:input.secondaryColor||'#ec4899',timezone:'America/Mexico_City',logoUrl:null,
   tools:catalog.tools.map(t=>({...t,enabled:selected.has(t.id)})),
   members:[{id:'33333333-3333-4333-8333-333333333333',email:'superadmin@ejemplo.invalid',role:'owner',status:'active'}],
-  clients:[],cases:[],caseEvents:[],caseDocumentMeta:{},entityLinks:[],deals:[],events:[],items:[],movements:[],generic:{}};
+  clients:[],cases:[],caseEvents:[],caseDocumentMeta:{},entityLinks:[],deals:[],events:[],items:[],movements:[],
+  quotes:[],catalogItems:[],expenses:[],payments:[],invoices:[],generic:{}};
 }
 function initial(catalog){
  const first=createTenant(catalog,{name:'Comercio de demostración',slug:'comercio-demo',suiteId:'S004',toolIds:[...catalog.tools.filter(t=>t.included).map(t=>t.id),'T004','T013']},initialId[0]);
@@ -56,6 +57,9 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  state.platformBackgrounds=makeBackgrounds(state.platformBackgrounds);
  for(const tenant of state.tenants){
   tenant.backgrounds=makeBackgrounds(tenant.backgrounds);tenant.uploads=Array.isArray(tenant.uploads)?tenant.uploads:[];
+  tenant.quotes=Array.isArray(tenant.quotes)?tenant.quotes:[];tenant.catalogItems=Array.isArray(tenant.catalogItems)?tenant.catalogItems:[];
+  tenant.expenses=Array.isArray(tenant.expenses)?tenant.expenses:[];tenant.payments=Array.isArray(tenant.payments)?tenant.payments:[];
+  tenant.invoices=Array.isArray(tenant.invoices)?tenant.invoices:[];
   tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];tenant.caseDocumentMeta=tenant.caseDocumentMeta&&typeof tenant.caseDocumentMeta==='object'?tenant.caseDocumentMeta:{};tenant.entityLinks=Array.isArray(tenant.entityLinks)?tenant.entityLinks:[];
   if(tenant.slug==='comercio-demo'){
    const sampleClient=tenant.clients.find(c=>c.name==='Contacto de ejemplo');
@@ -260,6 +264,8 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
     return send({appearance:tenant.appearance});
   }
   if(p==='/api/admin/catalog'&&method==='GET')return emit({catalog});
+  if(p==='/api/admin/billing'&&method==='GET')return emit({tenants:state.tenants.map(t=>({id:t.id,slug:t.slug,name:t.name,suiteId:t.suiteId,billingStatus:'active',billingStatusLabel:'Al corriente',monthlyFeeCents:94900,currentPeriodEnd:null,pastDueSince:null,daysPastDue:0,balancePendingCents:0})),pendingOrders:[]});
+  if(p.startsWith('/api/billing/status')&&method==='GET')return emit({organizationId:'demo',status:'active',effectiveStatus:'active',statusLabel:'Al corriente',monthlyFeeCents:94900,currentPeriodEnd:null,pastDueSince:null,daysPastDue:0,balancePendingCents:0,balanceInstallmentsPending:0,nextBalanceDueAt:null,nextMonthlyChargeCents:94900});
   if(p==='/api/admin/tenants'){
    if(method==='GET')return emit({tenants:state.tenants.map(({id,slug,name,status,suiteId})=>({id,slug,name,status,suiteId}))});
    if(method==='POST'){
@@ -449,6 +455,203 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
      return send({ok:true});
     }
    }
+  }
+  // Commerce tools reales (T013/C006/C007/T014/T015/T020) en memoria para la demo.
+  const quoteTotals=(lines,vat)=>{const sub=lines.reduce((s,l)=>s+l.lineTotalCents,0);const vatC=Math.round(sub*vat/100);return{subtotalCents:sub,vatCents:vatC,totalCents:sub+vatC};};
+  const csvCell=v=>{const t=v==null?'':String(v);return /[",\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
+  const toCsv=(cols,rows)=>cols.map(c=>csvCell(c[1])).join(',')+(rows.length?'\r\n'+rows.map(r=>cols.map(c=>csvCell(r[c[0]])).join(',')).join('\r\n'):'')+'\r\n';
+  const moneyText=c=>(Number(c||0)/100).toFixed(2);
+  const quoteTransitions={draft:['sent','accepted','rejected'],sent:['accepted','rejected','draft'],accepted:[],rejected:['draft']};
+  const expenseCats=['insumos','renta','servicios','transporte','marketing','personal','impuestos','otros'];
+  m=p.match(/^\/api\/app\/([a-z0-9-]+)\/workflows\/(quotes|catalog|expenses|payments|invoices|reports)(?:\/([a-z0-9-]+))?(?:\/(send|accept|reject|draft|issued|cancelled|export))?$/);
+  if(m){
+   const t=tenantBySlug(m[1]),module=m[2],id=m[3],action=m[4];
+   const tool={quotes:'T013',catalog:'C006',expenses:'C007',payments:'T014',invoices:'T015',reports:'T020'}[module];
+   allowed(t,tool);
+   const live=list=>list.filter(x=>!x.archivedAt);
+   const paidFor=qid=>live(t.payments).filter(x=>x.quoteId===qid).reduce((s,x)=>s+x.amountCents,0);
+   const quoteView=q=>({...q,paidCents:paidFor(q.id),balanceCents:Math.max(0,q.totalCents-paidFor(q.id))});
+   if(module==='reports'&&(action==='export'||id==='export')&&method==='GET'){
+    const kind=url.searchParams.get('kind');
+    if(kind==='clients')return emit({filename:'hubie-clientes.csv',csv:toCsv([['name','Nombre'],['company','Empresa'],['email','Correo'],['phone','Teléfono'],['status','Estatus']],live(t.clients))});
+    if(kind==='quotes')return emit({filename:'hubie-cotizaciones.csv',csv:toCsv([['title','Cotización'],['clientName','Cliente'],['status','Estatus'],['subtotal','Subtotal MXN'],['vat','IVA MXN'],['total','Total MXN']],live(t.quotes).map(q=>({...q,subtotal:moneyText(q.subtotalCents),vat:moneyText(q.vatCents),total:moneyText(q.totalCents)})))});
+    if(kind==='payments')return emit({filename:'hubie-cobros.csv',csv:toCsv([['clientName','Cliente'],['quoteTitle','Cotización'],['amount','Monto MXN'],['method','Método'],['reference','Referencia'],['paidOn','Fecha']],live(t.payments).map(x=>({...x,quoteTitle:t.quotes.find(q=>q.id===x.quoteId)?.title||'',amount:moneyText(x.amountCents)})))});
+    if(kind==='expenses')return emit({filename:'hubie-gastos.csv',csv:toCsv([['description','Concepto'],['category','Categoría'],['vendor','Proveedor'],['amount','Monto MXN'],['occurredOn','Fecha']],live(t.expenses).map(x=>({...x,amount:moneyText(x.amountCents)})))});
+    throw error('Not found',404);
+   }
+   if(module==='reports'&&method==='GET'){
+    const month=url.searchParams.get('month')||new Date().toISOString().slice(0,7);
+    const accepted=live(t.quotes).filter(q=>q.status==='accepted'&&(q.createdAt||'').slice(0,7)===month);
+    const pays=live(t.payments).filter(x=>x.paidOn.slice(0,7)===month);
+    const exps=live(t.expenses).filter(x=>x.occurredOn.slice(0,7)===month);
+    const byCategory={};for(const e of exps)byCategory[e.category]=(byCategory[e.category]||0)+e.amountCents;
+    const months=[];const d=new Date();d.setUTCDate(1);
+    for(let i=0;i<6;i++){months.unshift(d.toISOString().slice(0,7));d.setUTCMonth(d.getUTCMonth()-1);}
+    return emit({month,totals:{acceptedQuotes:accepted.length,acceptedQuotesCents:accepted.reduce((s,q)=>s+q.totalCents,0),
+     payments:pays.length,paymentsCents:pays.reduce((s,x)=>s+x.amountCents,0),
+     expensesCents:exps.reduce((s,x)=>s+x.amountCents,0),expensesCount:exps.length,
+     newClients:0,balanceCents:pays.reduce((s,x)=>s+x.amountCents,0)-exps.reduce((s,x)=>s+x.amountCents,0)},
+     expensesByCategory:byCategory,
+     byMonth:months.map(mo=>({month:mo,
+      paymentsCents:live(t.payments).filter(x=>x.paidOn.slice(0,7)===mo).reduce((s,x)=>s+x.amountCents,0),
+      expensesCents:live(t.expenses).filter(x=>x.occurredOn.slice(0,7)===mo).reduce((s,x)=>s+x.amountCents,0)}))});
+   }
+   if(module==='quotes'){
+    const normLines=raw=>{
+     if(!Array.isArray(raw)||!raw.length||raw.length>50)throw error('Invalid quote');
+     return raw.map((l,i)=>{
+      const description=String(l.description||'').trim(),quantity=l.quantity,unitPriceCents=l.unitPriceCents;
+      if(!description||!Number.isSafeInteger(quantity)||quantity<=0||quantity>100000||!Number.isSafeInteger(unitPriceCents)||unitPriceCents<0)throw error('Invalid quote');
+      return {id:uuid(),description,quantity,unitPriceCents,lineTotalCents:quantity*unitPriceCents,position:i};
+     });
+    };
+    if(method==='GET'&&!id)return emit({quotes:live(t.quotes).map(quoteView),
+     clients:t.clients.map(c=>({id:c.id,name:c.name,company:c.company})),statuses:['draft','sent','accepted','rejected'],
+     statusLabels:{draft:'Borrador',sent:'Enviada',accepted:'Aceptada',rejected:'Rechazada'},vatRates:[0,8,16]});
+    if(method==='GET'&&id){const q=getRecord(live(t.quotes),id);return emit({quote:quoteView({...q,lines:q.lines})});}
+    if(method==='POST'&&!id){
+     const title=String(input.title||'').trim(),clientName=String(input.clientName||'').trim();
+     const vatRate=input.vatRate??16,validUntil=input.validUntil||null;
+     if(title.length<2||!clientName||![0,8,16].includes(vatRate)||validUntil&&!validExpiry(validUntil))throw error('Invalid quote');
+     if(input.clientId&&!t.clients.some(c=>c.id===input.clientId))throw error('Client not found',404);
+     const lines=normLines(input.lines),totals=quoteTotals(lines,vatRate);
+     const q={id:uuid(),clientId:input.clientId||null,clientName,title,notes:String(input.notes||'').trim(),
+      vatRate,status:'draft',validUntil,...totals,
+      publicToken:Array.from({length:32},()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join(''),
+      acceptedAt:null,createdAt:now(),updatedAt:now(),lines};
+     t.quotes.unshift(q);return send({quote:quoteView(q)});
+    }
+    if(id&&action&&method==='POST'){
+     const q=getRecord(live(t.quotes),id);
+     const next=action==='send'?'sent':action==='accept'?'accepted':action==='reject'?'rejected':'draft';
+     if(!quoteTransitions[q.status].includes(next))throw error('Invalid quote status');
+     q.status=next;q.acceptedAt=next==='accepted'?now():null;q.updatedAt=now();
+     return send({ok:true,status:next});
+    }
+    if(id&&method==='PATCH'){
+     const q=getRecord(live(t.quotes),id);
+     if(!['draft','rejected'].includes(q.status))throw error('Invalid quote status');
+     const title=String(input.title||'').trim(),clientName=String(input.clientName||'').trim();
+     const vatRate=input.vatRate??16;
+     if(title.length<2||!clientName||![0,8,16].includes(vatRate))throw error('Invalid quote');
+     const lines=normLines(input.lines),totals=quoteTotals(lines,vatRate);
+     Object.assign(q,{clientId:input.clientId||null,clientName,title,notes:String(input.notes||'').trim(),vatRate,validUntil:input.validUntil||null,...totals,lines,updatedAt:now()});
+     return send({ok:true});
+    }
+    if(id&&method==='DELETE'){getRecord(live(t.quotes),id).archivedAt=now();return send({archived:true});}
+    throw error('Not found',404);
+   }
+   if(module==='catalog'){
+    if(method==='GET')return emit({items:live(t.catalogItems).map(i=>({...i,photoUrl:null})),categories:[...new Set(live(t.catalogItems).map(i=>i.category))]});
+    const norm=()=>{
+     const sku=String(input.sku||'').trim().toUpperCase(),name=String(input.name||'').trim();
+     const priceCents=input.priceCents??0,category=String(input.category||'General').trim()||'General';
+     if(name.length<2||!Number.isSafeInteger(priceCents)||priceCents<0||typeof input.active!=='undefined'&&typeof input.active!=='boolean')throw error('Invalid catalog item');
+     if(sku&&!/^[A-Z0-9][A-Z0-9._-]{0,47}$/.test(sku))throw error('Invalid catalog item');
+     return {sku,name,description:String(input.description||'').trim(),priceCents,category,active:input.active??true};
+    };
+    if(method==='POST'){
+     const item=norm();
+     if(item.sku&&live(t.catalogItems).some(x=>x.sku===item.sku))throw error('Duplicate SKU',409);
+     const created={id:uuid(),...item,createdAt:now(),updatedAt:now()};t.catalogItems.unshift(created);return send({item:created});
+    }
+    if(id&&method==='PATCH'){
+     const item=norm(),current=getRecord(live(t.catalogItems),id);
+     if(item.sku&&live(t.catalogItems).some(x=>x.id!==id&&x.sku===item.sku))throw error('Duplicate SKU',409);
+     Object.assign(current,item,{updatedAt:now()});return send({ok:true});
+    }
+    if(id&&method==='DELETE'){getRecord(live(t.catalogItems),id).archivedAt=now();return send({archived:true});}
+    throw error('Not found',404);
+   }
+   if(module==='expenses'){
+    if(method==='GET'){
+     const from=url.searchParams.get('from'),to=url.searchParams.get('to'),cat=url.searchParams.get('category');
+     const list=live(t.expenses).filter(e=>(!from||e.occurredOn>=from)&&(!to||e.occurredOn<=to)&&(!cat||e.category===cat));
+     const byCategory={},byMonth={};let total=0;
+     for(const e of list){total+=e.amountCents;byCategory[e.category]=(byCategory[e.category]||0)+e.amountCents;byMonth[e.occurredOn.slice(0,7)]=(byMonth[e.occurredOn.slice(0,7)]||0)+e.amountCents;}
+     return emit({expenses:list.map(e=>({...e,receiptCount:0})),summary:{totalCents:total,count:list.length,byCategory,byMonth},
+      categories:expenseCats,categoryLabels:{insumos:'Insumos',renta:'Renta',servicios:'Servicios',transporte:'Transporte',marketing:'Marketing',personal:'Personal',impuestos:'Impuestos',otros:'Otros'}});
+    }
+    const norm=()=>{
+     const description=String(input.description||'').trim(),amountCents=input.amountCents,occurredOn=input.occurredOn,category=input.category||'otros';
+     if(description.length<2||!Number.isSafeInteger(amountCents)||amountCents<=0||!validExpiry(occurredOn)||!expenseCats.includes(category))throw error('Invalid expense');
+     return {description,amountCents,occurredOn,category,vendor:String(input.vendor||'').trim()};
+    };
+    if(method==='POST'){const e={id:uuid(),...norm(),createdAt:now(),updatedAt:now()};t.expenses.unshift(e);return send({expense:{...e,receiptCount:0}});}
+    if(id&&method==='PATCH'){Object.assign(getRecord(live(t.expenses),id),norm(),{updatedAt:now()});return send({ok:true});}
+    if(id&&method==='DELETE'){getRecord(live(t.expenses),id).archivedAt=now();return send({archived:true});}
+    throw error('Not found',404);
+   }
+   if(module==='payments'){
+    if(method==='GET')return emit({payments:live(t.payments).map(p=>{
+     const q=t.quotes.find(x=>x.id===p.quoteId);
+     return {...p,quoteTitle:q?.title||null,quoteTotalCents:q?.totalCents??null,quotePaidCents:q?paidFor(q.id):null,
+      quoteBalanceCents:q?Math.max(0,q.totalCents-paidFor(q.id)):null};
+    }),
+    quotes:live(t.quotes).filter(q=>['sent','accepted'].includes(q.status)).map(q=>({id:q.id,title:q.title,clientName:q.clientName,totalCents:q.totalCents,paidCents:paidFor(q.id),balanceCents:Math.max(0,q.totalCents-paidFor(q.id))})),
+    clients:t.clients.map(c=>({id:c.id,name:c.name,company:c.company})),methods:['efectivo','transferencia','tarjeta'],
+    methodLabels:{efectivo:'Efectivo',transferencia:'Transferencia',tarjeta:'Tarjeta'},canReadQuotes:true});
+    if(method==='POST'){
+     const amountCents=input.amountCents,paidOn=input.paidOn,method=input.method||'efectivo';
+     const clientName=String(input.clientName||'').trim();
+     if(!Number.isSafeInteger(amountCents)||amountCents<=0||!validExpiry(paidOn)||!['efectivo','transferencia','tarjeta'].includes(method)||!clientName&&!input.quoteId&&!input.clientId)throw error('Invalid payment');
+     if(input.quoteId){
+      const q=t.quotes.find(x=>x.id===input.quoteId&&!x.archivedAt);
+      if(!q)throw error('Not found',404);
+      if(amountCents>Math.max(0,q.totalCents-paidFor(q.id)))throw error('Invalid payment');
+     }
+     if(input.clientId&&!t.clients.some(c=>c.id===input.clientId))throw error('Client not found',404);
+     const pay={id:uuid(),quoteId:input.quoteId||null,clientId:input.clientId||null,clientName,amountCents,paidOn,method,
+      reference:String(input.reference||'').trim(),notes:String(input.notes||'').trim(),createdAt:now(),updatedAt:now()};
+     t.payments.unshift(pay);return send({payment:pay});
+    }
+    if(id&&method==='PATCH'){
+     const pay=getRecord(live(t.payments),id);
+     if(Object.keys(input).some(k=>!['paidOn','method','reference','notes'].includes(k)))throw error('Invalid payment');
+     if(!validExpiry(input.paidOn)||!['efectivo','transferencia','tarjeta'].includes(input.method??'efectivo'))throw error('Invalid payment');
+     Object.assign(pay,{paidOn:input.paidOn,method:input.method??'efectivo',reference:String(input.reference||'').trim(),notes:String(input.notes||'').trim(),updatedAt:now()});
+     return send({ok:true});
+    }
+    if(id&&method==='DELETE'){getRecord(live(t.payments),id).archivedAt=now();return send({archived:true});}
+    throw error('Not found',404);
+   }
+   if(module==='invoices'){
+    if(method==='GET')return emit({invoices:live(t.invoices),acceptedQuotes:live(t.quotes).filter(q=>q.status==='accepted').map(q=>({id:q.id,title:q.title,clientName:q.clientName,totalCents:q.totalCents})),
+     statuses:['draft','issued','cancelled'],statusLabels:{draft:'Borrador',issued:'Emitida',cancelled:'Cancelada'},vatRates:[0,8,16]});
+    if(method==='POST'&&!id){
+     let data;
+     if(input.quoteId){
+      const q=t.quotes.find(x=>x.id===input.quoteId&&!x.archivedAt);
+      if(!q)throw error('Not found',404);
+      if(q.status!=='accepted')throw error('Invalid invoice');
+      data={clientName:q.clientName,rfc:String(input.rfc||'').trim().toUpperCase(),notes:String(input.notes||'').trim(),vatRate:q.vatRate,quoteId:q.id,lines:q.lines.map(l=>({description:l.description,quantity:l.quantity,unitPriceCents:l.unitPriceCents}))};
+     }else{
+      const lines=Array.isArray(input.lines)?input.lines:[];
+      if(!lines.length)throw error('Invalid invoice');
+      data={clientName:String(input.clientName||'').trim(),rfc:String(input.rfc||'').trim().toUpperCase(),notes:String(input.notes||'').trim(),vatRate:input.vatRate??16,quoteId:null,lines};
+     }
+     if(!data.clientName||data.rfc&&!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(data.rfc))throw error('Invalid invoice');
+     const lines=data.lines.map((l,i)=>{
+      const description=String(l.description||'').trim();
+      if(!description||!Number.isSafeInteger(l.quantity)||l.quantity<=0||!Number.isSafeInteger(l.unitPriceCents)||l.unitPriceCents<0)throw error('Invalid invoice');
+      return {id:uuid(),description,quantity:l.quantity,unitPriceCents:l.unitPriceCents,lineTotalCents:l.quantity*l.unitPriceCents,position:i};
+     });
+     const totals=quoteTotals(lines,data.vatRate);
+     const folio=Math.max(0,...live(t.invoices).map(x=>x.folio))+1;
+     const inv={id:uuid(),folio,folioLabel:'F-'+String(folio).padStart(4,'0'),quoteId:data.quoteId,clientName:data.clientName,rfc:data.rfc,
+      items:lines,...totals,vatRate:data.vatRate,status:'draft',notes:data.notes,createdAt:now(),updatedAt:now(),cfdi:false,cfdiNote:'Sin CFDI (pendiente PAC)'};
+     t.invoices.unshift(inv);return send({invoice:inv});
+    }
+    if(id&&action&&method==='POST'){
+     const inv=getRecord(live(t.invoices),id);
+     const allowedNext={draft:['issued','cancelled'],issued:['cancelled'],cancelled:[]};
+     if(!allowedNext[inv.status].includes(action))throw error('Invalid invoice');
+     inv.status=action;inv.updatedAt=now();return send({ok:true,status:action});
+    }
+    if(id&&method==='DELETE'){getRecord(live(t.invoices),id).archivedAt=now();return send({archived:true});}
+    throw error('Not found',404);
+   }
+   throw error('Not found',404);
   }
   throw error('Not found',404);
  }

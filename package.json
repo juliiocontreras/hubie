@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
-    "@tursodatabase/serverless": "^1.4.1"
+    "@tursodatabase/serverless": "^1.4.1",
+    "stripe": "^23.1.0"
   }
 }

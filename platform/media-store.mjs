@@ -8,7 +8,7 @@ import {normalizeCaseDocumentMetadata} from './case-document-domain.mjs';
 const rows=r=>r?.rows?.map(row=>row.map(cell=>cell?.value??null))??[];
 const bgKinds=['dashboard_bg','sidebar_bg'];
 const kindMap={dashboard:'dashboard_bg',sidebar:'sidebar_bg'};
-const tableForTool=id=>({'C001':'tenant_client_profiles','C002':'tenant_crm_deals','C003':'tenant_client_cases','C004':'tenant_schedule_events','C005':'tenant_inventory_items'})[id]||'tenant_tool_records';
+const tableForTool=id=>({'C001':'tenant_client_profiles','C002':'tenant_crm_deals','C003':'tenant_client_cases','C004':'tenant_schedule_events','C005':'tenant_inventory_items','C006':'tenant_catalog_items','C007':'tenant_expenses'})[id]||'tenant_tool_records';
 const mediaPublic=(scope,key,kind)=>scope==='madre'?'/api/admin/media/'+kind:scope==='admin'?'/api/admin/tenants/'+key+'/media/'+kind:'/api/app/'+key+'/media/'+kind;
 export async function latestBackground(scope,key,kind){
  const realKind=kindMap[kind];

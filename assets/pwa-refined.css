@@ -340,3 +340,27 @@ h2{font-weight:900}
  .module-card{padding:14px 15px}
  .company-icon{width:44px;height:44px}
 }
+
+/* ============================================================
+   DESIGN FLOW (2026-11-13) — jerarquía de flujo y coherencia.
+   Visual-only salvo los estilos de estados vacíos con acción.
+   - .eyebrow en morado: el texto azul (#2f6bff vía var(--blue)) no va.
+   - .btn-link / .btn-lg existían en el HTML de Madre sin definición
+     (el botón se veía con el estilo por defecto del navegador).
+   - .empty-state: estado vacío con título, explicación y CTA.
+   - .status--*: pills de cobro para Madre (contrato con Stripe:
+     billingStatus current / past_due / suspended). Solo estilos:
+     la app no inventa estados sin ese campo.
+   ============================================================ */
+.eyebrow{color:var(--purple)}
+.btn-link{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0;
+ border-radius:999px;padding:8px 10px;min-height:36px;color:#5b34f0;font-weight:800;font-size:13px}
+.btn-link:hover{text-decoration:underline;background:rgba(124,92,252,.08)}
+.btn-lg{padding:13px 24px;font-size:14px;min-height:48px}
+.empty-state{display:grid;gap:8px;justify-items:center;text-align:center;padding:34px 20px}
+.empty-state strong{font-size:15px;font-weight:900;color:#16123a}
+.empty-state p{margin:0;max-width:440px}
+.empty-state .btn{justify-self:center;margin-top:6px}
+.status--current{background:#d8f6e9;color:#117751}
+.status--past-due{background:#fef3c7;color:#92400e}
+.status--suspended{background:#f6e1eb;color:#9e4765}

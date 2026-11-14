@@ -10,7 +10,7 @@ test('la PWA Madre conserva las 30 Tools originales y añade encuesta de satisfa
  assert.equal(getTool('T021').pricing,'quote');
  assert.equal(getSuite('S001').price, 9900);
  assert.equal(getTool('T015').price, 6100);
- assert.equal(catalog.rules.monthlyPlatformFee, 0);
+ assert.equal(catalog.rules.monthlyPlatformFee, 949); // Cobro Stripe 2026-11-13: $949 MXN/mes parejo, 10 suites.
 });
 
 test('cada empresa hereda las tools Core y puede personalizar herramientas opcionales', () => {

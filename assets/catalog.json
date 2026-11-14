@@ -6,7 +6,7 @@
   "rules": {
     "depositRate": 0.5,
     "maxBalanceInstallments": 6,
-    "monthlyPlatformFee": 0
+    "monthlyPlatformFee": 949
   },
   "suites": [
     {

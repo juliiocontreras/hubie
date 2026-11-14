@@ -3,8 +3,12 @@ import {configurationStatus} from './platform/setup-health.mjs';
 import {seedQaCompanyIfRequested} from './platform/staging-qa-seed.mjs';
 import {listSurveys,createSurvey,setSurveyStatus,createSurveyInvitation,surveyReport,publicSurvey,submitSurvey} from './platform/satisfaction-store.mjs';
 import {sqlStatements} from './platform/migration-parser.mjs';
-import { databaseHealth, executeSql } from './database.mjs';
-import {readSessionCookie,verifySession,revokeSession} from './auth.mjs';
+import { databaseHealth, databaseConfigured, executeSql } from './database.mjs';
+import { resolveTenant } from './tenant.mjs';
+import { quoteCheckout, validateCheckoutEmail, validateOrganizationId } from './platform/billing-domain.mjs';
+import { getBillingStatus, listBillingForAdmin, createCheckoutOrder } from './platform/billing-store.mjs';
+import { stripeConfigured, webhookSecretConfigured, createStripeClient, buildCheckoutSessionParams, createCheckoutSession, verifyWebhookEvent, handleStripeEvent } from './platform/billing-webhook.mjs';
+import {readSessionCookie,verifySession,revokeSession,requireTenantSession} from './auth.mjs';
 import {requireSuperAdmin,createTenant,listTenants,getAdminCatalog,getTenantAdmin,setTenantTool,updateTenant,listTenantMembers,addTenantMember,setTenantMemberStatus} from './admin.mjs';
 import {userOrganizations,tenantConfig,toolRecords,saveToolRecord,archiveToolRecord} from './platform/records.mjs';
 import {getPlatformAppearance,setPlatformAppearance,setTenantAppearance,setOwnTenantAppearance} from './platform/appearance-store.mjs';
@@ -16,6 +20,12 @@ import {getClientSummary} from './platform/client-summary.mjs';
 import {listDeals,createDeal,updateDeal,archiveDeal} from './platform/operations-crm.mjs';
 import {listAppointments,createAppointment,updateAppointment} from './platform/operations-agenda.mjs';
 import {listInventory,createStockItem,updateStockItem,moveStock} from './platform/operations-inventory.mjs';
+import {listQuotes,getQuote,createQuote,updateQuote,setQuoteStatus,archiveQuote,publicQuote,publicQuoteDecision} from './platform/operations-quotes.mjs';
+import {listCatalog,createCatalogItem,updateCatalogItem,archiveCatalogItem} from './platform/operations-catalog.mjs';
+import {listExpenses,createExpense,updateExpense,archiveExpense} from './platform/operations-expenses.mjs';
+import {listPayments,createPayment,updatePayment,archivePayment} from './platform/operations-payments.mjs';
+import {listInvoices,createInvoice,setInvoiceStatus,archiveInvoice} from './platform/operations-invoices.mjs';
+import {reportSummary,exportCsv} from './platform/operations-reports.mjs';
 import {googleConfigured,startGoogleLogin,completeGoogleLogin} from './google-oidc.mjs';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -51,7 +61,7 @@ function decodedProtected(path){return /^(?:\/\.git|\/platform\/|\/turso\/|\/scr
 async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   for(const statement of sqlStatements(sql))await executeSql(statement);
  }
@@ -67,6 +77,7 @@ function sendApi(res,status,data){
  res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
  res.end(JSON.stringify(data));
 }
+const rowsOf=r=>r?.rows?.map(row=>row.map(x=>x?.value??null))??[];
 async function readApiBody(req,maxBytes=16000){
  if(req.headers['content-type']?.split(';')[0]!=='application/json')throw Error('Unsupported media type');
  let raw='',size=0;
@@ -299,6 +310,79 @@ createServer(async(req,res)=>{
       return createStockItem(token,slug,body);
     },{methods});
   }
+  // Commerce tools reales (T013/C006/C007/T014/T015/T020). Nada de cobro/Stripe aquí.
+  const reportsExport=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/reports\/export$/);
+  if(reportsExport){
+    if(req.method!=='GET'){res.writeHead(405,{'allow':'GET'});res.end();return;}
+    if(!configurationStatus().readyForLive||!(await migrationsReady))return sendApi(res,503,{error:'La base de datos no está inicializada'});
+    try{
+      const token=readSessionCookie(req.headers.cookie);
+      const kind=new URL(req.url,'http://localhost').searchParams.get('kind');
+      const {filename,csv}=await exportCsv(token,reportsExport[1],kind);
+      res.writeHead(200,{'content-type':'text/csv; charset=utf-8','cache-control':'no-store',
+        'content-disposition':'attachment; filename="'+filename+'"','x-content-type-options':'nosniff'});
+      res.end(csv);return;
+    }catch(error){
+      const msg=error?.message||'';
+      return sendApi(res,msg==='Unauthorized'?401:msg==='Forbidden'||msg==='Tool disabled'?403:msg==='Not found'?404:503,
+        {error:msg==='Not found'?'Exportación no disponible':'No se pudo exportar'});
+    }
+  }
+  const commercePath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/workflows\/(quotes|catalog|expenses|payments|invoices|reports)(?:\/([0-9a-f-]{36}))?(?:\/(send|accept|reject|draft|issued|cancelled))?$/);
+  if(commercePath){
+    const slug=commercePath[1],module=commercePath[2],id=commercePath[3],action=commercePath[4];
+    const query=new URL(req.url,'http://localhost').searchParams;
+    const methods=action?['POST']:module==='reports'?['GET']:module==='invoices'?(id?['DELETE']:['GET','POST']):id?['PATCH','DELETE']:['GET','POST'];
+    return processApi(req,res,async({token,body})=>{
+      if(module==='quotes'){
+        if(action)return setQuoteStatus(token,slug,id,action==='send'?'sent':action==='accept'?'accepted':action==='reject'?'rejected':'draft');
+        if(req.method==='GET')return id?getQuote(token,slug,id):listQuotes(token,slug);
+        if(req.method==='POST')return createQuote(token,slug,body);
+        if(req.method==='DELETE')return archiveQuote(token,slug,id);
+        return updateQuote(token,slug,id,body);
+      }
+      if(module==='catalog'){
+        if(req.method==='GET')return listCatalog(token,slug);
+        if(req.method==='POST')return createCatalogItem(token,slug,body);
+        if(req.method==='DELETE')return archiveCatalogItem(token,slug,id);
+        return updateCatalogItem(token,slug,id,body);
+      }
+      if(module==='expenses'){
+        if(req.method==='GET')return listExpenses(token,slug,{from:query.get('from'),to:query.get('to'),category:query.get('category')});
+        if(req.method==='POST')return createExpense(token,slug,body);
+        if(req.method==='DELETE')return archiveExpense(token,slug,id);
+        return updateExpense(token,slug,id,body);
+      }
+      if(module==='payments'){
+        if(req.method==='GET')return listPayments(token,slug);
+        if(req.method==='POST')return createPayment(token,slug,body);
+        if(req.method==='DELETE')return archivePayment(token,slug,id);
+        return updatePayment(token,slug,id,body);
+      }
+      if(module==='invoices'){
+        if(action)return setInvoiceStatus(token,slug,id,action);
+        if(req.method==='GET')return listInvoices(token,slug);
+        if(req.method==='POST')return createInvoice(token,slug,body);
+        return archiveInvoice(token,slug,id);
+      }
+      return reportSummary(token,slug,{month:query.get('month')});
+    },{methods});
+  }
+  const publicQuotePath=pathname.match(/^\/api\/public\/quotes\/([A-Za-z0-9]{32})$/);
+  if(publicQuotePath){
+    if(!['GET','POST'].includes(req.method)){res.writeHead(405,{'allow':'GET, POST'});res.end();return;}
+    if(req.method==='POST'&&!sameOrigin(req))return sendApi(res,403,{error:'Origin forbidden'});
+    if(!configurationStatus().databaseConfigured||!(await migrationsReady))return sendApi(res,503,{error:'Cotización temporalmente no disponible'});
+    try{
+      const result=req.method==='GET'?await publicQuote(publicQuotePath[1]):
+       await publicQuoteDecision(publicQuotePath[1],(await readApiBody(req,2000)).action);
+      return sendApi(res,req.method==='GET'?200:201,result);
+    }catch(e){
+      const msg=e?.message||'';
+      const status=msg==='Not found'?404:msg==='Invalid quote status'?400:msg==='Unsupported media type'?415:msg==='Payload too large'?413:503;
+      return sendApi(res,status,{error:status===503?'No fue posible consultar la cotización':status===404?'Este enlace ya no está disponible':msg});
+    }
+  }
   if(pathname==='/api/leads'){
     if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
     let raw='';try{for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('too-large');}
@@ -310,13 +394,75 @@ createServer(async(req,res)=>{
       res.writeHead(201,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({ok:true}));return;
     }catch(error){const bad=error instanceof SyntaxError||error.message==='too-large';res.writeHead(bad?400:503,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify({error:bad?'Solicitud inválida':'No se pudo guardar la solicitud'}));return;}
   }
+  // Cobro Stripe (modelo híbrido, docs/STRIPE-BILLING.md). Sin claves: 503
+  // "Stripe no configurado" y la app sigue funcionando normal.
+  if(pathname==='/api/checkout'){
+    if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
+    if(!stripeConfigured())return sendApi(res,503,{error:'Stripe no configurado'});
+    if(!databaseConfigured()||!(await migrationsReady))return sendApi(res,503,{error:'La base de datos no está inicializada'});
+    if(!sameOrigin(req))return sendApi(res,403,{error:'Origin forbidden'});
+    try{
+      const body=await readApiBody(req,8192);
+      const email=validateCheckoutEmail(body?.email);
+      const organizationId=validateOrganizationId(body?.organizationId);
+      const quote=quoteCheckout({suiteId:body?.suiteId,toolIds:body?.toolIds,extras:body?.extras,balanceInstallments:body?.balanceInstallments});
+      if(organizationId){
+        const exists=await executeSql('SELECT id FROM organizations WHERE id=?',[organizationId]);
+        if(!rowsOf(exists).length)return sendApi(res,404,{error:'Tenant not found'});
+      }
+      const stripe=await createStripeClient();
+      const orderId=randomUUID();
+      const origin=(process.env.HUBIE_PUBLIC_ORIGIN||'').replace(/\/$/,'')||('http://localhost:'+port);
+      const session=await createCheckoutSession(stripe,buildCheckoutSessionParams({quote,email,organizationId,orderId,origin}));
+      await createCheckoutOrder({id:orderId,email,quote,stripeSessionId:session.id,stripeCustomerId:typeof session.customer==='string'?session.customer:null,organizationId});
+      return sendApi(res,201,{url:session.url,sessionId:session.id,orderId,depositCents:quote.depositCents,balanceCents:quote.balanceCents,monthlyFeeCents:quote.monthlyFeeCents});
+    }catch(error){
+      const msg=error?.message||'';
+      if(msg==='Invalid checkout')return sendApi(res,400,{error:'Datos de cotización inválidos'});
+      if(msg==='Unsupported media type')return sendApi(res,415,{error:msg});
+      if(msg==='Payload too large')return sendApi(res,413,{error:msg});
+      console.error('Checkout failed:',msg);
+      return sendApi(res,503,{error:'No se pudo iniciar el pago'});
+    }
+  }
+  if(pathname==='/api/stripe/webhook'){
+    if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
+    if(!stripeConfigured()||!webhookSecretConfigured())return sendApi(res,503,{error:'Stripe no configurado'});
+    try{
+      const chunks=[];let size=0;
+      for await(const chunk of req){size+=chunk.length;if(size>1_000_000)throw Error('Payload too large');chunks.push(chunk);}
+      const rawBody=Buffer.concat(chunks);
+      const stripe=await createStripeClient();
+      const event=verifyWebhookEvent({rawBody,signature:req.headers['stripe-signature'],stripe,secret:process.env.STRIPE_WEBHOOK_SECRET});
+      await handleStripeEvent(event,{stripe});
+      return sendApi(res,200,{received:true});
+    }catch(error){
+      const msg=error?.message||'';
+      if(msg==='Invalid webhook signature')return sendApi(res,400,{error:'Invalid webhook signature'});
+      if(msg==='Payload too large')return sendApi(res,413,{error:msg});
+      console.error('Webhook failed:',msg);
+      return sendApi(res,500,{error:'Webhook retry'});
+    }
+  }
+  if(pathname==='/api/billing/status'){
+    return processApi(req,res,async({token})=>{
+      const slug=new URL(req.url,'http://localhost').searchParams.get('slug')||'';
+      const tenant=await resolveTenant(slug);
+      if(!tenant)throw Error('Not found');
+      await requireTenantSession(token,tenant.id);
+      return await getBillingStatus(tenant.id);
+    },{methods:['GET']});
+  }
+  if(pathname==='/api/admin/billing'){
+    return processApi(req,res,async()=>await listBillingForAdmin(),{admin:true,methods:['GET']});
+  }
   if(pathname==='/healthz'){
     const db=await databaseHealth();
     let schemaReady=false;
     if(db.status==='connected'){
       try{
-        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions','tenant_deal_clients','tenant_appointment_links','tenant_entity_links','tenant_surveys','tenant_survey_invitations','tenant_survey_responses')");
-        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===24;
+        const result=await executeSql("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('organizations','users','memberships','tenant_settings','tenant_tools','tenant_tool_records','tenant_crm_deals','tenant_schedule_events','tenant_inventory_items','tenant_inventory_movements','tenant_client_profiles','platform_appearance','tenant_appearance','pwa_media','tenant_client_cases','tenant_case_events','tenant_case_documents','tenant_case_document_versions','tenant_deal_clients','tenant_appointment_links','tenant_entity_links','tenant_surveys','tenant_survey_invitations','tenant_survey_responses','tenant_subscriptions','tenant_payments','stripe_webhook_events','billing_checkout_orders','tenant_quotes','tenant_quote_lines','tenant_catalog_items','tenant_expenses','tenant_collections','tenant_invoices')");
+        schemaReady=Number(result?.rows?.[0]?.[0]?.value??0)===34;
       }catch{schemaReady=false;}
     }
     const setup=configurationStatus();

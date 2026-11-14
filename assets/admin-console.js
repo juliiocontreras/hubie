@@ -6,6 +6,16 @@ const state={catalog:null,tenants:[],selected:null,detail:null,platformAppearanc
 let themeUI=null,iconUI=null;
 const money=n=>n==null?'A cotizar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);
 function node(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}
+// Estado vacío con acción: título + qué hacer + un botón que lo resuelve.
+// Una lista vacía sin salida es un callejón sin salida.
+function emptyAction(title,hint,ctaLabel,onClick){
+ const wrap=node('div',undefined,'empty empty-state');
+ wrap.append(node('strong',title));
+ if(hint)wrap.append(node('p',hint,'help'));
+ const btn=node('button',ctaLabel,'btn btn-primary');btn.type='button';
+ btn.addEventListener('click',onClick);wrap.append(btn);
+ return wrap;
+}
 async function api(path,options={}){
  if(demoMode)return demoApi(path,options);
  const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...options});
@@ -19,6 +29,7 @@ function screen(view){
  if(view!=='appearance'&&state.platformAppearance&&themeUI)themeUI.applyAppearance(state.platformAppearance,document.documentElement,state.platformBackgrounds);
  for(const s of document.querySelectorAll('[id^="view-"]'))s.hidden=s.id!=='view-'+view;
  for(const b of document.querySelectorAll('[data-view]'))b.setAttribute('aria-current',b.dataset.view===view?'page':'false');
+ if(view==='billing')void renderBilling();
  window.scrollTo({top:0,behavior:'instant'});
 }
 const toolList=()=>state.catalog.tools;
@@ -100,7 +111,7 @@ function renderTenants(){
  renderSuiteDistribution();
  const recent=$('overview-companies');recent.replaceChildren();
  for(const t of state.tenants.slice(0,5))recent.append(companyRow(t));
- if(!state.tenants.length)recent.append(node('div','Aún no hay empresas. Crea la primera desde Hubie Madre.','empty'));
+ if(!state.tenants.length)recent.append(emptyAction('Aún no hay empresas','Crea la primera desde Hubie Madre y configura su Suite.','Crear primera empresa',()=>screen('create')));
  const suites=$('overview-suites');suites.replaceChildren();
  for(const item of suiteList().slice(0,6)){
   const btn=node('button',undefined,'suite-tile');btn.type='button';
@@ -124,9 +135,36 @@ function filterCompanies(){
  const host=$('companies');host.replaceChildren();
  const found=state.tenants.filter(t=>(t.name+' '+t.slug).toLowerCase().includes(q));
  for(const t of found)host.append(companyRow(t));
- if(!found.length)host.append(node('div','No se encontraron empresas.','empty'));
+ if(!found.length)host.append(emptyAction('No se encontraron empresas','Ninguna empresa coincide con ese texto. Prueba con otro término o limpia la búsqueda.','Limpiar búsqueda',()=>{$('filter-companies').value='';filterCompanies();}));
 }
 async function loadTenants(){state.tenants=(await api('/api/admin/tenants')).tenants;renderTenants();}
+async function renderBilling(){
+ const host=$('billing-companies'),ordersHost=$('billing-orders');
+ try{
+  const data=await api('/api/admin/billing');
+  $('billing-summary').textContent=data.tenants.length+' empresas · '+data.tenants.filter(t=>t.billingStatus==='active').length+' al corriente';
+  host.replaceChildren();
+  for(const t of data.tenants){
+   const row=node('div',undefined,'aurora-row');
+   const meta=node('span',undefined,'insight-meta');
+   meta.append(node('strong',t.name),node('small',(t.suiteId||'Sin suite')+' · '+(t.billingStatusLabel||t.billingStatus)+(t.balancePendingCents?' · Saldo pendiente '+money(t.balancePendingCents):'')+(t.daysPastDue?' · '+t.daysPastDue+' días vencido':'')));
+   const pill=node('span',t.billingStatusLabel||t.billingStatus,'status'+(t.billingStatus==='active'?'':' off'));
+   const open=node('button','Ver empresa','btn');open.type='button';open.addEventListener('click',()=>openDetail(t.id));
+   row.append(meta,pill,open);host.append(row);
+  }
+  if(!data.tenants.length)host.append(node('div','Aún no hay empresas registradas.','empty'));
+  ordersHost.replaceChildren();
+  for(const o of data.pendingOrders){
+   const row=node('div',undefined,'aurora-row');
+   const meta=node('span',undefined,'insight-meta');
+   meta.append(node('strong',o.email),node('small','Suite '+o.suiteId+' · Total '+money(o.totalCents)+' · Anticipo '+money(o.depositCents)));
+   row.append(meta,node('span','Pagado · sin empresa','status off'));ordersHost.append(row);
+  }
+  if(!data.pendingOrders.length)ordersHost.append(node('div','Sin pagos pendientes de convertir.','empty'));
+ }catch(e){
+  host.replaceChildren();host.append(node('div','No se pudo cargar el estado de cobro: '+e.message,'empty'));
+ }
+}
 function renderMembers(items){
  const host=$('members');host.replaceChildren();
  for(const m of items){
@@ -151,7 +189,7 @@ function renderMembers(items){
   }else line.append(node('span','Propietario protegido','status'));
   host.append(line);
  }
- if(!items.length)host.append(node('p','Sin miembros asignados.','help'));
+ if(!items.length)host.append(node('p','Aún no hay miembros. Autoriza el primer correo con el formulario de abajo.','help'));
 }
 async function loadMembers(id){renderMembers((await api('/api/admin/tenants/'+id+'/members')).members);}
 function renderDetail(t){
