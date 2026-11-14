@@ -22,8 +22,14 @@ export async function listCatalog(token,slug){
 export async function createCatalogItem(token,slug,input){
  const {tenant,session}=await authorizeTool(token,slug,'C006',true);
  const item=normalizeCatalogItem(input),id=randomUUID();
+ // Sin índice único parcial en Turso (el motor en vivo lo rechaza), el SKU
+ // activo se valida aquí, igual que en updateCatalogItem: solo si trae SKU.
+ if(item.sku){
+  const clash=rows(await executeSql('SELECT id FROM tenant_catalog_items WHERE organization_id=? AND sku=? AND archived_at IS NULL LIMIT 1',[tenant.id,item.sku]));
+  if(clash.length)throw Error('Duplicate SKU');
+ }
  const results=await executeBatch([
-  {sql:'INSERT INTO tenant_catalog_items(organization_id,id,sku,name,description,price_cents,category,active,created_by) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING',
+  {sql:'INSERT INTO tenant_catalog_items(organization_id,id,sku,name,description,price_cents,category,active,created_by) VALUES(?,?,?,?,?,?,?,?,?)',
    args:[tenant.id,id,item.sku,item.name,item.description,item.priceCents,item.category,item.active?1:0,session.userId]},
   audit(tenant.id,session.userId,'catalog.created',id)
  ]);

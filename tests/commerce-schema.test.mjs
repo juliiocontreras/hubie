@@ -19,6 +19,23 @@ test('migration 016 creates the six commerce tables scoped by tenant',async()=>{
  assert.doesNotMatch(sqlBody,/cfdi|timbrado|sello|SAT/i);
 });
 
+test('migration 016 usa solo índices que Turso acepta en vivo (sin WHERE parcial ni 4 columnas)',async()=>{
+ const sql=await readFile('turso/migrations/016_commerce.sql','utf8');
+ const body=sql.replace(/^--.*$/gm,'');
+ // El motor en vivo rechazó el índice único parcial y el de 4 columnas con
+ // "invalid expression in CREATE INDEX" (SQL_INPUT_ERROR, 2026-11-13).
+ assert.doesNotMatch(body,/CREATE (UNIQUE )?INDEX[^;]*WHERE/i);
+ assert.match(body,/CREATE INDEX IF NOT EXISTS idx_catalog_items_tenant_sku\s+ON tenant_catalog_items\(organization_id,sku\)/);
+ assert.match(body,/CREATE INDEX IF NOT EXISTS idx_catalog_items_tenant_cat ON tenant_catalog_items\(organization_id,category,active\)/);
+ for(const match of body.matchAll(/CREATE (?:UNIQUE )?INDEX[^;]*ON \w+\(([^)]*)\)/g)){
+  assert.ok(match[1].split(',').length<=3,'índice con más de 3 columnas: '+match[0]);
+ }
+ const catalog=await readFile('platform/operations-catalog.mjs','utf8');
+ // Sin índice único parcial, el alta valida el SKU activo en código.
+ assert.match(catalog,/SELECT id FROM tenant_catalog_items WHERE organization_id=\? AND sku=\? AND archived_at IS NULL LIMIT 1/);
+ assert.match(catalog,/throw Error\('Duplicate SKU'\)/);
+});
+
 test('server applies migration 016, routes the commerce workflows and exports CSV',async()=>{
  const server=await readFile('server.mjs','utf8');
  assert.match(server,/'016_commerce\.sql'/);

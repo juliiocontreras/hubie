@@ -3,6 +3,11 @@
 -- Aditivo; no toca billing/Stripe ni tablas existentes. La 015 queda reservada
 -- para el trabajo de Stripe en paralelo.
 -- Moneda siempre en centavos enteros; IVA configurable por cotización/factura.
+-- NOTA Turso 2026-11-13: el motor en vivo rechaza el índice único parcial
+-- (WHERE archived_at IS NULL AND sku <> '') y el índice de 4 columnas con
+-- "invalid expression in CREATE INDEX" (SQL_INPUT_ERROR); por eso el SKU
+-- activo se valida en código (operations-catalog.mjs) y los índices son
+-- simples de 2-3 columnas, como el resto de las migraciones.
 
 CREATE TABLE IF NOT EXISTS tenant_quotes(
  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -58,10 +63,9 @@ CREATE TABLE IF NOT EXISTS tenant_catalog_items(
  archived_at TEXT,
  PRIMARY KEY(organization_id,id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_catalog_items_unique_active_sku
- ON tenant_catalog_items(organization_id,sku)
- WHERE archived_at IS NULL AND sku <> '';
-CREATE INDEX IF NOT EXISTS idx_catalog_items_tenant_cat ON tenant_catalog_items(organization_id,category,active,archived_at);
+CREATE INDEX IF NOT EXISTS idx_catalog_items_tenant_sku
+ ON tenant_catalog_items(organization_id,sku);
+CREATE INDEX IF NOT EXISTS idx_catalog_items_tenant_cat ON tenant_catalog_items(organization_id,category,active);
 
 CREATE TABLE IF NOT EXISTS tenant_expenses(
  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
