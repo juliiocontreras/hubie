@@ -47,6 +47,7 @@ function createTenant(catalog,input,id=uuid()){
   docSettings:{},docAccess:{},entityLinks:[],deals:[],dealTasks:[],events:[],items:[],movements:[],
   checklists:[],checklistTemplates:[],tasks:[],forms:[],formSubmissions:[],goals:[],variants:[],
   quotes:[],catalogItems:[],expenses:[],payments:[],invoices:[],generic:{},
+  training:{courses:[],sessions:[],employees:[],enrollments:[],attendance:[],progress:[],modules:[],attempts:[],evaluations:[],certificates:[],completions:[]},
   onboarding:{steps:{},demoSeeded:[]},
   invitations:[],audit:[]};
 }
@@ -74,6 +75,41 @@ function initial(catalog){
  second.audit.push(
   {id:uuid(),organizationId:second.id,actorUserId:'33333333-3333-4333-8333-333333333333',actorEmail:'superadmin@ejemplo.invalid',action:'tenant.created',targetType:'organization',targetId:second.id,occurredAt:'2026-11-10T11:00:00.000Z'});
  first.notifications.push({id:uuid(),userId:null,type:'info',title:'Bienvenido a la demostración',body:'Este es el centro de notificaciones: aquí aparecerían las cotizaciones por vencer, las citas próximas y los cobros vencidos de tu empresa.',link:null,readAt:null,createdAt:now()});
+ // Capacitaciones (T022) de demostración: datos ficticios, solo en esta pestaña.
+ // El catálogo ya trae T022 (no incluida): se habilita en este tenant demo.
+ const demoT022=first.tools.find(t=>t.id==='T022');
+ if(demoT022)demoT022.enabled=true;
+ else first.tools.push({id:'T022',name:'Capacitaciones',group:'Recursos Humanos',price:null,pricing:'quote',included:false,enabled:true});
+ const dPlus=n=>new Date(Date.now()+n*86400000).toISOString().slice(0,10);
+ const tr=first.training;
+ const empA={id:uuid(),name:'Ana Ruiz',email:'ana.ruiz@ejemplo.invalid',position:'Cajera',area:'Ventas',createdAt:now()};
+ const empB={id:uuid(),name:'Bruno Méndez',email:'bruno.mendez@ejemplo.invalid',position:'Almacenista',area:'Logística',createdAt:now()};
+ const empC={id:uuid(),name:'Carla Soto',email:'carla.soto@ejemplo.invalid',position:'Supervisora',area:'Operaciones',createdAt:now()};
+ tr.employees.push(empA,empB,empC);
+ const courseA={id:uuid(),name:'Atención al cliente',description:'Curso de demostración: trato al cliente y resolución de quejas.',category:'Atención al cliente',modality:'presencial',durationHours:8,instructor:'María López',materials:'Manual de demostración (ficticio).',validUntil:dPlus(20),minScore:70,status:'activo',createdAt:now(),updatedAt:now()};
+ const courseB={id:uuid(),name:'Seguridad en el almacén',description:'Curso de demostración: uso de equipo de protección.',category:'Seguridad',modality:'mixta',durationHours:4,instructor:'Jorge Pérez',materials:'',validUntil:dPlus(45),minScore:80,status:'activo',createdAt:now(),updatedAt:now()};
+ const courseC={id:uuid(),name:'Inducción general',description:'Curso de demostración en borrador.',category:'Inducción',modality:'en línea',durationHours:2,instructor:'',materials:'',validUntil:null,minScore:70,status:'borrador',createdAt:now(),updatedAt:now()};
+ tr.courses.push(courseA,courseB,courseC);
+ const modA1={id:uuid(),courseId:courseA.id,type:'learning',title:'Bienvenida y servicio',description:'Lección de demostración.',content:'Contenido de demostración: saluda, escucha y resuelve.',position:1,status:'activo',quizConfig:null,createdAt:now(),updatedAt:now()};
+ const modA2={id:uuid(),courseId:courseA.id,type:'certification',title:'Evaluación de atención',description:'Módulo de certificación de demostración.',content:'',position:2,status:'activo',
+  quizConfig:{passingScore:70,maxAttempts:2,questions:[
+   {id:'q1',text:'¿Qué se hace primero al recibir a un cliente?',points:1,options:['Saludar y escuchar su necesidad','Pedirle que espere sin explicarle','Derivarlo de inmediato sin preguntar'],correctIndex:0},
+   {id:'q2',text:'Ante una queja, ¿qué corresponde?',points:1,options:['Ignorarla','Escuchar, disculparse y ofrecer una solución','Culpar a otra área'],correctIndex:1}]},
+  createdAt:now(),updatedAt:now()};
+ tr.modules.push(modA1,modA2);
+ const sesA={id:uuid(),courseId:courseA.id,startsAt:new Date(Date.now()+86400000).toISOString(),endsAt:new Date(Date.now()+86400000+2*3600000).toISOString(),placeOrLink:'Sala de capacitación',capacity:20,instructor:'María López',createdAt:now(),updatedAt:now()};
+ const sesB={id:uuid(),courseId:courseB.id,startsAt:new Date(Date.now()+7*86400000).toISOString(),endsAt:new Date(Date.now()+7*86400000+4*3600000).toISOString(),placeOrLink:'Almacén principal',capacity:12,instructor:'Jorge Pérez',createdAt:now(),updatedAt:now()};
+ tr.sessions.push(sesA,sesB);
+ const enrA={id:uuid(),employeeId:empA.id,courseId:courseA.id,sessionId:sesA.id,status:'en curso',createdAt:now(),updatedAt:now()};
+ const enrB={id:uuid(),employeeId:empB.id,courseId:courseA.id,sessionId:sesA.id,status:'inscrito',createdAt:now(),updatedAt:now()};
+ const enrC={id:uuid(),employeeId:empC.id,courseId:courseB.id,sessionId:sesB.id,status:'en curso',createdAt:now(),updatedAt:now()};
+ tr.enrollments.push(enrA,enrB,enrC);
+ tr.attendance.push({id:uuid(),sessionId:sesA.id,employeeId:empA.id,status:'presente',createdAt:now()},
+  {id:uuid(),sessionId:sesA.id,employeeId:empB.id,status:'ausente',createdAt:now()});
+ tr.completions.push({enrollmentId:enrA.id,moduleId:modA1.id,createdAt:now()},{enrollmentId:enrA.id,moduleId:modA2.id,createdAt:now()});
+ tr.attempts.push({id:uuid(),moduleId:modA2.id,enrollmentId:enrA.id,employeeId:empA.id,answers:{q1:0,q2:1},score:100,passed:true,attemptNumber:1,correctCount:2,totalQuestions:2,moduleTitle:modA2.title,employeeName:empA.name,createdAt:now()});
+ tr.evaluations.push({id:uuid(),enrollmentId:enrA.id,employeeId:empA.id,courseId:courseA.id,score:100,passed:true,evaluatedAt:now()});
+ tr.certificates.push({id:uuid(),employeeId:empA.id,courseId:courseA.id,enrollmentId:enrA.id,folio:'CAP-2026-K7M2Q9',issuedAt:now()});
  second.clients.push({id:uuid(),name:'Otro contacto de ejemplo',company:'Otra empresa',email:'otro@correo.invalid',phone:'',status:'active',notes:''});
  return {platformAppearance:{...appearanceDefaults},platformBackgrounds:{dashboard:null,sidebar:null},tenants:[first,second]};
 }
@@ -99,7 +135,8 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   tenant.checklists=Array.isArray(tenant.checklists)?tenant.checklists:[];tenant.checklistTemplates=Array.isArray(tenant.checklistTemplates)?tenant.checklistTemplates:[];
   tenant.tasks=Array.isArray(tenant.tasks)?tenant.tasks:[];tenant.forms=Array.isArray(tenant.forms)?tenant.forms:[];
   tenant.formSubmissions=Array.isArray(tenant.formSubmissions)?tenant.formSubmissions:[];tenant.goals=Array.isArray(tenant.goals)?tenant.goals:[];
-  tenant.variants=Array.isArray(tenant.variants)?tenant.variants:[];
+  tenant.variants=Array.isArray(tenant.variants)?tenant.variants:[];tenant.training=tenant.training&&typeof tenant.training==='object'?tenant.training:{courses:[],sessions:[],employees:[],enrollments:[],attendance:[],progress:[],modules:[],attempts:[],evaluations:[],certificates:[],completions:[]};
+  for(const k of ['courses','sessions','employees','enrollments','attendance','progress','modules','attempts','evaluations','certificates','completions'])tenant.training[k]=Array.isArray(tenant.training[k])?tenant.training[k]:[];
   tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];tenant.caseDocumentMeta=tenant.caseDocumentMeta&&typeof tenant.caseDocumentMeta==='object'?tenant.caseDocumentMeta:{};tenant.entityLinks=Array.isArray(tenant.entityLinks)?tenant.entityLinks:[];
   if(tenant.slug==='comercio-demo'){
    const sampleClient=tenant.clients.find(c=>c.name==='Contacto de ejemplo');
@@ -121,7 +158,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  // lista de acciones es la de platform/audit.mjs (fuente de verdad); el
  // token vive en claro solo en sessionStorage de esta pestaña (demo), en
  // producción solo se guarda su hash (platform/invitations.mjs).
- const demoAuditActions=['agenda.appointment_created','agenda.appointment_status','agenda.appointment_updated','appearance.platform_updated','appearance.tenant_updated','archived','cases.created','cases.document_updated','cases.updated','catalog.archived','catalog.created','catalog.updated','clients.archived','clients.created','clients.updated','crm.deal_archived','crm.deal_created','crm.deal_updated','entities.linked','entities.unlinked','expenses.archived','expenses.created','expenses.updated','inventory.item_created','inventory.item_updated','inventory.stock_moved','invoices.archived','invoices.created','media.attachment_removed','media.attachment_uploaded','payments.archived','payments.created','payments.updated','quotes.archived','quotes.created','quotes.updated','survey.response_received','tenant.created','tenant.invitation_accepted','tenant.invitation_created','tenant.invitation_resent','tenant.invitation_revoked','tenant.member_activated','tenant.member_added','tenant.member_suspended','tenant.record_archived','tenant.record_created','tenant.record_updated','tenant.tool_disabled','tenant.tool_enabled','tenant.updated'];
+ const demoAuditActions=['agenda.appointment_created','agenda.appointment_status','agenda.appointment_updated','appearance.platform_updated','appearance.tenant_updated','archived','cases.created','cases.document_updated','cases.updated','catalog.archived','catalog.created','catalog.updated','clients.archived','clients.created','clients.updated','crm.deal_archived','crm.deal_created','crm.deal_updated','entities.linked','entities.unlinked','expenses.archived','expenses.created','expenses.updated','inventory.item_created','inventory.item_updated','inventory.stock_moved','invoices.archived','invoices.created','media.attachment_removed','media.attachment_uploaded','payments.archived','payments.created','payments.updated','quotes.archived','quotes.created','quotes.updated','survey.response_received','training.attempt_recorded','training.certificate_issued','training.course_created','training.enrollment_created','tenant.created','tenant.invitation_accepted','tenant.invitation_created','tenant.invitation_resent','tenant.invitation_revoked','tenant.member_activated','tenant.member_added','tenant.member_suspended','tenant.record_archived','tenant.record_created','tenant.record_updated','tenant.tool_disabled','tenant.tool_enabled','tenant.updated'];
  const demoAudit=(t,action,targetId)=>{t.audit.unshift({id:uuid(),organizationId:t.id,actorUserId:'33333333-3333-4333-8333-333333333333',actorEmail:'superadmin@ejemplo.invalid',action,targetType:'organization_invitation',targetId,occurredAt:now()});};
  const demoInviteStatus=i=>i.consumedAt?'consumed':Date.parse(i.expiresAt)<=Date.now()?'expired':'pending';
  const demoPublicInvite=i=>({id:i.id,organizationId:i.organizationId,email:i.email,role:i.role,expiresAt:i.expiresAt,consumedAt:i.consumedAt,createdAt:i.createdAt,status:demoInviteStatus(i)});
@@ -1564,6 +1601,420 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   if(p==='/api/admin/billing/sweep'&&method==='POST'){
    // La demo no tiene suscripciones past_due: nada que suspender.
    return send({checked:0,suspended:[],suspendedCount:0});
+  }
+  // Capacitaciones (T022): espejo en memoria del contrato real
+  // /api/app/<slug>/training/... (platform/training-store.mjs,
+  // training-domain.mjs, migración 026). Los datos viven solo en
+  // sessionStorage de esta pestaña (demo).
+  const trRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/training(?:\/(.*))?$/);
+  if(trRoute){
+   const tenant=tenantBySlug(trRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T022'))allowed(tenant,'T022');
+   const tr=tenant.training;
+   const seg=(trRoute[2]||'').split('/').filter(Boolean);
+   const escCsv=v=>{const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+   const csvRow=vals=>vals.map(escCsv).join(',');
+   const FOLIO_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+   const genFolio=()=>{let s='';for(let i=0;i<6;i++)s+=FOLIO_ALPHABET[Math.floor(Math.random()*FOLIO_ALPHABET.length)];return 'CAP-'+new Date().getFullYear()+'-'+s;};
+   const courseOf=id=>getRecord(tr.courses,id);
+   const employeeOf=id=>getRecord(tr.employees,id);
+   const sessionOf=id=>getRecord(tr.sessions,id);
+   const enrollmentOf=id=>getRecord(tr.enrollments,id);
+   const moduleOf=(cid,mid)=>getRecord(tr.modules.filter(m=>m.courseId===cid),mid);
+   const activeModules=cid=>tr.modules.filter(m=>m.courseId===cid&&m.status!=='archivado');
+   const moduleView=m=>({...m,quizConfig:m.quizConfig||null,
+    quiz:m.quizConfig?{hasQuiz:true,passingScore:m.quizConfig.passingScore,maxAttempts:m.quizConfig.maxAttempts,questionCount:m.quizConfig.questions.length}:{hasQuiz:false,passingScore:null,maxAttempts:null,questionCount:0}});
+   const courseView=c=>({...c,sessions:tr.sessions.filter(s=>s.courseId===c.id).length,
+    enrollments:tr.enrollments.filter(x=>x.courseId===c.id&&x.status!=='cancelado').length,
+    modules:tr.modules.filter(m=>m.courseId===c.id&&m.status!=='archivado').length});
+   const progressRow=enrId=>{
+    const enr=enrollmentOf(enrId),mods=activeModules(enr.courseId);
+    const done=new Set(tr.completions.filter(x=>x.enrollmentId===enrId&&mods.some(m=>m.id===x.moduleId)).map(x=>x.moduleId));
+    const total=mods.length,completed=done.size,percent=total?Math.round(100*completed/total):0;
+    let row=tr.progress.find(p=>p.enrollmentId===enrId);
+    if(!row){row={enrollmentId:enrId,completedModules:completed,totalModules:total,percent,updatedAt:now()};tr.progress.push(row);}
+    else{row.completedModules=completed;row.totalModules=total;row.percent=percent;row.updatedAt=now();}
+    return row;
+   };
+   const progressDetail=enrId=>{
+    const enr=enrollmentOf(enrId),row=progressRow(enrId),mods=activeModules(enr.courseId);
+    return {enrollmentId:enr.id,employeeId:enr.employeeId,courseId:enr.courseId,status:enr.status,
+     completedModules:row.completedModules,totalModules:row.totalModules,percent:row.percent,updatedAt:row.updatedAt,
+     modules:mods.map(m=>({id:m.id,title:m.title,type:m.type,position:m.position,
+      completed:tr.completions.some(x=>x.enrollmentId===enrId&&x.moduleId===m.id),
+      bestScore:m.type==='certification'?(()=>{const s=tr.attempts.filter(a=>a.enrollmentId===enrId&&a.moduleId===m.id).map(a=>a.score);return s.length?Math.max(...s):null;})():null}))};
+   };
+   const enrollmentView=x=>{const p=tr.progress.find(p=>p.enrollmentId===x.id);
+    return {...x,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',courseName:tr.courses.find(c=>c.id===x.courseId)?.name||'',progressPercent:p?p.percent:0};};
+   const evaluationOf=enrId=>tr.evaluations.find(v=>v.enrollmentId===enrId)||null;
+   const bestAttempt=(enrId,mid)=>{const s=tr.attempts.filter(a=>a.enrollmentId===enrId&&a.moduleId===mid).map(a=>a.score);return s.length?Math.max(...s):null;};
+   const hasPassed=(enrId,mid)=>tr.attempts.some(a=>a.enrollmentId===enrId&&a.moduleId===mid&&a.passed);
+   const validCourse=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid course');
+    const merged={...base,...input};
+    const name=String(merged.name||'').trim();
+    if(name.length<4||name.length>140)throw error('Invalid course');
+    if(merged.durationHours!==undefined&&merged.durationHours!==null&&(typeof merged.durationHours!=='number'||!Number.isFinite(merged.durationHours)||merged.durationHours<0||merged.durationHours>10000))throw error('Invalid course');
+    if(merged.minScore!==undefined&&merged.minScore!==null&&(!Number.isInteger(merged.minScore)||merged.minScore<0||merged.minScore>100))throw error('Invalid course');
+    if(merged.validUntil!==undefined&&merged.validUntil!==null&&!/^\d{4}-\d{2}-\d{2}$/.test(merged.validUntil))throw error('Invalid course');
+    return {name,description:String(merged.description||'').slice(0,2000),durationHours:merged.durationHours??0,
+     modality:['presencial','en línea','mixta'].includes(merged.modality)?merged.modality:'en línea',
+     instructor:String(merged.instructor||'').slice(0,160),materials:String(merged.materials||'').slice(0,4000),
+     validUntil:merged.validUntil||null,
+     status:['borrador','activo','archivado'].includes(merged.status)?merged.status:'borrador',
+     minScore:merged.minScore??70,category:String(merged.category||'').slice(0,80)};
+   };
+   const validModule=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid module');
+    const merged={...base,...input};
+    const title=String(merged.title||'').trim();
+    if(title.length<2||title.length>160)throw error('Invalid module');
+    if(merged.position!==undefined&&(!Number.isInteger(merged.position)||merged.position<0||merged.position>10000))throw error('Invalid module');
+    return {type:['learning','certification'].includes(merged.type)?merged.type:'learning',title,
+     description:String(merged.description||'').slice(0,2000),content:String(merged.content||'').slice(0,8000),
+     position:merged.position??0,status:['borrador','activo','archivado'].includes(merged.status)?merged.status:'borrador'};
+   };
+   const validQuiz=q=>{
+    if(!q||typeof q!=='object'||Array.isArray(q)||!Array.isArray(q.questions)||!q.questions.length||q.questions.length>50)throw error('Invalid quiz');
+    if(q.passingScore!==undefined&&q.passingScore!==null&&(!Number.isInteger(q.passingScore)||q.passingScore<0||q.passingScore>100))throw error('Invalid quiz');
+    if(q.maxAttempts!==undefined&&q.maxAttempts!==null&&(!Number.isInteger(q.maxAttempts)||q.maxAttempts<1||q.maxAttempts>20))throw error('Invalid quiz');
+    const used=new Set(),questions=q.questions.map((qq,i)=>{
+     if(!qq||typeof qq!=='object'||Array.isArray(qq))throw error('Invalid quiz');
+     const id=qq.id===undefined||qq.id===null?'q'+(i+1):qq.id;
+     if(typeof id!=='string'||!/^[a-z][a-z0-9_]{1,24}$/.test(id)||used.has(id))throw error('Invalid quiz');
+     used.add(id);
+     const text=String(qq.text||'').trim();
+     if(text.length<2||text.length>500)throw error('Invalid quiz');
+     if(!Array.isArray(qq.options)||qq.options.length<2||qq.options.length>6)throw error('Invalid quiz');
+     const options=qq.options.map(o=>String(o||'').trim());
+     if(options.some(o=>!o||o.length>300))throw error('Invalid quiz');
+     if(!Number.isInteger(qq.correctIndex)||qq.correctIndex<0||qq.correctIndex>=options.length)throw error('Invalid quiz');
+     return {id,text,options,correctIndex:qq.correctIndex,points:qq.points===undefined||qq.points===null?1:qq.points};
+    });
+    for(const qq of questions)if(!Number.isInteger(qq.points)||qq.points<1||qq.points>100)throw error('Invalid quiz');
+    return {passingScore:q.passingScore??null,maxAttempts:q.maxAttempts??null,questions};
+   };
+   const scoreQuiz=(quiz,answers,minScore)=>{
+    const totalPoints=quiz.questions.reduce((a,q)=>a+q.points,0);
+    let earnedPoints=0,correctCount=0;
+    for(const qq of quiz.questions){if(answers[qq.id]===qq.correctIndex){earnedPoints+=qq.points;correctCount++;}}
+    const score=totalPoints?Math.round(100*earnedPoints/totalPoints):0;
+    return {score,passed:score>=(quiz.passingScore??minScore),earnedPoints,totalPoints,correctCount,totalQuestions:quiz.questions.length,answeredCount:Object.keys(answers).length};
+   };
+   // ---- Tablero ----
+   if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET'){
+    const inTraining=new Set(tr.enrollments.filter(x=>['inscrito','en curso'].includes(x.status)).map(x=>x.employeeId));
+    const activeEnrs=tr.enrollments.filter(x=>['inscrito','en curso','completado'].includes(x.status));
+    const percents=activeEnrs.map(x=>progressRow(x.id).percent);
+    const global=percents.length?Math.round(percents.reduce((a,b)=>a+b,0)/percents.length):null;
+    const in30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+    const expiring=tr.courses.filter(c=>c.status==='activo'&&c.validUntil&&c.validUntil<=in30).map(c=>({id:c.id,name:c.name,validUntil:c.validUntil}));
+    const pending=tr.enrollments.filter(x=>x.status!=='cancelado'&&!evaluationOf(x.id)&&(x.status==='completado'||progressRow(x.id).percent===100))
+     .map(x=>({enrollmentId:x.id,employeeId:x.employeeId,courseId:x.courseId,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',courseName:tr.courses.find(c=>c.id===x.courseId)?.name||''}));
+    const upcoming=tr.sessions.filter(s=>Date.parse(s.startsAt)>=Date.now()).length;
+    return emit({kpis:{employeesInTraining:inTraining.size,globalProgress:global,activeCourses:tr.courses.filter(c=>c.status==='activo').length,
+     totalEmployees:tr.employees.length,activeEnrollments:tr.enrollments.filter(x=>x.status!=='cancelado').length,
+     certificatesIssued:tr.certificates.length,upcomingSessions:upcoming},
+     coursesExpiring:expiring,pendingEvaluations:pending,reminders:{created:0}});
+   }
+   // ---- Exportar CSV ----
+   if(seg[0]==='export'&&method==='GET'){
+    const kind=url.searchParams.get('kind');
+    if(kind==='progress'){
+     const lines=[csvRow(['Empleado','Curso','Estatus inscripción','Módulos completados','Módulos totales','Avance %','Calificación','Aprobado'])];
+     for(const x of tr.enrollments){
+      const p=progressRow(x.id),v=evaluationOf(x.id);
+      lines.push(csvRow([tr.employees.find(e=>e.id===x.employeeId)?.name||'',tr.courses.find(c=>c.id===x.courseId)?.name||'',x.status,p.completedModules,p.totalModules,p.percent,v?v.score:'',v?(v.passed?'Sí':'No'):'']));
+     }
+     return emit({csv:lines.join('\n'),filename:'hubie-capacitacion-avance.csv'});
+    }
+    if(kind==='attendance'){
+     const lines=[csvRow(['Sesión','Curso','Empleado','Asistencia'])];
+     for(const a of tr.attendance){
+      const s=tr.sessions.find(s=>s.id===a.sessionId);
+      lines.push(csvRow([s?.startsAt||'',s?tr.courses.find(c=>c.id===s.courseId)?.name||'':'',tr.employees.find(e=>e.id===a.employeeId)?.name||'',a.status]));
+     }
+     return emit({csv:lines.join('\n'),filename:'hubie-capacitacion-asistencia.csv'});
+    }
+    throw error('Invalid export',400);
+   }
+   // ---- Cursos ----
+   if(seg[0]==='courses'&&seg.length===1){
+    if(method==='GET'){
+     const status=url.searchParams.get('status');
+     return emit({courses:tr.courses.filter(c=>!status||c.status===status).map(courseView)});
+    }
+    if(method==='POST'){const c={id:uuid(),...validCourse(input),createdAt:now(),updatedAt:now()};tr.courses.unshift(c);demoAudit(tenant,'training.course_created',c.id);return send({course:c});}
+    throw error('Not found',404);
+   }
+   if(seg[0]==='courses'&&seg.length===2&&method==='PATCH'){
+    const c=courseOf(seg[1]);
+    if(input&&Object.keys(input).length===1&&'status' in input){
+     if(!['borrador','activo','archivado'].includes(input.status))throw error('Invalid course');
+     c.status=input.status;c.updatedAt=now();return send({ok:true,status:input.status});
+    }
+    Object.assign(c,validCourse(input,c),{updatedAt:now()});return send({course:c});
+   }
+   if(seg[0]==='courses'&&seg.length===3&&seg[2]==='history'&&method==='GET'){
+    const c=courseOf(seg[1]);
+    const sessions=tr.sessions.filter(s=>s.courseId===c.id).map(s=>({...s,attendance:tr.attendance.filter(a=>a.sessionId===s.id).length,present:tr.attendance.filter(a=>a.sessionId===s.id&&a.status==='presente').length}));
+    const enrollments=tr.enrollments.filter(x=>x.courseId===c.id).map(x=>{const p=progressRow(x.id),v=evaluationOf(x.id);
+     return {id:x.id,employeeId:x.employeeId,status:x.status,createdAt:x.createdAt,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',
+      progress:{completedModules:p.completedModules,totalModules:p.totalModules,percent:p.percent},
+      evaluation:v?{score:v.score,passed:v.passed}:null,certificates:tr.certificates.filter(t=>t.enrollmentId===x.id).length};});
+    return emit({course:courseView(c),sessions,enrollments,modules:tr.modules.filter(m=>m.courseId===c.id).map(moduleView),certificatesIssued:tr.certificates.filter(t=>t.courseId===c.id).length});
+   }
+   // ---- Módulos y quizzes ----
+   if(seg[0]==='courses'&&seg.length===3&&seg[2]==='modules'){
+    const c=courseOf(seg[1]);
+    if(method==='GET')return emit({modules:tr.modules.filter(m=>m.courseId===c.id).sort((a,b)=>(a.position||0)-(b.position||0)).map(moduleView)});
+    if(method==='POST'){
+     const m={id:uuid(),courseId:c.id,...validModule(input),quizConfig:null,createdAt:now(),updatedAt:now()};
+     tr.modules.push(m);return send({module:moduleView(m)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='courses'&&seg.length===4&&seg[2]==='modules'){
+    const m=moduleOf(seg[1],seg[3]);
+    if(method==='PATCH'){Object.assign(m,validModule(input,m),{updatedAt:now()});return send({module:moduleView(m)});}
+    if(method==='DELETE'){
+     if(tr.attempts.some(a=>a.moduleId===m.id))throw error('Invalid module');
+     tr.modules.splice(tr.modules.indexOf(m),1);
+     for(const x of tr.enrollments.filter(x=>x.courseId===seg[1]))progressRow(x.id);
+     return send({ok:true});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='courses'&&seg.length===5&&seg[2]==='modules'&&seg[4]==='quiz'){
+    const m=moduleOf(seg[1],seg[3]),course=courseOf(seg[1]);
+    if(method==='GET'){
+     if(m.type!=='certification'||!m.quizConfig)throw error('Not found',404);
+     return emit({module:{id:m.id,courseId:m.courseId,title:m.title,passingScore:m.quizConfig.passingScore??course.minScore,maxAttempts:m.quizConfig.maxAttempts,
+      questions:m.quizConfig.questions.map(q=>({id:q.id,text:q.text,options:q.options,points:q.points}))}});
+    }
+    if(method==='PUT'){
+     if(m.type!=='certification')throw error('Invalid quiz');
+     if(tr.attempts.some(a=>a.moduleId===m.id))throw error('Invalid quiz');
+     m.quizConfig=validQuiz(input);m.updatedAt=now();return send({module:moduleView(m)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='courses'&&seg.length===5&&seg[2]==='modules'&&seg[4]==='attempts'){
+    const m=moduleOf(seg[1],seg[3]),course=courseOf(seg[1]);
+    if(method==='GET'){
+     const q=url.searchParams;
+     return emit({attempts:tr.attempts.filter(a=>a.moduleId===m.id&&(!q.get('employeeId')||a.employeeId===q.get('employeeId'))&&(!q.get('enrollmentId')||a.enrollmentId===q.get('enrollmentId')))});
+    }
+    if(method==='POST'){
+     if(m.type!=='certification'||!m.quizConfig)throw error('Invalid attempt');
+     const enr=enrollmentOf(input?.enrollmentId);
+     if(enr.courseId!==seg[1]||enr.status==='cancelado')throw error('Invalid attempt');
+     if(!input?.answers||typeof input.answers!=='object'||Array.isArray(input.answers))throw error('Invalid attempt');
+     const ids=new Set(m.quizConfig.questions.map(q=>q.id));
+     if(Object.keys(input.answers).some(k=>!ids.has(k)))throw error('Invalid attempt');
+     const answers={};
+     for(const qq of m.quizConfig.questions){
+      const v=input.answers[qq.id];
+      if(v===undefined||v===null)continue;
+      if(!Number.isInteger(v)||v<0||v>=qq.options.length)throw error('Invalid attempt');
+      answers[qq.id]=v;
+     }
+     const count=tr.attempts.filter(a=>a.moduleId===m.id&&a.enrollmentId===enr.id).length;
+     if(m.quizConfig.maxAttempts!==null&&count>=m.quizConfig.maxAttempts)throw error('Invalid attempt');
+     const result=scoreQuiz(m.quizConfig,answers,course.minScore);
+     const attempt={id:uuid(),moduleId:m.id,enrollmentId:enr.id,employeeId:enr.employeeId,answers,score:result.score,passed:result.passed,attemptNumber:count+1,correctCount:result.correctCount,totalQuestions:result.totalQuestions,moduleTitle:m.title,employeeName:tr.employees.find(e=>e.id===enr.employeeId)?.name||'',createdAt:now()};
+     tr.attempts.push(attempt);
+     demoAudit(tenant,'training.attempt_recorded',attempt.id);
+     if(result.passed&&!tr.completions.some(x=>x.enrollmentId===enr.id&&x.moduleId===m.id))tr.completions.push({enrollmentId:enr.id,moduleId:m.id,createdAt:now()});
+     if(enr.status==='inscrito')enr.status='en curso';
+     const progress=progressRow(enr.id);
+     return send({attempt:{id:attempt.id,moduleId:m.id,enrollmentId:enr.id,employeeId:enr.employeeId,score:result.score,passed:result.passed,attemptNumber:count+1,correctCount:result.correctCount,totalQuestions:result.totalQuestions},progress});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='courses'&&seg.length===5&&seg[2]==='modules'&&seg[4]==='complete'&&method==='POST'){
+    const m=moduleOf(seg[1],seg[3]);
+    if(m.type!=='learning'||m.status==='archivado')throw error('Invalid module');
+    const enr=enrollmentOf(input?.enrollmentId);
+    if(enr.courseId!==seg[1]||enr.status==='cancelado')throw error('Invalid module');
+    if(!tr.completions.some(x=>x.enrollmentId===enr.id&&x.moduleId===m.id))tr.completions.push({enrollmentId:enr.id,moduleId:m.id,createdAt:now()});
+    if(enr.status==='inscrito')enr.status='en curso';
+    return send({completed:true,moduleId:m.id,enrollmentId:enr.id,progress:progressRow(enr.id)});
+   }
+   // ---- Sesiones ----
+   if(seg[0]==='sessions'&&seg.length===1){
+    if(method==='GET'){
+     const courseId=url.searchParams.get('courseId');
+     if(courseId)courseOf(courseId);
+     return emit({sessions:tr.sessions.filter(s=>!courseId||s.courseId===courseId).map(s=>({...s,courseName:tr.courses.find(c=>c.id===s.courseId)?.name||'',attendance:tr.attendance.filter(a=>a.sessionId===s.id).length}))});
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid session');
+     const c=courseOf(input.courseId);
+     if(typeof input.startsAt!=='string'||isNaN(Date.parse(input.startsAt))||typeof input.endsAt!=='string'||isNaN(Date.parse(input.endsAt))||Date.parse(input.endsAt)<=Date.parse(input.startsAt))throw error('Invalid session');
+     if(!Number.isInteger(input.capacity)||input.capacity<1||input.capacity>10000)throw error('Invalid session');
+     const s={id:uuid(),courseId:c.id,startsAt:new Date(input.startsAt).toISOString(),endsAt:new Date(input.endsAt).toISOString(),placeOrLink:String(input.placeOrLink||'').slice(0,300),capacity:input.capacity,instructor:String(input.instructor||'').slice(0,160),createdAt:now(),updatedAt:now()};
+     tr.sessions.unshift(s);return send({session:s});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='sessions'&&seg.length===2&&method==='PATCH'){
+    const s=sessionOf(seg[1]);
+    const base={courseId:s.courseId,startsAt:s.startsAt,endsAt:s.endsAt,placeOrLink:s.placeOrLink,capacity:s.capacity,instructor:s.instructor};
+    const next={...base,...input};
+    if(typeof next.startsAt!=='string'||isNaN(Date.parse(next.startsAt))||typeof next.endsAt!=='string'||isNaN(Date.parse(next.endsAt))||Date.parse(next.endsAt)<=Date.parse(next.startsAt))throw error('Invalid session');
+    if(!Number.isInteger(next.capacity)||next.capacity<1||next.capacity>10000)throw error('Invalid session');
+    Object.assign(s,{startsAt:new Date(next.startsAt).toISOString(),endsAt:new Date(next.endsAt).toISOString(),placeOrLink:String(next.placeOrLink||'').slice(0,300),capacity:next.capacity,instructor:String(next.instructor||'').slice(0,160),updatedAt:now()});
+    return send({session:s});
+   }
+   // ---- Empleados ----
+   if(seg[0]==='employees'&&seg.length===1){
+    if(method==='GET')return emit({employees:tr.employees.map(e=>({...e,enrollments:tr.enrollments.filter(x=>x.employeeId===e.id&&x.status!=='cancelado').length}))});
+    if(method==='POST'){
+     const name=String(input?.name||'').trim(),email=String(input?.email||'').trim().toLowerCase();
+     if(name.length<2||name.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)||email.length>200)throw error('Invalid employee');
+     if(tr.employees.some(e=>e.email===email))throw error('Duplicate employee email',409);
+     const e={id:uuid(),name,email,position:String(input.position||'').slice(0,120),area:String(input.area||'').slice(0,120),createdAt:now(),updatedAt:now()};
+     tr.employees.push(e);return send({employee:e});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='employees'&&seg.length===2&&method==='PATCH'){
+    const e=employeeOf(seg[1]);
+    const base={name:e.name,email:e.email,position:e.position,area:e.area};
+    const next={...base,...input};
+    const name=String(next.name||'').trim(),email=String(next.email||'').trim().toLowerCase();
+    if(name.length<2||name.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)||email.length>200)throw error('Invalid employee');
+    if(tr.employees.some(x=>x.id!==e.id&&x.email===email))throw error('Duplicate employee email',409);
+    Object.assign(e,{name,email,position:String(next.position||'').slice(0,120),area:String(next.area||'').slice(0,120),updatedAt:now()});
+    return send({employee:e});
+   }
+   if(seg[0]==='employees'&&seg.length===3&&seg[2]==='history'&&method==='GET'){
+    const e=employeeOf(seg[1]);
+    const enrollments=tr.enrollments.filter(x=>x.employeeId===e.id).map(x=>{const p=progressRow(x.id),v=evaluationOf(x.id);
+     return {id:x.id,courseId:x.courseId,sessionId:x.sessionId,status:x.status,createdAt:x.createdAt,courseName:tr.courses.find(c=>c.id===x.courseId)?.name||'',
+      progress:{completedModules:p.completedModules,totalModules:p.totalModules,percent:p.percent},
+      evaluation:v?{score:v.score,passed:v.passed}:null,certificates:tr.certificates.filter(t=>t.enrollmentId===x.id).length,
+      sessionsAttended:tr.attendance.filter(a=>a.employeeId===e.id&&a.status==='presente'&&tr.sessions.some(s=>s.id===a.sessionId&&s.courseId===x.courseId)).length};});
+    return emit({employee:e,enrollments});
+   }
+   // ---- Inscripciones ----
+   if(seg[0]==='enrollments'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     return emit({enrollments:tr.enrollments.filter(x=>(!q.get('courseId')||x.courseId===q.get('courseId'))&&(!q.get('employeeId')||x.employeeId===q.get('employeeId'))&&(!q.get('status')||x.status===q.get('status'))).map(enrollmentView)});
+    }
+    if(method==='POST'){
+     const emp=employeeOf(input?.employeeId),c=courseOf(input?.courseId);
+     if(input.sessionId){const s=sessionOf(input.sessionId);if(s.courseId!==c.id)throw error('Invalid enrollment');}
+     if(tr.enrollments.some(x=>x.employeeId===emp.id&&x.courseId===c.id&&['inscrito','en curso','completado'].includes(x.status)))throw error('Duplicate enrollment',409);
+     const x={id:uuid(),employeeId:emp.id,courseId:c.id,sessionId:input.sessionId||null,status:'inscrito',createdAt:now(),updatedAt:now()};
+     tr.enrollments.push(x);
+     tr.progress.push({enrollmentId:x.id,completedModules:0,totalModules:0,percent:0,updatedAt:now()});
+     demoAudit(tenant,'training.enrollment_created',x.id);
+     return send({enrollment:{id:x.id,employeeId:emp.id,courseId:c.id,sessionId:x.sessionId,status:'inscrito'}});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='enrollments'&&seg.length===2){
+    const x=enrollmentOf(seg[1]);
+    if(method==='PATCH'){
+     if(!input||Object.keys(input).length!==1||!['inscrito','en curso','completado','cancelado'].includes(input.status))throw error('Invalid enrollment');
+     x.status=input.status;x.updatedAt=now();return send({ok:true,status:input.status});
+    }
+    if(method==='DELETE'){
+     if(x.status==='cancelado')throw error('Not found',404);
+     x.status='cancelado';x.updatedAt=now();return send({ok:true,status:'cancelado'});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Asistencia ----
+   if(seg[0]==='attendance'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     return emit({attendance:tr.attendance.filter(a=>(!q.get('sessionId')||a.sessionId===q.get('sessionId'))&&(!q.get('employeeId')||a.employeeId===q.get('employeeId'))).map(a=>{const s=tr.sessions.find(s=>s.id===a.sessionId);
+      return {...a,employeeName:tr.employees.find(e=>e.id===a.employeeId)?.name||'',sessionStartsAt:s?.startsAt||null,courseName:s?tr.courses.find(c=>c.id===s.courseId)?.name||'':''};})});
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid attendance');
+     const s=sessionOf(input.sessionId),emp=employeeOf(input.employeeId);
+     if(!['presente','ausente','justificado'].includes(input.status))throw error('Invalid attendance');
+     if(!tr.enrollments.some(x=>x.employeeId===emp.id&&x.courseId===s.courseId&&x.status!=='cancelado'))throw error('Invalid attendance');
+     const existing=tr.attendance.find(a=>a.sessionId===s.id&&a.employeeId===emp.id);
+     if(existing){existing.status=input.status;return send({attendance:existing});}
+     const a={id:uuid(),sessionId:s.id,employeeId:emp.id,status:input.status,createdAt:now()};
+     tr.attendance.push(a);return send({attendance:a});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Avance ----
+   if(seg[0]==='progress'&&seg.length===1){
+    if(method==='GET'){
+     const enrId=url.searchParams.get('enrollmentId');
+     if(!enrId)throw error('Invalid progress');
+     return emit(progressDetail(enrId));
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid progress');
+     const enr=enrollmentOf(input.enrollmentId);
+     if(activeModules(enr.courseId).length>0)throw error('Invalid progress');
+     if(!Number.isInteger(input.completedModules)||input.completedModules<0||!Number.isInteger(input.totalModules)||input.totalModules<0||input.completedModules>input.totalModules)throw error('Invalid progress');
+     const percent=input.totalModules?Math.round(100*input.completedModules/input.totalModules):0;
+     let row=tr.progress.find(p=>p.enrollmentId===enr.id);
+     if(!row){row={enrollmentId:enr.id,completedModules:input.completedModules,totalModules:input.totalModules,percent,updatedAt:now()};tr.progress.push(row);}
+     else{row.completedModules=input.completedModules;row.totalModules=input.totalModules;row.percent=percent;row.updatedAt=now();}
+     return send({progress:{enrollmentId:enr.id,completedModules:row.completedModules,totalModules:row.totalModules,percent:row.percent}});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Evaluaciones ----
+   if(seg[0]==='evaluations'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     return emit({evaluations:tr.evaluations.filter(v=>(!q.get('courseId')||v.courseId===q.get('courseId'))&&(!q.get('employeeId')||v.employeeId===q.get('employeeId'))).map(v=>({...v,employeeName:tr.employees.find(e=>e.id===v.employeeId)?.name||'',courseName:tr.courses.find(c=>c.id===v.courseId)?.name||''}))});
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid evaluation');
+     const enr=enrollmentOf(input.enrollmentId),course=courseOf(enr.courseId);
+     const certModules=activeModules(enr.courseId).filter(m=>m.type==='certification'&&m.quizConfig);
+     let score=input.score??null,derived=false;
+     if(certModules.length>0){
+      const bests=[];
+      for(const m of certModules){const best=bestAttempt(enr.id,m.id);if(best===null)throw error('Invalid evaluation');bests.push(best);}
+      score=Math.round(bests.reduce((a,b)=>a+b,0)/bests.length);derived=true;
+     }else if(score===null||!Number.isInteger(score)||score<0||score>100){
+      throw error('Invalid evaluation');
+     }
+     const passed=score>=course.minScore;
+     const existing=evaluationOf(enr.id);
+     if(existing){existing.score=score;existing.passed=passed;existing.evaluatedAt=now();}
+     else tr.evaluations.push({id:uuid(),enrollmentId:enr.id,employeeId:enr.employeeId,courseId:enr.courseId,score,passed,evaluatedAt:now()});
+     return send({evaluation:{enrollmentId:enr.id,employeeId:enr.employeeId,courseId:enr.courseId,score,passed,derived}});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Constancias ----
+   if(seg[0]==='certificates'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     return emit({certificates:tr.certificates.filter(x=>(!q.get('courseId')||x.courseId===q.get('courseId'))&&(!q.get('employeeId')||x.employeeId===q.get('employeeId'))).map(x=>({...x,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',courseName:tr.courses.find(c=>c.id===x.courseId)?.name||''}))});
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid certificate');
+     const enr=enrollmentOf(input.enrollmentId);
+     const certModules=activeModules(enr.courseId).filter(m=>m.type==='certification');
+     for(const m of certModules){if(!m.quizConfig||!hasPassed(enr.id,m.id))throw error('Invalid certificate');}
+     const ev=evaluationOf(enr.id);
+     if(!ev||!ev.passed)throw error('Invalid certificate');
+     const existing=tr.certificates.find(x=>x.enrollmentId===enr.id);
+     if(existing)return send({certificate:existing});
+     const cert={id:uuid(),employeeId:enr.employeeId,courseId:enr.courseId,enrollmentId:enr.id,folio:genFolio(),issuedAt:now()};
+     tr.certificates.push(cert);demoAudit(tenant,'training.certificate_issued',cert.id);
+     return send({certificate:cert});
+    }
+    throw error('Not found',404);
+   }
+   throw error('Not found',404);
   }
   throw error('Not found',404);
  }

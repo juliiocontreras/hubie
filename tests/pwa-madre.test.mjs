@@ -2,12 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { catalog, getSuite, getTool, normalizeTenantInput, resolveEnabledTools, validateRecord } from '../platform/catalog.mjs';
 
-test('la PWA Madre conserva las 30 Tools originales y añade encuesta de satisfacción sin precio inventado', () => {
+test('la PWA Madre conserva las 30 Tools originales y añade encuesta de satisfacción y capacitaciones sin precio inventado', () => {
  assert.equal(catalog.suites.length, 10);
- assert.equal(catalog.tools.length, 31);
- assert.equal(catalog.tools.filter(t=>t.id!=='T021').length,30);
+ assert.equal(catalog.tools.length, 32);
+ assert.equal(catalog.tools.filter(t=>!['T021','T022'].includes(t.id)).length,30);
  assert.equal(getTool('T021').price,null);
  assert.equal(getTool('T021').pricing,'quote');
+ assert.equal(getTool('T022').price,null);
+ assert.equal(getTool('T022').pricing,'quote');
+ assert.equal(getTool('T022').name,'Capacitaciones');
+ assert.equal(getTool('T022').group,'Recursos Humanos');
  assert.equal(getSuite('S001').price, 9900);
  assert.equal(getTool('T015').price, 6100);
  assert.equal(catalog.rules.monthlyPlatformFee, 949); // Cobro Stripe 2026-11-13: $949 MXN/mes parejo, 10 suites.

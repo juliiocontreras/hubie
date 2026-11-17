@@ -4,6 +4,7 @@ import {renderCrm} from './operational-crm.js';
 import {renderAgenda} from './operational-agenda.js';
 import {renderStock} from './operational-stock.js';
 import {renderSurveys} from './operational-surveys.js';
+import {renderTraining} from './operational-training.js';
 import {renderQuotes,renderCatalog,renderExpenses,renderPayments,renderInvoices,renderReports} from './operational-commerce.js';
 import {renderChecklists} from './operational-checklists.js';
 import {renderTasks} from './operational-tasks.js';
@@ -56,7 +57,7 @@ export async function openOperationalModule(ctx){
  search.value='';
  document.getElementById('add-record').hidden=true;
  const key=ctx.tool.id;
- const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:
+ const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:key==='T022'?renderTraining:
   key==='C006'?renderCatalog:key==='C007'?renderExpenses:key==='T013'?renderQuotes:key==='T014'?renderPayments:key==='T015'?renderInvoices:key==='T020'?renderReports:
   key==='C008'?renderDashboard:key==='T003'?renderChecklists:key==='T004'?renderTasks:key==='T007'?renderForms:
   key==='T008'?renderPurchases:key==='T009'?renderSuppliers:key==='T010'?renderWarehouses:key==='T016'?renderCashbox:key==='T017'?renderReceivables:key==='T018'?renderPayables:

@@ -288,6 +288,14 @@
       "price": null,
       "pricing": "quote",
       "included": false
+    },
+    {
+      "id": "T022",
+      "name": "Capacitaciones",
+      "group": "Recursos Humanos",
+      "price": null,
+      "pricing": "quote",
+      "included": false
     }
   ],
   "extras": [

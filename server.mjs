@@ -2,6 +2,7 @@ import { isSameOrigin } from './platform/public-origin.mjs';
 import {configurationStatus} from './platform/setup-health.mjs';
 import {seedQaCompanyIfRequested} from './platform/staging-qa-seed.mjs';
 import {listSurveys,createSurvey,setSurveyStatus,createSurveyInvitation,surveyReport,publicSurvey,submitSurvey} from './platform/satisfaction-store.mjs';
+import {listCourses,createCourse,updateCourse,setCourseStatus,listSessions,createSession as createTrainingSession,updateSession,listEmployees,createEmployee,updateEmployee,listEnrollments,enroll,unenroll,setEnrollmentStatus,markAttendance,listAttendance,listModules,createModule,updateModule,deleteModule,setModuleQuiz,getModuleQuiz,submitAttempt,listAttempts,completeModule,setProgress,getProgress,evaluate,listEvaluations,issueCertificate,listCertificates,dashboard,employeeHistory,courseHistory,exportCsv as exportTrainingCsv} from './platform/training-store.mjs';
 import {sqlStatements,executableStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, databaseConfigured, executeSql } from './database.mjs';
 import { resolveTenant, getTenantTools } from './tenant.mjs';
@@ -96,7 +97,7 @@ async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
  const failures=[];
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql','017_media_limit.sql','018_onboarding.sql','020_notifications.sql','021_tools_p0.sql','022_tools_p1a.sql','023_tools_p1b.sql','024_tools_p2.sql','025_drop_tenant_domains.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql','017_media_limit.sql','018_onboarding.sql','020_notifications.sql','021_tools_p0.sql','022_tools_p1a.sql','023_tools_p1b.sql','024_tools_p2.sql','025_drop_tenant_domains.sql','026_training.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   const statements=executableStatements(sql);
   for(let i=0;i<statements.length;i++){
@@ -151,7 +152,7 @@ async function processApi(req,res,fn,{admin=false,methods=['GET'],maxBytes=16000
   return sendApi(res,req.method==='POST'?201:200,result);
  }catch(error){
   const message=error?.message||'';
-  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:['Not found','Client not found','Deal not found','Template not found','Evidence not found','Assignee not found'].includes(message)?404:['Schedule conflict','Duplicate SKU','Duplicate variant SKU','Insufficient stock','Duplicate client email','Duplicate relation','Relation mismatch','Duplicate invitation','Duplicate loyalty earn','Duplicate lot','Duplicate kanban card','Duplicate commission rule','Duplicate commission entry','Insufficient loyalty points','Insufficient lot stock'].includes(message)?409:message==='Invitation expired'||message==='Invitation already used'?410:message==='Token expired'||message==='Token consumed'?400:message==='Unsupported media type'?415:message==='Payload too large'?413:message==='Storage quota exceeded'?409:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
+  const status=message==='Unauthorized'?401:message==='Forbidden'||message==='Tool disabled'||message==='Authentication required'?403:['Not found','Client not found','Deal not found','Template not found','Evidence not found','Assignee not found'].includes(message)?404:['Schedule conflict','Duplicate SKU','Duplicate variant SKU','Insufficient stock','Duplicate client email','Duplicate employee email','Duplicate enrollment','Duplicate attendance','Duplicate relation','Relation mismatch','Duplicate invitation','Duplicate loyalty earn','Duplicate lot','Duplicate kanban card','Duplicate commission rule','Duplicate commission entry','Insufficient loyalty points','Insufficient lot stock'].includes(message)?409:message==='Invitation expired'||message==='Invitation already used'?410:message==='Token expired'||message==='Token consumed'?400:message==='Unsupported media type'?415:message==='Payload too large'?413:message==='Storage quota exceeded'?409:message.startsWith('Invalid')||message==='Payload too large'||message==='Read only tool'?400:503;
   return sendApi(res,status,{error:status===503?'Operación temporalmente no disponible':message});
  }
 }
@@ -457,6 +458,99 @@ createServer(async(req,res)=>{
       if(id)return setSurveyStatus(token,slug,id,body);
       return req.method==='GET'?listSurveys(token,slug):createSurvey(token,slug,body);
     },{methods,maxBytes:12000});
+  }
+  // T022 Capacitaciones: panel RH. Exportación CSV fuera de processApi
+  // (respuesta text/csv, como reportsExport); el resto va por processApi.
+  const trainingExport=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/training\/export$/);
+  if(trainingExport){
+    if(req.method!=='GET'){res.writeHead(405,{'allow':'GET'});res.end();return;}
+    if(!configurationStatus().readyForLive||!(await migrationsReady))return sendApi(res,503,{error:'La base de datos no está inicializada'});
+    try{
+      const token=readSessionCookie(req.headers.cookie);
+      const kind=new URL(req.url,'http://localhost').searchParams.get('kind');
+      const {filename,csv}=await exportTrainingCsv(token,trainingExport[1],kind);
+      res.writeHead(200,{'content-type':'text/csv; charset=utf-8','cache-control':'no-store',
+        'content-disposition':'attachment; filename="'+filename+'"','x-content-type-options':'nosniff'});
+      res.end(csv);return;
+    }catch(error){
+      const msg=error?.message||'';
+      return sendApi(res,msg==='Unauthorized'?401:msg==='Forbidden'||msg==='Tool disabled'?403:msg==='Not found'?404:503,
+        {error:msg==='Not found'?'Exportación no disponible':'No se pudo exportar'});
+    }
+  }
+  const trainingPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/training(?:\/(.*))?$/);
+  if(trainingPath){
+    const slug=trainingPath[1];
+    const parts=(trainingPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>dashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='courses'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listCourses(token,slug,{status:query.get('status')}):createCourse(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='courses'&&parts.length===2){
+      handler=({token,body})=>Object.keys(body||{}).length===1&&'status' in (body||{})?setCourseStatus(token,slug,parts[1],body):updateCourse(token,slug,parts[1],body);
+      methods=['PATCH'];
+    }
+    else if(parts[0]==='courses'&&parts[2]==='history'&&parts.length===3){handler=({token})=>courseHistory(token,slug,parts[1]);methods=['GET'];}
+    else if(parts[0]==='courses'&&parts[2]==='modules'&&parts.length===3){
+      handler=({token,body})=>req.method==='GET'?listModules(token,slug,parts[1]):createModule(token,slug,parts[1],body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='courses'&&parts[2]==='modules'&&parts.length===4){
+      handler=({token,body})=>req.method==='DELETE'?deleteModule(token,slug,parts[1],parts[3]):updateModule(token,slug,parts[1],parts[3],body);
+      methods=['PATCH','DELETE'];
+    }
+    else if(parts[0]==='courses'&&parts[2]==='modules'&&parts[4]==='quiz'&&parts.length===5){
+      handler=({token,body})=>req.method==='PUT'?setModuleQuiz(token,slug,parts[1],parts[3],body):getModuleQuiz(token,slug,parts[1],parts[3]);
+      methods=['GET','PUT'];
+    }
+    else if(parts[0]==='courses'&&parts[2]==='modules'&&parts[4]==='attempts'&&parts.length===5){
+      handler=({token,body})=>req.method==='POST'?submitAttempt(token,slug,parts[1],parts[3],body):listAttempts(token,slug,{moduleId:parts[3],employeeId:query.get('employeeId'),enrollmentId:query.get('enrollmentId')});
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='courses'&&parts[2]==='modules'&&parts[4]==='complete'&&parts.length===5){
+      handler=({token,body})=>completeModule(token,slug,parts[1],parts[3],body);
+      methods=['POST'];
+    }
+    else if(parts[0]==='sessions'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listSessions(token,slug,{courseId:query.get('courseId')}):createTrainingSession(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='sessions'&&parts.length===2){handler=({token,body})=>updateSession(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='employees'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listEmployees(token,slug):createEmployee(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='employees'&&parts.length===2){handler=({token,body})=>updateEmployee(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='employees'&&parts[2]==='history'&&parts.length===3){handler=({token})=>employeeHistory(token,slug,parts[1]);methods=['GET'];}
+    else if(parts[0]==='enrollments'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listEnrollments(token,slug,{courseId:query.get('courseId'),employeeId:query.get('employeeId'),status:query.get('status')}):enroll(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='enrollments'&&parts.length===2){
+      handler=({token,body})=>req.method==='DELETE'?unenroll(token,slug,parts[1]):setEnrollmentStatus(token,slug,parts[1],body);
+      methods=['PATCH','DELETE'];
+    }
+    else if(parts[0]==='attendance'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listAttendance(token,slug,{sessionId:query.get('sessionId'),employeeId:query.get('employeeId')}):markAttendance(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='progress'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?getProgress(token,slug,query.get('enrollmentId')):setProgress(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='evaluations'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listEvaluations(token,slug,{courseId:query.get('courseId'),employeeId:query.get('employeeId')}):evaluate(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='certificates'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listCertificates(token,slug,{courseId:query.get('courseId'),employeeId:query.get('employeeId')}):issueCertificate(token,slug,body);
+      methods=['GET','POST'];
+    }
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
   }
   const surveyPublic=pathname.match(/^\/api\/public\/surveys\/([A-Za-z0-9_-]{32})$/);
   if(surveyPublic){
@@ -1069,7 +1163,7 @@ createServer(async(req,res)=>{
     const raw=await readFile(file);
     const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded==='/auth/configuracion.html'||(decoded.startsWith('/app/')||decoded.startsWith('/encuesta/'));
     const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
-    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js','/assets/operational-surveys.js','/assets/satisfaction-public.js','/assets/invitations-ui.js','/assets/audit-ui.js','/assets/invitation-accept.js'].includes(decoded);
+    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js','/assets/operational-surveys.js','/assets/operational-training.js','/assets/satisfaction-public.js','/assets/invitations-ui.js','/assets/audit-ui.js','/assets/invitation-accept.js'].includes(decoded);
     res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream',
       'cache-control':appShell||isPwaAsset?'no-store':'public, max-age=300',
       'x-content-type-options':'nosniff'});

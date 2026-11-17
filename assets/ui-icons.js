@@ -31,13 +31,14 @@ const paths={
  receipt:['path:M4 2h16v20l-4-2-4 2-4-2-4 2zM8 7h8M8 11h8M8 15h5']
 };
 paths.survey=['rect:4 3 16 18 2','path:M8 8h8M8 12h3M8 16h3','path:M14 14l2 2 4-5'];
+paths.academy=['path:M2 9l10-5 10 5-10 5z','path:M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5','path:M22 9v5'];
 const toolIcons={
  C001:'users',C002:'target',C003:'folder',C004:'calendar',C005:'box',C006:'grid',C007:'money',
  C008:'chart',C009:'shield',C010:'bell',
  T001:'briefcase',T002:'clipboard',T003:'file',T004:'list',T005:'receipt',
  T006:'chart',T007:'truck',T008:'calendar',T009:'users',T010:'money',
  T011:'box',T012:'file',T013:'receipt',T014:'briefcase',T015:'calendar',
- T016:'chart',T017:'clipboard',T018:'folder',T019:'settings',T020:'spark',T021:'survey'
+ T016:'chart',T017:'clipboard',T018:'folder',T019:'settings',T020:'spark',T021:'survey',T022:'academy'
 };
 export function icon(name,size=18){
  const svg=document.createElementNS(ns,'svg');
@@ -66,7 +67,7 @@ const toolTints={
  T006:'expedientes',T007:'catalogos',T008:'inventario',T009:'vendedores',
  T010:'inventario',T011:'inventario',T012:'bots',T013:'cobros',T014:'cobros',
  T015:'gastos',T016:'gastos',T017:'cobros',T018:'gastos',T019:'vendedores',
- T020:'reportes',T021:'bots'
+ T020:'reportes',T021:'bots',T022:'crm'
 };
 export const toolTint=id=>toolTints[id]||'crm';
 export function decorateSidebar(sidebar){

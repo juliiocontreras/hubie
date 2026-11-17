@@ -48,6 +48,7 @@
 | T018 | Cuentas por pagar | Registro genérico | P1 | Proveedores/compra, vencimientos, abonos y aprobaciones |
 | T019 | Comisiones | Registro genérico | P2 | Reglas de comisión ligadas a cierres validados |
 | T020 | Reportes avanzados | Registro genérico | P1 | Consultas, filtros, reportes y exportación sobre datos reales |
+| T022 | Capacitaciones | Operativa (2026-11-16, fuera del alcance v5) | P2 | Cursos con módulos y quizzes, sesiones, empleados, inscripciones, asistencia, avance derivado, evaluaciones, constancias con folio CAP-AAAA-XXXXXX, tablero RH y exportación CSV; avisos solo en la app, sin correo; constancia sin PDF |
 
 ## Rediseño requerido de C003 Expedientes
 

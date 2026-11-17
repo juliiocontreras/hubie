@@ -25,7 +25,7 @@ const emptyCopyFor=id=>({
  T018:{title:'Aún no hay cuentas por pagar',hint:'Registra la primera con proveedor, total y vencimiento.',cta:'＋ Nueva cuenta por pagar'},
 }[id]||{title:'Aún no hay registros en '+ctx.tool.name,hint:'Crea el primero para empezar.',cta:'＋ Nuevo registro'});
 function render(){
- if(!ctx||['C001','C002','C003','C004','C005','C006','C007','T001','T002','T005','T006','T008','T009','T010','T011','T012','T013','T014','T015','T016','T017','T018','T019','T020','T021'].includes(ctx.tool.id))return;
+ if(!ctx||['C001','C002','C003','C004','C005','C006','C007','T001','T002','T005','T006','T008','T009','T010','T011','T012','T013','T014','T015','T016','T017','T018','T019','T020','T021','T022'].includes(ctx.tool.id))return;
  const host=$('record-list');host.replaceChildren();
  const q=$('record-search').value.toLowerCase().trim();
  const shown=records.filter(r=>(r.title+' '+Object.values(r.fields).join(' ')).toLowerCase().includes(q));
@@ -119,7 +119,7 @@ export async function openRecords(context){
  closeOperationalModule();
  ctx={...context,attachmentsPanel:context.tool.id==='T021'?null:setupAttachments(context)};
  if($('record-dialog').open)$('record-dialog').close();
- if(['C001','C002','C003','C004','C005','C006','C007','C008','T001','T002','T003','T004','T005','T006','T007','T008','T009','T010','T011','T012','T013','T014','T015','T016','T017','T018','T019','T020','T021'].includes(ctx.tool.id))return openOperationalModule(ctx);
+ if(['C001','C002','C003','C004','C005','C006','C007','C008','T001','T002','T003','T004','T005','T006','T007','T008','T009','T010','T011','T012','T013','T014','T015','T016','T017','T018','T019','T020','T021','T022'].includes(ctx.tool.id))return openOperationalModule(ctx);
  wire();editing=null;records=[];
  $('record-search').value='';
  $('add-record').textContent=newLabelFor(ctx.tool.id);
