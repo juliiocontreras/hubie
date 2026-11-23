@@ -97,7 +97,7 @@ async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
  const failures=[];
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql','017_media_limit.sql','018_onboarding.sql','020_notifications.sql','021_tools_p0.sql','022_tools_p1a.sql','023_tools_p1b.sql','024_tools_p2.sql','025_drop_tenant_domains.sql','026_training.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql','017_media_limit.sql','018_onboarding.sql','020_notifications.sql','021_tools_p0.sql','022_tools_p1a.sql','023_tools_p1b.sql','024_tools_p2.sql','025_drop_tenant_domains.sql','026_training.sql','027_catalog_columns.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   const statements=executableStatements(sql);
   for(let i=0;i<statements.length;i++){
