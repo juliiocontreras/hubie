@@ -284,15 +284,16 @@ export async function enroll(token,slug,input,deps){
   const s=await sessionFor(db,tenant.id,data.sessionId);
   if(s.courseId!==data.courseId)throw Error('Invalid enrollment');
  }
- const dup=rows(await db.executeSql("SELECT id FROM tenant_training_enrollments WHERE organization_id=? AND employee_id=? AND course_id=? AND status IN ('inscrito','en curso','completado') LIMIT 1",[tenant.id,data.employeeId,data.courseId]))[0];
- if(dup)throw Error('Duplicate enrollment');
  const id=randomUUID();
- await db.executeBatch([
-  {sql:'INSERT INTO tenant_training_enrollments(organization_id,id,employee_id,course_id,session_id,created_by) VALUES(?,?,?,?,?,?)',
-   args:[tenant.id,id,data.employeeId,data.courseId,data.sessionId,session.userId]},
-  {sql:'INSERT INTO tenant_training_progress(organization_id,id,enrollment_id,completed_modules,total_modules,percent) VALUES(?,?,?,?,?,?)',
-   args:[tenant.id,randomUUID(),id,0,0,0]}
- ]);
+ // La inscripción es atómica: el INSERT solo inserta si no existe otra
+ // inscripción activa del mismo empleado en el curso. Dos inscripciones
+ // simultáneas ya no pueden duplicar (antes: SELECT de duplicado y luego
+ // INSERT por separado; la segunda pasaba el control antes del INSERT).
+ const inserted=await db.executeSql('INSERT INTO tenant_training_enrollments(organization_id,id,employee_id,course_id,session_id,created_by) SELECT ?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM tenant_training_enrollments WHERE organization_id=? AND employee_id=? AND course_id=? AND status IN (\'inscrito\',\'en curso\',\'completado\'))',
+  [tenant.id,id,data.employeeId,data.courseId,data.sessionId,session.userId,tenant.id,data.employeeId,data.courseId]);
+ if(!changed(inserted))throw Error('Duplicate enrollment');
+ await db.executeSql('INSERT INTO tenant_training_progress(organization_id,id,enrollment_id,completed_modules,total_modules,percent) VALUES(?,?,?,?,?,?)',
+  [tenant.id,randomUUID(),id,0,0,0]);
  // El avance es derivado: al inscribir, el total ya debe reflejar los
  // módulos activos del curso (si no, el inscrito ve 0/0 hasta el primer
  // módulo completado o quiz aprobado).
@@ -427,13 +428,16 @@ export async function submitAttempt(token,slug,courseId,moduleId,input,deps){
  const course=await courseFor(db,tenant.id,courseId);
  const answers=normalizeQuizAnswers(m.quizConfig,input.answers);
  const result=scoreQuiz(m.quizConfig,answers,course.minScore);
- const count=num(rows(await db.executeSql('SELECT COUNT(*) FROM tenant_training_quiz_attempts WHERE organization_id=? AND module_id=? AND enrollment_id=?',[tenant.id,moduleId,enr.id]))[0]?.[0]);
- if(m.quizConfig.maxAttempts!==null&&count>=m.quizConfig.maxAttempts)throw Error('Invalid attempt');
- const attemptNumber=count+1,attemptId=randomUUID();
- const statements=[
-  {sql:'INSERT INTO tenant_training_quiz_attempts(organization_id,id,module_id,employee_id,enrollment_id,answers_json,score,passed,attempt_number) VALUES(?,?,?,?,?,?,?,?,?)',
-   args:[tenant.id,attemptId,moduleId,enr.employeeId,enr.id,JSON.stringify(answers),result.score,result.passed?1:0,attemptNumber]}
- ];
+ const attemptId=randomUUID();
+ // El límite de intentos se hace cumplir en la misma sentencia que inserta
+ // (INSERT ... SELECT ... WHERE count < maxAttempts): dos envíos simultáneos
+ // ya no pueden pasarse del máximo (antes: COUNT y luego INSERT por separado).
+ // Con maxAttempts null el WHERE queda abierto (? IS NULL).
+ const inserted=await db.executeSql('INSERT INTO tenant_training_quiz_attempts(organization_id,id,module_id,employee_id,enrollment_id,answers_json,score,passed,attempt_number) SELECT ?,?,?,?,?,?,?,?,(SELECT COUNT(*) FROM tenant_training_quiz_attempts WHERE organization_id=? AND module_id=? AND enrollment_id=?)+1 WHERE ? IS NULL OR (SELECT COUNT(*) FROM tenant_training_quiz_attempts WHERE organization_id=? AND module_id=? AND enrollment_id=?) < ?',
+  [tenant.id,attemptId,moduleId,enr.employeeId,enr.id,JSON.stringify(answers),result.score,result.passed?1:0,tenant.id,moduleId,enr.id,m.quizConfig.maxAttempts,tenant.id,moduleId,enr.id,m.quizConfig.maxAttempts]);
+ if(!changed(inserted))throw Error('Invalid attempt');
+ const attemptNumber=num(rows(await db.executeSql('SELECT attempt_number FROM tenant_training_quiz_attempts WHERE organization_id=? AND id=?',[tenant.id,attemptId]))[0]?.[0]);
+ const statements=[];
  if(result.passed){
   statements.push({sql:`INSERT INTO tenant_training_module_completions(organization_id,id,enrollment_id,module_id)
    SELECT ?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM tenant_training_module_completions WHERE organization_id=? AND enrollment_id=? AND module_id=?)`,
@@ -448,7 +452,20 @@ export async function submitAttempt(token,slug,courseId,moduleId,input,deps){
 }
 export async function listAttempts(token,slug,{moduleId=null,employeeId=null,enrollmentId=null}={},deps){
  const db=depsOf(deps);
- const {tenant}=await db.authorize(token,slug,'T022');
+ const {tenant,session}=await db.authorize(token,slug,'T022');
+ // Visibilidad de respuestas: dueño/admin ven todas; el resto solo ve las
+ // respuestas de sus propios intentos (se resuelve el empleado por el correo
+ // del usuario). El puntaje y el aprobado/reprobado sí se listan para todos
+ // con lectura de T022 (seguimiento de RH).
+ const canSeeAll=['owner','admin'].includes(session?.role);
+ let ownEmployeeId=null;
+ if(!canSeeAll&&session?.userId){
+  const emailRow=rows(await db.executeSql('SELECT email FROM users WHERE id=?',[session.userId]))[0];
+  if(emailRow?.[0]){
+   const emp=rows(await db.executeSql('SELECT id FROM tenant_training_employees WHERE organization_id=? AND email=?',[tenant.id,emailRow[0]]))[0];
+   ownEmployeeId=emp?.[0]||null;
+  }
+ }
  const conds=['a.organization_id=?'],args=[tenant.id];
  if(moduleId){validId(moduleId,'Invalid module');conds.push('a.module_id=?');args.push(moduleId);}
  if(employeeId){await employeeFor(db,tenant.id,employeeId);conds.push('a.employee_id=?');args.push(employeeId);}
@@ -458,7 +475,7 @@ export async function listAttempts(token,slug,{moduleId=null,employeeId=null,enr
   JOIN tenant_training_modules m ON m.organization_id=a.organization_id AND m.id=a.module_id
   JOIN tenant_training_employees e ON e.organization_id=a.organization_id AND e.id=a.employee_id
   WHERE ${conds.join(' AND ')} ORDER BY a.created_at DESC LIMIT 200`,args);
- return {attempts:rows(r).map(x=>({id:x[0],moduleId:x[1],employeeId:x[2],enrollmentId:x[3],answers:JSON.parse(x[4]),score:num(x[5]),passed:x[6]===1,attemptNumber:num(x[7]),createdAt:x[8],moduleTitle:x[9],employeeName:x[10]}))};
+ return {attempts:rows(r).map(x=>({id:x[0],moduleId:x[1],employeeId:x[2],enrollmentId:x[3],answers:(canSeeAll||x[2]===ownEmployeeId)?JSON.parse(x[4]):null,score:num(x[5]),passed:x[6]===1,attemptNumber:num(x[7]),createdAt:x[8],moduleTitle:x[9],employeeName:x[10]}))};
 }
 // Marcar un módulo 'learning' como completado por el empleado inscrito.
 export async function completeModule(token,slug,courseId,moduleId,input,deps){

@@ -164,6 +164,58 @@ test('módulos y quizzes: quiz solo en certificación, preguntas sin respuesta c
  assert.equal((await listModules(token,slug,course.id,deps)).modules.length,1);
 });
 
+test('quizzes S1: las respuestas solo las ven dueño/admin y el propio empleado',async()=>{
+ const {fake}=setup();
+ const depsOwner=trainingDeps(fake);
+ const {course,cert}=await fullSetup(depsOwner);
+ const other=(await createEmployee(token,slug,employeeInput({name:'Carlos Ruiz',email:'otro@empresa.mx'}),depsOwner)).employee;
+ const memberEmp=(await createEmployee(token,slug,employeeInput({name:'Miembro Demo',email:'member@demo.test'}),depsOwner)).employee;
+ const enrMember=(await enroll(token,slug,{employeeId:memberEmp.id,courseId:course.id},depsOwner)).enrollment;
+ const enrOther=(await enroll(token,slug,{employeeId:other.id,courseId:course.id},depsOwner)).enrollment;
+ await submitAttempt(token,slug,course.id,cert.id,{enrollmentId:enrMember.id,answers:{q1:0,q2:1}},depsOwner);
+ await submitAttempt(token,slug,course.id,cert.id,{enrollmentId:enrOther.id,answers:{q1:0,q2:0}},depsOwner);
+ // Dueño: ve todas las respuestas.
+ const asOwner=(await listAttempts(token,slug,{moduleId:cert.id},depsOwner)).attempts;
+ assert.equal(asOwner.length,2);
+ assert.ok(asOwner.every(a=>a.answers&&typeof a.answers==='object'));
+ // Viewer: ve puntaje y estado, pero las respuestas en null.
+ const depsViewer=trainingDeps(fake,{userId:fake.viewerId,role:'viewer'});
+ const asViewer=(await listAttempts(token,slug,{moduleId:cert.id},depsViewer)).attempts;
+ assert.equal(asViewer.length,2);
+ assert.ok(asViewer.every(a=>a.answers===null));
+ assert.ok(asViewer.every(a=>typeof a.score==='number'));
+ // El propio empleado (miembro): solo ve sus respuestas.
+ const depsMember=trainingDeps(fake,{userId:fake.memberId,role:'member'});
+ const asMember=(await listAttempts(token,slug,{moduleId:cert.id},depsMember)).attempts;
+ assert.equal(asMember.find(a=>a.employeeId===memberEmp.id).answers?.q1,0);
+ assert.equal(asMember.find(a=>a.employeeId===other.id).answers,null);
+});
+
+test('quizzes S2: el límite de intentos se hace cumplir en el INSERT y el número es secuencial',async()=>{
+ const {deps}=setup();
+ const {course,cert,enrollment}=await fullSetup(deps);
+ const first=await submitAttempt(token,slug,course.id,cert.id,{enrollmentId:enrollment.id,answers:{q1:0,q2:0}},deps);
+ assert.equal(first.attempt.attemptNumber,1);
+ const second=await submitAttempt(token,slug,course.id,cert.id,{enrollmentId:enrollment.id,answers:{q1:0,q2:1}},deps);
+ assert.equal(second.attempt.attemptNumber,2);
+ await assert.rejects(()=>submitAttempt(token,slug,course.id,cert.id,{enrollmentId:enrollment.id,answers:{q1:0,q2:1}},deps),/Invalid attempt/);
+ assert.equal((await listAttempts(token,slug,{moduleId:cert.id},deps)).attempts.length,2);
+ // Sin límite (maxAttempts null): no se bloquea y el número sigue creciendo.
+ const cert2=(await createModule(token,slug,course.id,{type:'certification',title:'Examen 2',position:3},deps)).module;
+ await setModuleQuiz(token,slug,course.id,cert2.id,quizConfig({maxAttempts:null}),deps);
+ for(let i=1;i<=3;i++){
+  const a=await submitAttempt(token,slug,course.id,cert2.id,{enrollmentId:enrollment.id,answers:{q1:0,q2:1}},deps);
+  assert.equal(a.attempt.attemptNumber,i);
+ }
+});
+
+test('inscripciones S2: el duplicado no deja inscripción extra',async()=>{
+ const {deps}=setup();
+ const {course,employee}=await fullSetup(deps);
+ await assert.rejects(()=>enroll(token,slug,{employeeId:employee.id,courseId:course.id},deps),/Duplicate enrollment/);
+ assert.equal((await listEnrollments(token,slug,{},deps)).enrollments.length,1);
+});
+
 test('avance: derivado de módulos, completar learning, manual solo sin módulos',async()=>{
  const {deps}=setup();
  const {course,employee,learning,cert,enrollment}=await fullSetup(deps);

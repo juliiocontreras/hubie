@@ -10,6 +10,15 @@ export function createTrainingFakeDb(seed={}){
  const orgA=seed.orgA||'11111111-1111-4111-8111-111111111111';
  const orgB=seed.orgB||'22222222-2222-4222-8222-222222222222';
  const ownerId=seed.ownerId||'33333333-3333-4333-8333-333333333333';
+ // Usuarios del tenant para probar visibilidad por rol (S1): el dueño, un
+ // viewer y un miembro cuyo correo coincide con un empleado.
+ const viewerId=seed.viewerId||'44444444-4444-4444-8444-444444444444';
+ const memberId=seed.memberId||'55555555-5555-4555-8555-555555555555';
+ const users=[
+  {id:ownerId,email:'owner@demo.test'},
+  {id:viewerId,email:'viewer@demo.test'},
+  {id:memberId,email:'member@demo.test'}
+ ];
  let tick=0;
  const now=()=>new Date(Date.parse('2026-11-16T00:00:00.000Z')+(++tick)*1000).toISOString();
  const tables={
@@ -43,6 +52,12 @@ export function createTrainingFakeDb(seed={}){
    return ok([],1);
   }
   // --- lecturas por id ---
+  if(s.startsWith('SELECT email FROM users WHERE id=?')){
+   const u=users.find(x=>x.id===args[0]);return ok(u?[[u.email]]:[]);
+  }
+  if(s.startsWith('SELECT id FROM tenant_training_employees WHERE organization_id=? AND email=?')){
+   const e=tables.employees.find(x=>x.organization_id===args[0]&&x.email===args[1]);return ok(e?[[e.id]]:[]);
+  }
   if(s.startsWith('SELECT id,name,description,duration_hours,modality,instructor,materials,valid_until,status,min_score,category,created_at,updated_at FROM tenant_training_courses WHERE')){
    const c=courseById(args[0],args[1]);return ok(c?[courseView(c)]:[]);
   }
@@ -185,7 +200,10 @@ export function createTrainingFakeDb(seed={}){
    const found=tables.enrollments.find(n=>n.organization_id===args[0]&&n.employee_id===args[1]&&n.course_id===args[2]&&['inscrito','en curso','completado'].includes(n.status));
    return ok(found?[[found.id]]:[]);
   }
-  if(s.startsWith('INSERT INTO tenant_training_enrollments(')){
+  if(s.startsWith('INSERT INTO tenant_training_enrollments(organization_id,id,employee_id,course_id,session_id,created_by) SELECT')){
+   // Inserción condicional (S2): solo inserta si no hay inscripción activa.
+   const dup=tables.enrollments.some(n=>n.organization_id===args[0]&&n.employee_id===args[2]&&n.course_id===args[3]&&['inscrito','en curso','completado'].includes(n.status));
+   if(dup)return ok([],0);
    tables.enrollments.push({organization_id:args[0],id:args[1],employee_id:args[2],course_id:args[3],session_id:args[4],status:'inscrito',created_by:args[5],created_at:now(),updated_at:now()});
    return ok([],1);
   }
@@ -264,10 +282,20 @@ export function createTrainingFakeDb(seed={}){
    if(m&&m.course_id===args[2]){m.quiz_config_json=args[0];m.updated_at=now();}
    return ok([],m&&m.course_id===args[2]?1:0);
   }
-  if(s.startsWith('INSERT INTO tenant_training_quiz_attempts(')){
+  if(s.startsWith('INSERT INTO tenant_training_quiz_attempts(organization_id,id,module_id,employee_id,enrollment_id,answers_json,score,passed,attempt_number) SELECT')){
+   // Inserción condicional (S2): solo inserta si los intentos hechos son
+   // menos que maxAttempts (null = sin límite). args: 0-7 valores, 8-10
+   // conteo, 11 maxAttempts, 12-14 conteo, 15 maxAttempts.
+   const count=tables.attempts.filter(a=>a.organization_id===args[0]&&a.module_id===args[2]&&a.enrollment_id===args[4]).length;
+   const max=args[11];
+   if(max!==null&&max!==undefined&&count>=max)return ok([],0);
    tables.attempts.push({organization_id:args[0],id:args[1],module_id:args[2],employee_id:args[3],enrollment_id:args[4],
-    answers_json:args[5],score:args[6],passed:args[7],attempt_number:args[8],created_at:now()});
+    answers_json:args[5],score:args[6],passed:args[7],attempt_number:count+1,created_at:now()});
    return ok([],1);
+  }
+  if(s.startsWith('SELECT attempt_number FROM tenant_training_quiz_attempts WHERE organization_id=? AND id=?')){
+   const a=tables.attempts.find(x=>x.organization_id===args[0]&&x.id===args[1]);
+   return ok(a?[[a.attempt_number]]:[]);
   }
   if(s.startsWith('INSERT INTO tenant_training_module_completions(organization_id,id,enrollment_id,module_id) SELECT')){
    if(tables.completions.some(c=>c.organization_id===args[0]&&c.enrollment_id===args[2]&&c.module_id===args[3]))return ok([],0);
@@ -405,15 +433,15 @@ export function createTrainingFakeDb(seed={}){
   for(const command of commands)results.push(await executeSql(command.sql,command.args||[]));
   return results;
  }
- return {tables,orgA,orgB,ownerId,executeSql,executeBatch};
+ return {tables,orgA,orgB,ownerId,viewerId,memberId,users,executeSql,executeBatch};
 }
-export function trainingDeps(fake){
+export function trainingDeps(fake,session={userId:fake.ownerId,role:'owner'}){
  return {executeSql:fake.executeSql,executeBatch:fake.executeBatch,
   authorize:async(token,slug,toolId)=>{
    if(token==='bad-token')throw Error('Unauthorized');
    if(toolId!=='T022')throw Error('Tool disabled');
    const orgId=slug==='demo'?fake.orgA:slug==='demo-b'?fake.orgB:null;
    if(!orgId)throw Error('Not found');
-   return {tenant:{id:orgId},session:{userId:fake.ownerId}};
+   return {tenant:{id:orgId},session};
   }};
 }
