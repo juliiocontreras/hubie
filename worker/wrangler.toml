@@ -10,6 +10,7 @@ compatibility_flags = ["nodejs_compat"]
 # (pendiente de Julio; los valores Google de staging son placeholders).
 [vars]
 TURSO_DATABASE_URL = "libsql://hubie-test-juliiocontreras.aws-us-east-2.turso.io"
+RESEND_FROM = "Hubie <invitaciones@tapmarketing.site>"
 HUBIE_PUBLIC_ORIGIN = "https://hubie-api.juliiocontreras.workers.dev"
 HUBIE_AUTH_ENABLED = "true"
 HUBIE_INITIAL_ADMIN_EMAIL = "juliiocontreras@gmail.com"
