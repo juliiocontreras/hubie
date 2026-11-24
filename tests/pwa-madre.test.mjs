@@ -2,16 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { catalog, getSuite, getTool, normalizeTenantInput, resolveEnabledTools, validateRecord } from '../platform/catalog.mjs';
 
-test('la PWA Madre conserva las 30 Tools originales y añade encuesta de satisfacción y capacitaciones sin precio inventado', () => {
+test('la PWA Madre conserva las 30 Tools originales y añade encuesta, capacitaciones y las 9 tools Odoo sin precio inventado', () => {
  assert.equal(catalog.suites.length, 10);
- assert.equal(catalog.tools.length, 32);
- assert.equal(catalog.tools.filter(t=>!['T021','T022'].includes(t.id)).length,30);
+ assert.equal(catalog.tools.length, 41);
+ assert.equal(catalog.tools.filter(t=>!['T021','T022','T023','T024','T025','T026','T027','T028','T029','T030','T031'].includes(t.id)).length,30);
  assert.equal(getTool('T021').price,null);
  assert.equal(getTool('T021').pricing,'quote');
  assert.equal(getTool('T022').price,null);
  assert.equal(getTool('T022').pricing,'quote');
  assert.equal(getTool('T022').name,'Capacitaciones');
  assert.equal(getTool('T022').group,'Recursos Humanos');
+ for(const [id,name,group] of [['T023','Contabilidad','Finanzas'],['T024','Pedidos de venta','Finanzas'],['T025','Proyectos','Operación'],['T026','Empleados','Recursos Humanos'],['T027','Asistencia y vacaciones','Recursos Humanos'],['T028','Mesa de ayuda','Operación'],['T029','Marketing','Marketing'],['T030','Punto de venta','Finanzas'],['T031','Nómina','Recursos Humanos']]){
+  assert.equal(getTool(id).price,null);
+  assert.equal(getTool(id).pricing,'quote');
+  assert.equal(getTool(id).name,name);
+  assert.equal(getTool(id).group,group);
+ }
  assert.equal(getSuite('S001').price, 9900);
  assert.equal(getTool('T015').price, 6100);
  assert.equal(catalog.rules.monthlyPlatformFee, 949); // Cobro Stripe 2026-11-13: $949 MXN/mes parejo, 10 suites.

@@ -50,7 +50,7 @@ test('demo-backend: guía, replay y datos de ejemplo con el mismo contrato que e
  const base = '/api/app/' + slug + '/onboarding';
  const fresh = await demo.request(base);
  assert.equal(fresh.total, 6);
- assert.equal(fresh.doneCount, 1); // el demo ya trae 1 cliente
+ assert.equal(fresh.doneCount, 2); // el demo ya trae 1 cliente y productos de muestra en el catálogo
  assert.equal(fresh.steps.find(s => s.key === 'first-client').done, true);
  assert.equal(fresh.steps.find(s => s.key === 'first-client').auto, true);
  assert.equal(fresh.steps.find(s => s.key === 'profile').done, false);
@@ -79,6 +79,6 @@ test('demo-backend: guía, replay y datos de ejemplo con el mismo contrato que e
  assert.equal(cleared.removed, 3);
  const afterClear = await demo.request(base);
  assert.equal(afterClear.demoSeeded, false);
- assert.equal(afterClear.steps.find(s => s.key === 'catalog').done, false);
+ assert.equal(afterClear.steps.find(s => s.key === 'catalog').done, true); // los productos de muestra de T030 no son de la siembra demo
  assert.equal(afterClear.steps.find(s => s.key === 'quote').done, false);
 });

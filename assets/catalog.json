@@ -296,6 +296,78 @@
       "price": null,
       "pricing": "quote",
       "included": false
+    },
+    {
+      "id": "T023",
+      "name": "Contabilidad",
+      "group": "Finanzas",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T024",
+      "name": "Pedidos de venta",
+      "group": "Finanzas",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T025",
+      "name": "Proyectos",
+      "group": "Operación",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T026",
+      "name": "Empleados",
+      "group": "Recursos Humanos",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T027",
+      "name": "Asistencia y vacaciones",
+      "group": "Recursos Humanos",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T028",
+      "name": "Mesa de ayuda",
+      "group": "Operación",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T029",
+      "name": "Marketing",
+      "group": "Marketing",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T030",
+      "name": "Punto de venta",
+      "group": "Finanzas",
+      "price": null,
+      "pricing": "quote",
+      "included": false
+    },
+    {
+      "id": "T031",
+      "name": "Nómina",
+      "group": "Recursos Humanos",
+      "price": null,
+      "pricing": "quote",
+      "included": false
     }
   ],
   "extras": [

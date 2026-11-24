@@ -14,6 +14,30 @@
 - Los defaults de Tools son los mismos Core para las 10 Suites; elegir un giro no activa todavía flujos de negocio especializados.
 - El demo Render no demuestra persistencia Turso ni permisos OAuth reales.
 
+## Adenda 2026-11-24 — Build Odoo (32 → 41 Tools)
+
+**Fecha:** 24 de noviembre de 2026. La auditoría v5 del 2026-11-05 quedó desactualizada: el programa P0 posterior dio profundidad real a los vecinos, verificada en código antes de construir (no se duplicó nada):
+- C002 CRM: deals reales con asignación y cotizaciones. C005 Inventario: stock real por SKU y variantes. T004 Tareas: tabla `tenant_tasks` real con responsable, vencimiento, estado, prioridad y origen (`source_tool_id`/`source_record_id`). T005 Kanban: tableros/fases/tarjetas reales. T013 Cotizaciones: partidas reales + aceptación pública. T015 Facturación: facturas reales desde cotizaciones aceptadas.
+- Por eso T025 reutiliza las tareas de T004 (`source_tool_id='T025'`) y enlaza un tablero T005 en vez de crear su propio motor de tareas; T026 reutiliza `tenant_training_employees` de T022 (los empleados de capacitación son los mismos); T030 descuenta inventario por SKU exacto contra C005; T029 degrada sin clave Resend como las invitaciones por correo (nunca finge el envío).
+
+**Nuevas Tools (precio `null`, `pricing: "quote"` — el precio lo decide Julio):**
+
+| ID | Tool | Grupo | Alcance implementado |
+|---|---|---|---|
+| T023 | Contabilidad | Finanzas | Plan de cuentas, pólizas/asientos, balanza de comprobación, estado de resultados y balance general. Sin conexión al SAT ni timbrado: cálculo y reportes sobre los movimientos del tenant. |
+| T024 | Pedidos de venta | Finanzas | Pedidos desde cotización aceptada (T013), estados, entrega con guía, conversión a cobro, factura y CxC. |
+| T025 | Proyectos | Operación | Proyectos con hitos, tareas con responsable y fechas (reutiliza T004), avance derivado, tablero Kanban (T005) enlazado. |
+| T026 | Empleados | Recursos Humanos | Directorio, puesto, área, contrato, documentos (metadatos); reutiliza los empleados de T022. |
+| T027 | Asistencia y vacaciones | Recursos Humanos | Registro de jornada, solicitudes de vacaciones/permisos con aprobación de dueño/admin. |
+| T028 | Mesa de ayuda | Operación | Tickets con estados, prioridad, asignación y respuestas en hilo. |
+| T029 | Marketing | Marketing | Campañas por correo con segmentos de clientes; sin clave Resend no se envía nada real (degrada mostrando el contenido y marcando `sin_envio`). |
+| T030 | Punto de venta | Finanzas | Venta rápida con carrito desde catálogo/inventario, cobro registrado, ticket con IVA; descuenta existencias por SKU si el producto las lleva. |
+| T031 | Nómina | Recursos Humanos | Periodos, percepciones/deducciones configurables, recibos por empleado, cálculo básico. Límite honesto en la UI: sin timbrado CFDI de nómina ni cálculo real de IMSS/ISR. |
+
+**Verificación del build:** 440 tests en verde (335 antes + 105 nuevos: 36 Finanzas, 15 Operación, 20 RH, 34 Ventas/Marketing); migraciones 028–036 (21 tablas nuevas, 105 → 126; `/healthz` sigue en 84); renders Playwright reales a 390 y 1440 px de los 9 flujos principales, sin desbordamiento horizontal ni errores de consola.
+
+**Pendiente (no bloqueante):** precios de T022 y T023–T031; clave Resend para envío real; CFDI/PAC (T015, T024, T031); verificación de migraciones 028–036 contra Turso real; revisión de Julio a 390 px en su teléfono.
+
 ## Matriz de brechas por Tool
 
 | ID | Tool | Estado del código | Prioridad | Mínimo faltante |
@@ -96,6 +120,8 @@
 10. Recetas, ingredientes y mermas (Food).
 11. Mascotas y cartillas (Pet).
 12. Cursos, grupos y asistencia (Academy).
+
+De esta lista, el build Odoo del 2026-11-24 implementó: #1 Órdenes y pedidos (T024 Pedidos de venta + T030 Punto de venta), #4 Proyectos, hitos y entregables (T025 Proyectos) y #5 Tickets y servicio al cliente (T028 Mesa de ayuda). El resto sigue como backlog sin asignar.
 
 ## Desarrollo recomendado por etapas
 

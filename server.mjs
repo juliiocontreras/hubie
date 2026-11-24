@@ -3,6 +3,15 @@ import {configurationStatus} from './platform/setup-health.mjs';
 import {seedQaCompanyIfRequested} from './platform/staging-qa-seed.mjs';
 import {listSurveys,createSurvey,setSurveyStatus,createSurveyInvitation,surveyReport,publicSurvey,submitSurvey} from './platform/satisfaction-store.mjs';
 import {listCourses,createCourse,updateCourse,setCourseStatus,listSessions,createSession as createTrainingSession,updateSession,listEmployees,createEmployee,updateEmployee,listEnrollments,enroll,unenroll,setEnrollmentStatus,markAttendance,listAttendance,listModules,createModule,updateModule,deleteModule,setModuleQuiz,getModuleQuiz,submitAttempt,listAttempts,completeModule,setProgress,getProgress,evaluate,listEvaluations,issueCertificate,listCertificates,dashboard,employeeHistory,courseHistory,exportCsv as exportTrainingCsv} from './platform/training-store.mjs';
+import {listAccounts,createAccount,updateAccount,setAccountActive,seedChart,listEntries,getEntry,createEntry,setEntryStatus,getTrialBalance,getIncomeStatement,getBalanceSheet,exportTrialBalanceCsv,dashboard as accountingDashboard} from './platform/accounting-store.mjs';
+import {listOrders,getOrder,createOrder,updateOrderNotes,setOrderStatus,setDelivery,createOrderPayment,createOrderInvoice,createOrderReceivable,dashboard as salesOrdersDashboard} from './platform/sales-orders-store.mjs';
+import {listProjects,createProject,updateProject,setProjectStatus,getProject,listMilestones,createMilestone,updateMilestone,setMilestoneStatus,listProjectTasks,createProjectTask,updateProjectTaskStatus,linkProjectBoard,createProjectBoard,dashboard as projectsDashboard} from './platform/projects-store.mjs';
+import {listTickets,createTicket,updateTicket,setTicketStatus,assignTicket,getTicket,listReplies,createReply,dashboard as helpdeskDashboard} from './platform/helpdesk-store.mjs';
+import {listEmployees as listHrEmployees,getEmployee as getHrEmployee,createEmployee as createHrEmployee,updateEmployee as updateHrEmployee,setEmployeeStatus,listDocuments,createDocument,deleteDocument,dashboard as employeesDashboard} from './platform/employees-store.mjs';
+import {recordWorkday,listWorkdays,createRequest,listRequests,resolveRequest,vacationSummary,dashboard as attendanceDashboard} from './platform/attendance-store.mjs';
+import {listPeriods,createPeriod,listConcepts,createConcept,updateConcept,deleteConcept,calculatePayroll,markPeriodPaid,listReceipts,getReceipt,dashboard as payrollDashboard} from './platform/payroll-store.mjs';
+import {listSegments,createSegment,updateSegment,deleteSegment,listCampaigns,createCampaign,updateCampaign,setCampaignStatus,getCampaign,previewRecipients,listSends,sendCampaign,dashboard as marketingDashboard} from './platform/marketing-store.mjs';
+import {catalogForSale,listSales,getSale,createSale,dashboard as posDashboard} from './platform/pos-store.mjs';
 import {sqlStatements,executableStatements} from './platform/migration-parser.mjs';
 import { databaseHealth, databaseConfigured, executeSql } from './database.mjs';
 import { resolveTenant, getTenantTools } from './tenant.mjs';
@@ -97,7 +106,7 @@ async function applyCoreSchema(){
  const health=await databaseHealth();
  if(health.status!=='connected'){console.error('Core migration skipped: database '+health.status+' '+(health.reason||''));return;}
  const failures=[];
- for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql','017_media_limit.sql','018_onboarding.sql','020_notifications.sql','021_tools_p0.sql','022_tools_p1a.sql','023_tools_p1b.sql','024_tools_p2.sql','025_drop_tenant_domains.sql','026_training.sql','027_catalog_columns.sql']){
+ for(const migration of ['001_core.sql','002_multitenant.sql','003_identity.sql','004_platform_admin.sql','005_google_oidc.sql','006_pwa_records.sql','007_operational_workflows.sql','008_clients.sql','009_appearance.sql','010_media.sql','011_cases.sql','012_case_documents.sql','013_entity_relationships.sql','014_satisfaction.sql','015_billing.sql','016_commerce.sql','017_media_limit.sql','018_onboarding.sql','020_notifications.sql','021_tools_p0.sql','022_tools_p1a.sql','023_tools_p1b.sql','024_tools_p2.sql','025_drop_tenant_domains.sql','026_training.sql','027_catalog_columns.sql','028_accounting.sql','029_sales_orders.sql','030_projects.sql','031_employees.sql','032_attendance.sql','033_helpdesk.sql','034_marketing.sql','035_pos.sql','036_payroll.sql']){
   const sql=await readFile(resolve(root,'turso/migrations',migration),'utf8');
   const statements=executableStatements(sql);
   for(let i=0;i<statements.length;i++){
@@ -549,6 +558,260 @@ createServer(async(req,res)=>{
       handler=({token,body})=>req.method==='GET'?listCertificates(token,slug,{courseId:query.get('courseId'),employeeId:query.get('employeeId')}):issueCertificate(token,slug,body);
       methods=['GET','POST'];
     }
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T023 Contabilidad: plan de cuentas, pólizas, balanza, resultados y
+  // balance. Exportación CSV fuera de processApi (respuesta text/csv, como
+  // trainingExport); el resto va por processApi. Sin conexión al SAT.
+  const accountingExport=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/accounting\/export$/);
+  if(accountingExport){
+    if(req.method!=='GET'){res.writeHead(405,{'allow':'GET'});res.end();return;}
+    if(!configurationStatus().readyForLive||!(await migrationsReady))return sendApi(res,503,{error:'La base de datos no está inicializada'});
+    try{
+      const token=readSessionCookie(req.headers.cookie);
+      const query=new URL(req.url,'http://localhost').searchParams;
+      const {filename,csv}=await exportTrialBalanceCsv(token,accountingExport[1],{from:query.get('from'),to:query.get('to')});
+      res.writeHead(200,{'content-type':'text/csv; charset=utf-8','cache-control':'no-store',
+        'content-disposition':'attachment; filename="'+filename+'"','x-content-type-options':'nosniff'});
+      res.end(csv);return;
+    }catch(error){
+      const msg=error?.message||'';
+      return sendApi(res,msg==='Unauthorized'?401:msg==='Forbidden'||msg==='Tool disabled'?403:msg==='Not found'?404:503,
+        {error:msg==='Not found'?'Exportación no disponible':'No se pudo exportar'});
+    }
+  }
+  const accountingPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/accounting(?:\/(.*))?$/);
+  if(accountingPath){
+    const slug=accountingPath[1];
+    const parts=(accountingPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>accountingDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='accounts'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listAccounts(token,slug,{type:query.get('type'),activeOnly:query.get('activeOnly')==='1'}):createAccount(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='accounts'&&parts[1]==='seed'&&parts.length===2){handler=({token})=>seedChart(token,slug);methods=['POST'];}
+    else if(parts[0]==='accounts'&&parts[2]==='active'&&parts.length===3){handler=({token,body})=>setAccountActive(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='accounts'&&parts.length===2){handler=({token,body})=>updateAccount(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='entries'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listEntries(token,slug,{status:query.get('status'),from:query.get('from'),to:query.get('to')}):createEntry(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='entries'&&parts.length===2){handler=({token})=>getEntry(token,slug,parts[1]);methods=['GET'];}
+    else if(parts[0]==='entries'&&parts[2]==='status'&&parts.length===3){handler=({token,body})=>setEntryStatus(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='trial-balance'&&parts.length===1){handler=({token})=>getTrialBalance(token,slug,{from:query.get('from'),to:query.get('to')});methods=['GET'];}
+    else if(parts[0]==='income-statement'&&parts.length===1){handler=({token})=>getIncomeStatement(token,slug,{from:query.get('from'),to:query.get('to')});methods=['GET'];}
+    else if(parts[0]==='balance-sheet'&&parts.length===1){handler=({token})=>getBalanceSheet(token,slug,{asOf:query.get('asOf')});methods=['GET'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T024 Pedidos de venta: desde cotización aceptada hasta entrega, cobro,
+  // factura y CxC. Orquesta T013/T014/T015/T017 sin duplicarlas.
+  const salesOrdersPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/sales-orders(?:\/(.*))?$/);
+  if(salesOrdersPath){
+    const slug=salesOrdersPath[1];
+    const parts=(salesOrdersPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>salesOrdersDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='orders'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listOrders(token,slug,{status:query.get('status')}):createOrder(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='orders'&&parts.length===2){handler=({token})=>getOrder(token,slug,parts[1]);methods=['GET'];}
+    else if(parts[0]==='orders'&&parts[2]==='notes'&&parts.length===3){handler=({token,body})=>updateOrderNotes(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='orders'&&parts[2]==='status'&&parts.length===3){handler=({token,body})=>setOrderStatus(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='orders'&&parts[2]==='delivery'&&parts.length===3){handler=({token,body})=>setDelivery(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='orders'&&parts[2]==='payment'&&parts.length===3){handler=({token,body})=>createOrderPayment(token,slug,parts[1],body);methods=['POST'];}
+    else if(parts[0]==='orders'&&parts[2]==='invoice'&&parts.length===3){handler=({token,body})=>createOrderInvoice(token,slug,parts[1],body);methods=['POST'];}
+    else if(parts[0]==='orders'&&parts[2]==='receivable'&&parts.length===3){handler=({token,body})=>createOrderReceivable(token,slug,parts[1],body);methods=['POST'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T025 Proyectos: proyectos, hitos, tareas (T004 reutilizada) y tablero Kanban (T005).
+  const projectsPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/projects(?:\/(.*))?$/);
+  if(projectsPath){
+    const slug=projectsPath[1];
+    const parts=(projectsPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0){
+      handler=({token,body})=>req.method==='GET'?listProjects(token,slug,{status:query.get('status')}):createProject(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='dashboard'&&parts.length===1){handler=({token})=>projectsDashboard(token,slug);methods=['GET'];}
+    else if(parts.length===1){
+      handler=({token,body})=>req.method==='GET'?getProject(token,slug,parts[0]):Object.keys(body||{}).length===1&&'status' in (body||{})?setProjectStatus(token,slug,parts[0],body):updateProject(token,slug,parts[0],body);
+      methods=['GET','PATCH'];
+    }
+    else if(parts[1]==='milestones'&&parts.length===2){
+      handler=({token,body})=>req.method==='GET'?listMilestones(token,slug,parts[0]):createMilestone(token,slug,parts[0],body);
+      methods=['GET','POST'];
+    }
+    else if(parts[1]==='milestones'&&parts.length===3){
+      handler=({token,body})=>Object.keys(body||{}).length===1&&'status' in (body||{})?setMilestoneStatus(token,slug,parts[0],parts[2],body):updateMilestone(token,slug,parts[0],parts[2],body);
+      methods=['PATCH'];
+    }
+    else if(parts[1]==='tasks'&&parts.length===2){
+      handler=({token,body})=>req.method==='GET'?listProjectTasks(token,slug,parts[0]):createProjectTask(token,slug,parts[0],body);
+      methods=['GET','POST'];
+    }
+    else if(parts[1]==='tasks'&&parts.length===3){handler=({token,body})=>updateProjectTaskStatus(token,slug,parts[0],parts[2],body);methods=['PATCH'];}
+    else if(parts[1]==='board'&&parts.length===2){handler=({token,body})=>req.method==='POST'?createProjectBoard(token,slug,parts[0],body||{}):linkProjectBoard(token,slug,parts[0],body?.boardId);methods=['POST','PATCH'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T028 Mesa de ayuda: tickets, respuestas en hilo y asignación con aviso en la app.
+  const helpdeskPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/helpdesk(?:\/(.*))?$/);
+  if(helpdeskPath){
+    const slug=helpdeskPath[1];
+    const parts=(helpdeskPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0){
+      handler=({token,body})=>req.method==='GET'?listTickets(token,slug,{status:query.get('status'),priority:query.get('priority'),assignee:query.get('assignee')}):createTicket(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='dashboard'&&parts.length===1){handler=({token})=>helpdeskDashboard(token,slug);methods=['GET'];}
+    else if(parts.length===1){
+      handler=({token,body})=>req.method==='GET'?getTicket(token,slug,parts[0]):Object.keys(body||{}).length===1&&'status' in (body||{})?setTicketStatus(token,slug,parts[0],body):updateTicket(token,slug,parts[0],body);
+      methods=['GET','PATCH'];
+    }
+    else if(parts[1]==='assign'&&parts.length===2){handler=({token,body})=>assignTicket(token,slug,parts[0],body);methods=['POST'];}
+    else if(parts[1]==='replies'&&parts.length===2){
+      handler=({token,body})=>req.method==='GET'?listReplies(token,slug,parts[0]):createReply(token,slug,parts[0],body);
+      methods=['GET','POST'];
+    }
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T026 Empleados: directorio RH sobre la tabla compartida de T022.
+  const employeesPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/employees(?:\/(.*))?$/);
+  if(employeesPath){
+    const slug=employeesPath[1];
+    const parts=(employeesPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>employeesDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='employees'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listHrEmployees(token,slug,{estado:query.get('estado'),search:query.get('search')}):createHrEmployee(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='employees'&&parts.length===2){
+      handler=({token,body})=>req.method==='GET'?getHrEmployee(token,slug,parts[1]):updateHrEmployee(token,slug,parts[1],body);
+      methods=['GET','PATCH'];
+    }
+    else if(parts[0]==='employees'&&parts[2]==='status'&&parts.length===3){handler=({token,body})=>setEmployeeStatus(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='employees'&&parts[2]==='documents'&&parts.length===3){
+      handler=({token,body})=>req.method==='GET'?listDocuments(token,slug,{employeeId:parts[1]}):createDocument(token,slug,{...body,employeeId:parts[1]});
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='documents'&&parts.length===2){handler=({token})=>deleteDocument(token,slug,parts[1]);methods=['DELETE'];}
+    else if(parts[0]==='documents'&&parts.length===1){handler=({token})=>listDocuments(token,slug,{});methods=['GET'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T027 Asistencia y vacaciones: jornada y solicitudes.
+  const attendancePath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/attendance(?:\/(.*))?$/);
+  if(attendancePath){
+    const slug=attendancePath[1];
+    const parts=(attendancePath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>attendanceDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='workdays'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listWorkdays(token,slug,{employeeId:query.get('employeeId'),from:query.get('from'),to:query.get('to')}):recordWorkday(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='requests'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listRequests(token,slug,{employeeId:query.get('employeeId'),estado:query.get('estado'),tipo:query.get('tipo')}):createRequest(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='requests'&&parts[2]==='resolve'&&parts.length===3){handler=({token,body})=>resolveRequest(token,slug,parts[1],body);methods=['PATCH'];}
+    else if(parts[0]==='summary'&&parts.length===1){handler=({token})=>vacationSummary(token,slug,{year:query.get('year')?Number(query.get('year')):null,employeeId:query.get('employeeId')});methods=['GET'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T031 Nómina: periodos, conceptos y recibos (cálculo básico, sin CFDI ni IMSS/ISR).
+  const payrollPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/payroll(?:\/(.*))?$/);
+  if(payrollPath){
+    const slug=payrollPath[1];
+    const parts=(payrollPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>payrollDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='periods'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listPeriods(token,slug):createPeriod(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='periods'&&parts[2]==='calculate'&&parts.length===3){handler=({token})=>calculatePayroll(token,slug,parts[1]);methods=['POST'];}
+    else if(parts[0]==='periods'&&parts[2]==='pay'&&parts.length===3){handler=({token})=>markPeriodPaid(token,slug,parts[1]);methods=['POST'];}
+    else if(parts[0]==='concepts'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listConcepts(token,slug,{activo:query.get('activo')===null?null:query.get('activo')==='1'}):createConcept(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='concepts'&&parts.length===2){
+      handler=({token,body})=>req.method==='DELETE'?deleteConcept(token,slug,parts[1]):updateConcept(token,slug,parts[1],body);
+      methods=['PATCH','DELETE'];
+    }
+    else if(parts[0]==='receipts'&&parts.length===1){
+      handler=({token})=>listReceipts(token,slug,{periodId:query.get('periodId'),employeeId:query.get('employeeId')});
+      methods=['GET'];
+    }
+    else if(parts[0]==='receipts'&&parts.length===2){handler=({token})=>getReceipt(token,slug,parts[1]);methods=['GET'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T029 Marketing: segmentos, campañas, vista previa y envío (con o sin
+  // clave Resend: sin clave el envío se registra como 'sin_envio' y la
+  // campaña NO se marca como enviada; ver platform/marketing-store.mjs).
+  const marketingPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/marketing(?:\/(.*))?$/);
+  if(marketingPath){
+    const slug=marketingPath[1];
+    const parts=(marketingPath[2]||'').split('/').filter(Boolean);
+    const query=new URL(req.url,'http://localhost').searchParams;
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>marketingDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='segments'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listSegments(token,slug):createSegment(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='segments'&&parts.length===2){
+      handler=({token,body})=>req.method==='DELETE'?deleteSegment(token,slug,parts[1]):updateSegment(token,slug,parts[1],body);
+      methods=['PATCH','DELETE'];
+    }
+    else if(parts[0]==='campaigns'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listCampaigns(token,slug,{status:query.get('status')}):createCampaign(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='campaigns'&&parts.length===2){
+      handler=({token,body})=>req.method==='GET'?getCampaign(token,slug,parts[1]):
+        Object.keys(body||{}).length===1&&'status' in (body||{})?setCampaignStatus(token,slug,parts[1],body):updateCampaign(token,slug,parts[1],body);
+      methods=['GET','PATCH'];
+    }
+    else if(parts[0]==='campaigns'&&parts[2]==='preview'&&parts.length===3){handler=({token})=>previewRecipients(token,slug,{campaignId:parts[1]});methods=['GET'];}
+    else if(parts[0]==='campaigns'&&parts[2]==='sends'&&parts.length===3){handler=({token})=>listSends(token,slug,parts[1]);methods=['GET'];}
+    else if(parts[0]==='campaigns'&&parts[2]==='send'&&parts.length===3){handler=({token})=>sendCampaign(token,slug,parts[1]);methods=['POST'];}
+    if(!handler)return sendApi(res,404,{error:'Not found'});
+    return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
+  }
+  // T030 Punto de venta: catálogo para vender, ventas con ticket (folio,
+  // IVA 16%) y tablero. El cobro va a tenant_collections (T014) y el
+  // efectivo con caja abierta a tenant_cashbox_movements (T016).
+  const posPath=pathname.match(/^\/api\/app\/([a-z0-9-]{3,63})\/pos(?:\/(.*))?$/);
+  if(posPath){
+    const slug=posPath[1];
+    const parts=(posPath[2]||'').split('/').filter(Boolean);
+    let handler=null,methods=[];
+    if(parts.length===0||parts[0]==='dashboard'&&parts.length===1){handler=({token})=>posDashboard(token,slug);methods=['GET'];}
+    else if(parts[0]==='catalog'&&parts.length===1){handler=({token})=>catalogForSale(token,slug);methods=['GET'];}
+    else if(parts[0]==='sales'&&parts.length===1){
+      handler=({token,body})=>req.method==='GET'?listSales(token,slug):createSale(token,slug,body);
+      methods=['GET','POST'];
+    }
+    else if(parts[0]==='sales'&&parts.length===2){handler=({token})=>getSale(token,slug,parts[1]);methods=['GET'];}
     if(!handler)return sendApi(res,404,{error:'Not found'});
     return processApi(req,res,async({token,body})=>handler({token,body}),{methods,maxBytes:64000});
   }
@@ -1163,7 +1426,7 @@ createServer(async(req,res)=>{
     const raw=await readFile(file);
     const appShell=decoded==='/admin.html'||decoded==='/madre/app.html'||decoded==='/auth/configuracion.html'||(decoded.startsWith('/app/')||decoded.startsWith('/encuesta/'));
     const data=isHtml?Buffer.from(appShell?raw.toString('utf8'):enhanceHtml(raw.toString('utf8'))):raw;
-    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js','/assets/operational-surveys.js','/assets/operational-training.js','/assets/satisfaction-public.js','/assets/invitations-ui.js','/assets/audit-ui.js','/assets/invitation-accept.js'].includes(decoded);
+    const isPwaAsset=decoded.startsWith('/assets/pwa-')||['/assets/appearance-ui.js','/assets/ui-icons.js','/assets/media-ui.js','/assets/attachments-ui.js','/assets/admin-console.js','/assets/app-console.js','/assets/demo-backend.js','/assets/operational-surveys.js','/assets/operational-training.js','/assets/operational-accounting.js','/assets/operational-sales-orders.js','/assets/operational-projects.js','/assets/operational-helpdesk.js','/assets/operational-employees.js','/assets/operational-attendance.js','/assets/operational-payroll.js','/assets/operational-marketing.js','/assets/operational-pos.js','/assets/satisfaction-public.js','/assets/invitations-ui.js','/assets/audit-ui.js','/assets/invitation-accept.js'].includes(decoded);
     res.writeHead(200,{'content-type':types[extname(file).toLowerCase()]||'application/octet-stream',
       'cache-control':appShell||isPwaAsset?'no-store':'public, max-age=300',
       'x-content-type-options':'nosniff'});

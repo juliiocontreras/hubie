@@ -28,7 +28,13 @@ const paths={
  chevron:['path:M6 9l6 6 6-6'],
  layers:['path:M3 9l9-6 9 6-9 6zM3 14l9 6 9-6'],
  truck:['path:M2 6h12v12H2zM14 10h4l4 4v4h-8','circle:6 19 2','circle:18 19 2'],
- receipt:['path:M4 2h16v20l-4-2-4 2-4-2-4 2zM8 7h8M8 11h8M8 15h5']
+ receipt:['path:M4 2h16v20l-4-2-4 2-4-2-4 2zM8 7h8M8 11h8M8 15h5'],
+ help:['circle:12 12 9','path:M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3','path:M12 17h.01'],
+ check:['path:M20 6 9 17l-5-5'],
+ clock:['circle:12 12 9','path:M12 7v5l3 2'],
+ mail:['rect:2 4 20 16 2','path:M2 7l10 6L22 7'],
+ send:['path:M22 2 11 13','path:M22 2 15 22l-4-9-9-4z'],
+ shoppingCart:['path:M3 3h2l2.4 12.4A2 2 0 0 0 9.4 17h7.9a2 2 0 0 0 2-1.6L21 7H6','circle:10 21 1.5','circle:18 21 1.5']
 };
 paths.survey=['rect:4 3 16 18 2','path:M8 8h8M8 12h3M8 16h3','path:M14 14l2 2 4-5'];
 paths.academy=['path:M2 9l10-5 10 5-10 5z','path:M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5','path:M22 9v5'];
@@ -38,7 +44,7 @@ const toolIcons={
  T001:'briefcase',T002:'clipboard',T003:'file',T004:'list',T005:'receipt',
  T006:'chart',T007:'truck',T008:'calendar',T009:'users',T010:'money',
  T011:'box',T012:'file',T013:'receipt',T014:'briefcase',T015:'calendar',
- T016:'chart',T017:'clipboard',T018:'folder',T019:'settings',T020:'spark',T021:'survey',T022:'academy'
+ T016:'chart',T017:'clipboard',T018:'folder',T019:'settings',T020:'spark',T021:'survey',T022:'academy',T023:'money',T024:'truck',T025:'folder',T026:'users',T027:'calendar',T028:'help',T029:'mail',T030:'shoppingCart',T031:'money'
 };
 export function icon(name,size=18){
  const svg=document.createElementNS(ns,'svg');
@@ -67,7 +73,7 @@ const toolTints={
  T006:'expedientes',T007:'catalogos',T008:'inventario',T009:'vendedores',
  T010:'inventario',T011:'inventario',T012:'bots',T013:'cobros',T014:'cobros',
  T015:'gastos',T016:'gastos',T017:'cobros',T018:'gastos',T019:'vendedores',
- T020:'reportes',T021:'bots',T022:'crm'
+ T020:'reportes',T021:'bots',T022:'crm',T023:'gastos',T024:'cobros',T025:'crm',T026:'crm',T027:'crm',T028:'cobros',T029:'bots',T030:'cobros',T031:'crm'
 };
 export const toolTint=id=>toolTints[id]||'crm';
 export function decorateSidebar(sidebar){

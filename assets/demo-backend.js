@@ -47,7 +47,14 @@ function createTenant(catalog,input,id=uuid()){
   docSettings:{},docAccess:{},entityLinks:[],deals:[],dealTasks:[],events:[],items:[],movements:[],
   checklists:[],checklistTemplates:[],tasks:[],forms:[],formSubmissions:[],goals:[],variants:[],
   quotes:[],catalogItems:[],expenses:[],payments:[],invoices:[],generic:{},
+  marketing:{segments:[],campaigns:[],sends:[]},
+  pos:{sales:[],saleLines:[]},cashboxes:[],cashboxMovements:[],
   training:{courses:[],sessions:[],employees:[],enrollments:[],attendance:[],progress:[],modules:[],attempts:[],evaluations:[],certificates:[],completions:[]},
+  accounting:{accounts:[],entries:[],lines:[]},
+  salesOrders:{orders:[],lines:[]},
+  receivables:[],
+  projects:{projects:[],milestones:[]},helpdesk:{tickets:[],replies:[]},kanbanBoards:[],
+  hr:{documents:[],workdays:[],requests:[],periods:[],concepts:[],receipts:[],receiptItems:[]},
   onboarding:{steps:{},demoSeeded:[]},
   invitations:[],audit:[]};
 }
@@ -82,9 +89,9 @@ function initial(catalog){
  else first.tools.push({id:'T022',name:'Capacitaciones',group:'Recursos Humanos',price:null,pricing:'quote',included:false,enabled:true});
  const dPlus=n=>new Date(Date.now()+n*86400000).toISOString().slice(0,10);
  const tr=first.training;
- const empA={id:uuid(),name:'Ana Ruiz',email:'ana.ruiz@ejemplo.invalid',position:'Cajera',area:'Ventas',createdAt:now()};
- const empB={id:uuid(),name:'Bruno Méndez',email:'bruno.mendez@ejemplo.invalid',position:'Almacenista',area:'Logística',createdAt:now()};
- const empC={id:uuid(),name:'Carla Soto',email:'carla.soto@ejemplo.invalid',position:'Supervisora',area:'Operaciones',createdAt:now()};
+ const empA={id:uuid(),name:'Ana Ruiz',email:'ana.ruiz@ejemplo.invalid',position:'Cajera',area:'Ventas',fechaIngreso:'2026-01-15',tipoContrato:'indefinido',salarioMensualCents:1200000,estado:'activo',createdAt:now()};
+ const empB={id:uuid(),name:'Bruno Méndez',email:'bruno.mendez@ejemplo.invalid',position:'Almacenista',area:'Logística',fechaIngreso:'2026-03-01',tipoContrato:'temporal',salarioMensualCents:950000,estado:'activo',createdAt:now()};
+ const empC={id:uuid(),name:'Carla Soto',email:'carla.soto@ejemplo.invalid',position:'Supervisora',area:'Operaciones',fechaIngreso:'2026-08-10',tipoContrato:'indefinido',salarioMensualCents:1800000,estado:'activo',createdAt:now()};
  tr.employees.push(empA,empB,empC);
  const courseA={id:uuid(),name:'Atención al cliente',description:'Curso de demostración: trato al cliente y resolución de quejas.',category:'Atención al cliente',modality:'presencial',durationHours:8,instructor:'María López',materials:'Manual de demostración (ficticio).',validUntil:dPlus(20),minScore:70,status:'activo',createdAt:now(),updatedAt:now()};
  const courseB={id:uuid(),name:'Seguridad en el almacén',description:'Curso de demostración: uso de equipo de protección.',category:'Seguridad',modality:'mixta',durationHours:4,instructor:'Jorge Pérez',materials:'',validUntil:dPlus(45),minScore:80,status:'activo',createdAt:now(),updatedAt:now()};
@@ -110,6 +117,106 @@ function initial(catalog){
  tr.attempts.push({id:uuid(),moduleId:modA2.id,enrollmentId:enrA.id,employeeId:empA.id,answers:{q1:0,q2:1},score:100,passed:true,attemptNumber:1,correctCount:2,totalQuestions:2,moduleTitle:modA2.title,employeeName:empA.name,createdAt:now()});
  tr.evaluations.push({id:uuid(),enrollmentId:enrA.id,employeeId:empA.id,courseId:courseA.id,score:100,passed:true,evaluatedAt:now()});
  tr.certificates.push({id:uuid(),employeeId:empA.id,courseId:courseA.id,enrollmentId:enrA.id,folio:'CAP-2026-K7M2Q9',issuedAt:now()});
+ // Contabilidad (T023) y Pedidos de venta (T024) de demostración: datos
+ // ficticios, solo en esta pestaña. El catálogo ya trae T023/T024 (no
+ // incluidas): se habilitan en este tenant demo.
+ for(const toolId of ['T023','T024']){
+  const t=first.tools.find(x=>x.id===toolId);
+  if(t)t.enabled=true;
+  else first.tools.push({id:toolId,name:toolId==='T023'?'Contabilidad':'Pedidos de venta',group:'Finanzas',price:null,pricing:'quote',included:false,enabled:true});
+ }
+ const ac=first.accounting;
+ const chartSeed=[['1000','Caja','activo'],['1010','Bancos','activo'],['1100','Clientes','activo'],['1200','Inventario','activo'],
+  ['2000','Proveedores','pasivo'],['2100','IVA por pagar','pasivo'],['3000','Capital social','capital'],
+  ['3200','Resultados de ejercicios anteriores','capital'],['4000','Ventas','ingreso'],['5000','Costo de ventas','gasto'],['5100','Gastos de operación','gasto']];
+ for(const [code,name,type] of chartSeed)ac.accounts.push({id:uuid(),code,name,type,
+  nature:type==='activo'||type==='gasto'?'deudora':'acreedora',parentId:null,active:true,createdAt:now(),updatedAt:now()});
+ const accByCode=code=>ac.accounts.find(a=>a.code===code);
+ const entrySeed={id:uuid(),folio:1,entryDate:new Date().toISOString().slice(0,10),concept:'Venta del día (demostración)',
+  sourceType:'manual',sourceId:null,status:'registrada',createdAt:now(),updatedAt:now()};
+ ac.entries.push(entrySeed);
+ ac.lines.push({id:uuid(),entryId:entrySeed.id,accountId:accByCode('1000').id,debitCents:11600,creditCents:0,memo:'',createdAt:now()},
+  {id:uuid(),entryId:entrySeed.id,accountId:accByCode('4000').id,debitCents:0,creditCents:10000,memo:'',createdAt:now()},
+  {id:uuid(),entryId:entrySeed.id,accountId:accByCode('2100').id,debitCents:0,creditCents:1600,memo:'IVA 16%',createdAt:now()});
+ // Proyectos (T025) y Mesa de ayuda (T028) de demostración: datos
+ // ficticios, solo en esta pestaña. El catálogo ya trae T025/T028 (no
+ // incluidas): se habilitan en este tenant demo, como T022. Kanban (T005)
+ // también se habilita: el proyecto de ejemplo tiene tablero ligado.
+ for(const [id,name] of [['T025','Proyectos'],['T028','Mesa de ayuda'],['T005','Kanban']]){
+  const tool=first.tools.find(t=>t.id===id);
+  if(tool)tool.enabled=true;
+  else first.tools.push({id,name,group:'Operación',price:null,pricing:'quote',included:false,enabled:true});
+ }
+ const pj=first.projects;
+ const ownerId='33333333-3333-4333-8333-333333333333';
+ const projA={id:uuid(),name:'Rediseño de tienda en línea',description:'Proyecto de demostración: nueva tienda con catálogo y checkout.',clientId:first.clients[0].id,startsOn:dPlus(-10),endsOn:dPlus(40),status:'en curso',ownerUserId:ownerId,kanbanBoardId:null,createdAt:now(),updatedAt:now()};
+ const projB={id:uuid(),name:'Apertura sucursal norte',description:'Proyecto de demostración en planificación.',clientId:null,startsOn:dPlus(15),endsOn:dPlus(90),status:'planificado',ownerUserId:null,kanbanBoardId:null,createdAt:now(),updatedAt:now()};
+ pj.projects.push(projA,projB);
+ pj.milestones.push(
+  {id:uuid(),projectId:projA.id,title:'Mockups aprobados',dueOn:dPlus(-2),status:'completado',createdAt:now(),updatedAt:now()},
+  {id:uuid(),projectId:projA.id,title:'Catálogo migrado',dueOn:dPlus(12),status:'pendiente',createdAt:now(),updatedAt:now()},
+  {id:uuid(),projectId:projA.id,title:'Checkout en vivo',dueOn:dPlus(35),status:'pendiente',createdAt:now(),updatedAt:now()});
+ first.tasks.push(
+  {id:uuid(),title:'Revisar catálogo migrado',notes:'',assigneeUserId:ownerId,assigneeEmail:'superadmin@ejemplo.invalid',dueOn:dPlus(5),status:'pending',priority:'normal',sourceToolId:'T025',sourceRecordId:projA.id,notifiedAt:null,createdAt:now(),updatedAt:now()},
+  {id:uuid(),title:'Probar checkout con tarjeta de prueba',notes:'',assigneeUserId:ownerId,assigneeEmail:'superadmin@ejemplo.invalid',dueOn:dPlus(20),status:'in_progress',priority:'high',sourceToolId:'T025',sourceRecordId:projA.id,notifiedAt:null,createdAt:now(),updatedAt:now()},
+  {id:uuid(),title:'Aprobar diseño de inicio',notes:'',assigneeUserId:null,assigneeEmail:null,dueOn:dPlus(-3),status:'done',priority:'normal',sourceToolId:'T025',sourceRecordId:projA.id,notifiedAt:null,createdAt:now(),updatedAt:now()});
+ const boardA={id:uuid(),name:'Tablero: Rediseño de tienda en línea',sourceToolId:'generic',
+  phases:[{id:uuid(),title:'Por hacer',position:0},{id:uuid(),title:'En curso',position:1},{id:uuid(),title:'Hecho',position:2}],createdAt:now()};
+ first.kanbanBoards.push(boardA);
+ projA.kanbanBoardId=boardA.id;
+ const hd=first.helpdesk;
+ const tickA={id:uuid(),subject:'No llega la cotización',description:'El cliente no recibió el PDF de la cotización por correo.',clientId:first.clients[0].id,status:'abierto',priority:'alta',assigneeUserId:ownerId,createdAt:now(),updatedAt:now()};
+ const tickB={id:uuid(),subject:'Error al entrar al portal',description:'El portal marca sesión expirada al entrar.',clientId:null,status:'en curso',priority:'urgente',assigneeUserId:null,createdAt:now(),updatedAt:now()};
+ const tickC={id:uuid(),subject:'Duda sobre envío',description:'¿Cuánto tarda el envío a Monterrey?',clientId:first.clients[0].id,status:'resuelto',priority:'baja',assigneeUserId:ownerId,createdAt:now(),updatedAt:now()};
+ hd.tickets.push(tickA,tickB,tickC);
+ hd.replies.push({id:uuid(),ticketId:tickA.id,authorUserId:ownerId,authorEmail:'superadmin@ejemplo.invalid',body:'Lo revisamos ahora mismo y te confirmamos por aquí.',createdAt:now()},
+  {id:uuid(),ticketId:tickC.id,authorUserId:ownerId,authorEmail:'superadmin@ejemplo.invalid',body:'El envío a Monterrey tarda 24 a 48 horas hábiles.',createdAt:now()});
+ // Recursos Humanos (T026/T027/T031) de demostración: los empleados SON
+ // los de T022 (mismo arreglo); documentos, jornada, solicitudes y nómina
+ // viven en tenant.hr. Datos ficticios, solo en esta pestaña.
+ for(const [id,name] of [['T026','Empleados'],['T027','Asistencia y vacaciones'],['T031','Nómina']]){
+  const t=first.tools.find(x=>x.id===id);
+  if(t)t.enabled=true;
+  else first.tools.push({id,name,group:'Recursos Humanos',price:null,pricing:'quote',included:false,enabled:true});
+ }
+ const hr=first.hr;
+ const todayStr=new Date().toISOString().slice(0,10);
+ const y=new Date().getFullYear(),m=new Date().getMonth();
+ const monthStart=new Date(y,m,1).toISOString().slice(0,10);
+ const monthEnd=new Date(y,m+1,0).toISOString().slice(0,10);
+ hr.documents.push(
+  {id:uuid(),employeeId:empA.id,tipo:'contrato',nombre:'Contrato indefinido 2026.pdf',fecha:'2026-01-15',notas:'Firmado en original.',employeeName:empA.name,createdAt:now()},
+  {id:uuid(),employeeId:empB.id,tipo:'identificación',nombre:'INE frente.jpg',fecha:'2026-03-01',notas:'',employeeName:empB.name,createdAt:now()});
+ hr.workdays.push(
+  {id:uuid(),employeeId:empA.id,fecha:todayStr,entrada:'09:00',salida:'18:00',notas:'',employeeName:empA.name,createdAt:now()},
+  {id:uuid(),employeeId:empB.id,fecha:todayStr,entrada:'08:00',salida:'17:00',notas:'',employeeName:empB.name,createdAt:now()},
+  {id:uuid(),employeeId:empA.id,fecha:dPlus(-1),entrada:'09:00',salida:'18:00',notas:'',employeeName:empA.name,createdAt:now()});
+ hr.requests.push(
+  {id:uuid(),employeeId:empB.id,tipo:'vacaciones',fechaInicio:dPlus(30),fechaFin:dPlus(32),motivo:'Descanso con familia.',estado:'pendiente',resueltaPor:null,resueltaAt:null,employeeName:empB.name,createdAt:now()},
+  {id:uuid(),employeeId:empA.id,tipo:'vacaciones',fechaInicio:dPlus(5),fechaFin:dPlus(7),motivo:'Vacaciones de fin de año.',estado:'aprobada',resueltaPor:'33333333-3333-4333-8333-333333333333',resueltaAt:now(),employeeName:empA.name,createdAt:now()});
+ hr.concepts.push(
+  {id:uuid(),nombre:'Bono de puntualidad',tipo:'percepcion',modo:'fijo',montoCents:50000,porcentaje:null,activo:true,createdAt:now()},
+  {id:uuid(),nombre:'Vales de despensa',tipo:'percepcion',modo:'porcentaje',montoCents:null,porcentaje:5,activo:true,createdAt:now()},
+  {id:uuid(),nombre:'Préstamo',tipo:'deduccion',modo:'fijo',montoCents:20000,porcentaje:null,activo:true,createdAt:now()});
+ hr.periods.push({id:uuid(),tipo:'mensual',fechaInicio:monthStart,fechaFin:monthEnd,estado:'borrador',createdAt:now(),updatedAt:now()});
+ // Marketing (T029) y Punto de venta (T030) de demostración: datos
+ // ficticios, solo en esta pestaña. El catálogo ya trae T029/T030 (no
+ // incluidas): se habilitan en este tenant demo.
+ for(const toolId of ['T029','T030']){
+  const tool=first.tools.find(t=>t.id===toolId);
+  if(tool)tool.enabled=true;
+  else first.tools.push({id:toolId,name:toolId==='T029'?'Marketing':'Punto de venta',group:toolId==='T029'?'Marketing':'Finanzas',price:null,pricing:'quote',included:false,enabled:true});
+ }
+ const mk=first.marketing;
+ const segAll={id:uuid(),name:'Todos los clientes',description:'Segmento de demostración: todos los clientes.',status:'',companyContains:'',createdAt:now(),updatedAt:now()};
+ const segActive={id:uuid(),name:'Clientes activos',description:'Segmento de demostración: solo clientes activos.',status:'active',companyContains:'',createdAt:now(),updatedAt:now()};
+ mk.segments.push(segAll,segActive);
+ mk.campaigns.push({id:uuid(),name:'Oferta de apertura',subject:'10% en tu primera compra',content:'Hola, tenemos una oferta de apertura para ti. Visítanos y aprovecha el 10% en tu primera compra.',segmentId:segAll.id,status:'borrador',scheduledAt:null,sentAt:null,createdAt:now(),updatedAt:now()});
+ first.catalogItems.push(
+  {id:uuid(),sku:'DEMO-001',name:'Producto de muestra',description:'Producto de demostración con existencias.',priceCents:25000,category:'General',active:true,createdAt:now(),updatedAt:now()},
+  {id:uuid(),sku:'CAFE-500',name:'Café molido 500 g',description:'Café de olla, bolsa de 500 g.',priceCents:8500,category:'Café',active:true,createdAt:now(),updatedAt:now()},
+  {id:uuid(),sku:'PAN-DULCE',name:'Pan dulce',description:'Pieza de pan dulce.',priceCents:1500,category:'Pan',active:true,createdAt:now(),updatedAt:now()});
+ first.cashboxes.push({id:uuid(),responsible:'Ana Ruiz',shift:'Matutino',openingCents:50000,status:'open',notes:'Caja de demostración',openedAt:now(),closedAt:null,countedCents:null,differenceCents:null});
  second.clients.push({id:uuid(),name:'Otro contacto de ejemplo',company:'Otra empresa',email:'otro@correo.invalid',phone:'',status:'active',notes:''});
  return {platformAppearance:{...appearanceDefaults},platformBackgrounds:{dashboard:null,sidebar:null},tenants:[first,second]};
 }
@@ -136,7 +243,24 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
   tenant.tasks=Array.isArray(tenant.tasks)?tenant.tasks:[];tenant.forms=Array.isArray(tenant.forms)?tenant.forms:[];
   tenant.formSubmissions=Array.isArray(tenant.formSubmissions)?tenant.formSubmissions:[];tenant.goals=Array.isArray(tenant.goals)?tenant.goals:[];
   tenant.variants=Array.isArray(tenant.variants)?tenant.variants:[];tenant.training=tenant.training&&typeof tenant.training==='object'?tenant.training:{courses:[],sessions:[],employees:[],enrollments:[],attendance:[],progress:[],modules:[],attempts:[],evaluations:[],certificates:[],completions:[]};
+  tenant.accounting=tenant.accounting&&typeof tenant.accounting==='object'?tenant.accounting:{accounts:[],entries:[],lines:[]};
+  tenant.accounting.accounts=Array.isArray(tenant.accounting.accounts)?tenant.accounting.accounts:[];
+  tenant.accounting.entries=Array.isArray(tenant.accounting.entries)?tenant.accounting.entries:[];
+  tenant.accounting.lines=Array.isArray(tenant.accounting.lines)?tenant.accounting.lines:[];
+  tenant.salesOrders=tenant.salesOrders&&typeof tenant.salesOrders==='object'?tenant.salesOrders:{orders:[],lines:[]};
+  tenant.salesOrders.orders=Array.isArray(tenant.salesOrders.orders)?tenant.salesOrders.orders:[];
+  tenant.salesOrders.lines=Array.isArray(tenant.salesOrders.lines)?tenant.salesOrders.lines:[];
+  tenant.receivables=Array.isArray(tenant.receivables)?tenant.receivables:[];
   for(const k of ['courses','sessions','employees','enrollments','attendance','progress','modules','attempts','evaluations','certificates','completions'])tenant.training[k]=Array.isArray(tenant.training[k])?tenant.training[k]:[];
+  tenant.projects=tenant.projects&&typeof tenant.projects==='object'?tenant.projects:{projects:[],milestones:[]};
+  tenant.projects.projects=Array.isArray(tenant.projects.projects)?tenant.projects.projects:[];
+  tenant.projects.milestones=Array.isArray(tenant.projects.milestones)?tenant.projects.milestones:[];
+  tenant.helpdesk=tenant.helpdesk&&typeof tenant.helpdesk==='object'?tenant.helpdesk:{tickets:[],replies:[]};
+  tenant.helpdesk.tickets=Array.isArray(tenant.helpdesk.tickets)?tenant.helpdesk.tickets:[];
+  tenant.helpdesk.replies=Array.isArray(tenant.helpdesk.replies)?tenant.helpdesk.replies:[];
+  tenant.kanbanBoards=Array.isArray(tenant.kanbanBoards)?tenant.kanbanBoards:[];
+  tenant.hr=tenant.hr&&typeof tenant.hr==='object'?tenant.hr:{documents:[],workdays:[],requests:[],periods:[],concepts:[],receipts:[],receiptItems:[]};
+  for(const k of ['documents','workdays','requests','periods','concepts','receipts','receiptItems'])tenant.hr[k]=Array.isArray(tenant.hr[k])?tenant.hr[k]:[];
   tenant.cases=Array.isArray(tenant.cases)?tenant.cases:[];tenant.caseEvents=Array.isArray(tenant.caseEvents)?tenant.caseEvents:[];tenant.caseDocumentMeta=tenant.caseDocumentMeta&&typeof tenant.caseDocumentMeta==='object'?tenant.caseDocumentMeta:{};tenant.entityLinks=Array.isArray(tenant.entityLinks)?tenant.entityLinks:[];
   if(tenant.slug==='comercio-demo'){
    const sampleClient=tenant.clients.find(c=>c.name==='Contacto de ejemplo');
@@ -158,7 +282,7 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
  // lista de acciones es la de platform/audit.mjs (fuente de verdad); el
  // token vive en claro solo en sessionStorage de esta pestaña (demo), en
  // producción solo se guarda su hash (platform/invitations.mjs).
- const demoAuditActions=['agenda.appointment_created','agenda.appointment_status','agenda.appointment_updated','appearance.platform_updated','appearance.tenant_updated','archived','cases.created','cases.document_updated','cases.updated','catalog.archived','catalog.created','catalog.updated','clients.archived','clients.created','clients.updated','crm.deal_archived','crm.deal_created','crm.deal_updated','entities.linked','entities.unlinked','expenses.archived','expenses.created','expenses.updated','inventory.item_created','inventory.item_updated','inventory.stock_moved','invoices.archived','invoices.created','media.attachment_removed','media.attachment_uploaded','payments.archived','payments.created','payments.updated','quotes.archived','quotes.created','quotes.updated','survey.response_received','training.attempt_recorded','training.certificate_issued','training.course_created','training.enrollment_created','tenant.created','tenant.invitation_accepted','tenant.invitation_created','tenant.invitation_resent','tenant.invitation_revoked','tenant.member_activated','tenant.member_added','tenant.member_suspended','tenant.record_archived','tenant.record_created','tenant.record_updated','tenant.tool_disabled','tenant.tool_enabled','tenant.updated'];
+ const demoAuditActions=['agenda.appointment_created','agenda.appointment_status','agenda.appointment_updated','appearance.platform_updated','appearance.tenant_updated','archived','cases.created','cases.document_updated','cases.updated','catalog.archived','catalog.created','catalog.updated','clients.archived','clients.created','clients.updated','crm.deal_archived','crm.deal_created','crm.deal_updated','entities.linked','entities.unlinked','expenses.archived','expenses.created','expenses.updated','inventory.item_created','inventory.item_updated','inventory.stock_moved','invoices.archived','invoices.created','media.attachment_removed','media.attachment_uploaded','payments.archived','payments.created','payments.updated','quotes.archived','quotes.created','quotes.updated','survey.response_received','training.attempt_recorded','training.certificate_issued','training.course_created','training.enrollment_created','accounting.account_created','accounting.entry_created','accounting.entry_registered','sales_orders.order_created','sales_orders.payment_created','sales_orders.invoice_created','sales_orders.receivable_created','projects.project_created','projects.milestone_completed','projects.board_created','helpdesk.ticket_created','helpdesk.ticket_assigned','helpdesk.reply_added','kanban.board_created','marketing.campaign_created','marketing.campaign_sent','pos.sale_created','tenant.created','tenant.invitation_accepted','tenant.invitation_created','tenant.invitation_resent','tenant.invitation_revoked','tenant.member_activated','tenant.member_added','tenant.member_suspended','tenant.record_archived','tenant.record_created','tenant.record_updated','tenant.tool_disabled','tenant.tool_enabled','tenant.updated'];
  const demoAudit=(t,action,targetId)=>{t.audit.unshift({id:uuid(),organizationId:t.id,actorUserId:'33333333-3333-4333-8333-333333333333',actorEmail:'superadmin@ejemplo.invalid',action,targetType:'organization_invitation',targetId,occurredAt:now()});};
  const demoInviteStatus=i=>i.consumedAt?'consumed':Date.parse(i.expiresAt)<=Date.now()?'expired':'pending';
  const demoPublicInvite=i=>({id:i.id,organizationId:i.organizationId,email:i.email,role:i.role,expiresAt:i.expiresAt,consumedAt:i.consumedAt,createdAt:i.createdAt,status:demoInviteStatus(i)});
@@ -1874,19 +1998,25 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
      const name=String(input?.name||'').trim(),email=String(input?.email||'').trim().toLowerCase();
      if(name.length<2||name.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)||email.length>200)throw error('Invalid employee');
      if(tr.employees.some(e=>e.email===email))throw error('Duplicate employee email',409);
-     const e={id:uuid(),name,email,position:String(input.position||'').slice(0,120),area:String(input.area||'').slice(0,120),createdAt:now(),updatedAt:now()};
+     const e={id:uuid(),name,email,position:String(input.position||'').slice(0,120),area:String(input.area||'').slice(0,120),
+      fechaIngreso:input.fechaIngreso||null,tipoContrato:input.tipoContrato||null,
+      salarioMensualCents:Number.isInteger(input.salarioMensualCents)?input.salarioMensualCents:null,
+      estado:['activo','inactivo'].includes(input.estado)?input.estado:'activo',createdAt:now(),updatedAt:now()};
      tr.employees.push(e);return send({employee:e});
     }
     throw error('Not found',404);
    }
    if(seg[0]==='employees'&&seg.length===2&&method==='PATCH'){
     const e=employeeOf(seg[1]);
-    const base={name:e.name,email:e.email,position:e.position,area:e.area};
+    const base={name:e.name,email:e.email,position:e.position,area:e.area,fechaIngreso:e.fechaIngreso??null,tipoContrato:e.tipoContrato??null,salarioMensualCents:e.salarioMensualCents??null,estado:e.estado||'activo'};
     const next={...base,...input};
     const name=String(next.name||'').trim(),email=String(next.email||'').trim().toLowerCase();
     if(name.length<2||name.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)||email.length>200)throw error('Invalid employee');
     if(tr.employees.some(x=>x.id!==e.id&&x.email===email))throw error('Duplicate employee email',409);
-    Object.assign(e,{name,email,position:String(next.position||'').slice(0,120),area:String(next.area||'').slice(0,120),updatedAt:now()});
+    Object.assign(e,{name,email,position:String(next.position||'').slice(0,120),area:String(next.area||'').slice(0,120),
+     fechaIngreso:next.fechaIngreso||null,tipoContrato:next.tipoContrato||null,
+     salarioMensualCents:Number.isInteger(next.salarioMensualCents)?next.salarioMensualCents:null,
+     estado:['activo','inactivo'].includes(next.estado)?next.estado:'activo',updatedAt:now()});
     return send({employee:e});
    }
    if(seg[0]==='employees'&&seg.length===3&&seg[2]==='history'&&method==='GET'){
@@ -2016,6 +2146,1256 @@ export function createDemoStore(catalog,{load=()=>null,save=()=>{}}={}){
    }
    throw error('Not found',404);
   }
+  // Proyectos (T025): espejo en memoria del contrato real
+  // /api/app/<slug>/projects/... (platform/projects-store.mjs,
+  // projects-domain.mjs, migración 030). Las tareas viven en
+  // tenant.tasks con sourceToolId='T025' (tareas reales T004).
+  // El tablero Kanban se espeja aparte (ver kanbanRoute): aquí solo se
+  // guarda kanbanBoardId en el proyecto.
+  const pjRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/projects(?:\/(.*))?$/);
+  if(pjRoute){
+   const tenant=tenantBySlug(pjRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T025'))allowed(tenant,'T025');
+   const pj=tenant.projects;
+   const seg=(pjRoute[2]||'').split('/').filter(Boolean);
+   const projectOf=id=>getRecord(pj.projects,id);
+   const milestoneOf=(pid,mid)=>getRecord(pj.milestones.filter(m=>m.projectId===pid),mid);
+   const projectTasks=pid=>tenant.tasks.filter(t=>t.sourceToolId==='T025'&&t.sourceRecordId===pid&&!t.archivedAt);
+   const progressOf=p=>{
+    const ms=pj.milestones.filter(m=>m.projectId===p.id&&m.status!=='cancelado');
+    const done=ms.filter(m=>m.status==='completado').length;
+    const tasks=projectTasks(p.id),tasksDone=tasks.filter(t=>t.status==='done').length;
+    const pct=(a,b)=>b?Math.round(100*a/b):0;
+    return {milestones:{done,total:ms.length,percent:pct(done,ms.length)},
+     tasks:{done:tasksDone,total:tasks.length,percent:pct(tasksDone,tasks.length)},
+     percent:pct(done+tasksDone,ms.length+tasks.length)};
+   };
+   const projectView=p=>({...p,progress:progressOf(p),
+    clientName:tenant.clients.find(c=>c.id===p.clientId)?.name||null,
+    ownerEmail:tenant.members.find(m=>m.id===p.ownerUserId)?.email||null,
+    kanbanBoardName:tenant.kanbanBoards.find(b=>b.id===p.kanbanBoardId)?.name||null});
+   const validProject=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid project');
+    const merged={...base,...input};
+    const name=String(merged.name||'').trim();
+    if(name.length<3||name.length>160)throw error('Invalid project');
+    if(merged.startsOn&&merged.endsOn&&merged.endsOn<merged.startsOn)throw error('Invalid project');
+    if(merged.startsOn!==undefined&&merged.startsOn!==null&&!/^\d{4}-\d{2}-\d{2}$/.test(merged.startsOn))throw error('Invalid project');
+    if(merged.endsOn!==undefined&&merged.endsOn!==null&&!/^\d{4}-\d{2}-\d{2}$/.test(merged.endsOn))throw error('Invalid project');
+    if(merged.clientId&&!tenant.clients.some(c=>c.id===merged.clientId&&!c.archivedAt))throw error('Client not found',404);
+    if(merged.ownerUserId&&!tenant.members.some(m=>m.id===merged.ownerUserId&&m.status==='active'))throw error('Assignee not found',404);
+    if(merged.kanbanBoardId&&!tenant.kanbanBoards.some(b=>b.id===merged.kanbanBoardId))throw error('Not found',404);
+    return {name,description:String(merged.description||'').slice(0,4000),clientId:merged.clientId||null,
+     startsOn:merged.startsOn||null,endsOn:merged.endsOn||null,
+     status:['planificado','en curso','en pausa','completado','cancelado'].includes(merged.status)?merged.status:'planificado',
+     ownerUserId:merged.ownerUserId||null,kanbanBoardId:merged.kanbanBoardId||null};
+   };
+   const validMilestone=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid milestone');
+    const merged={...base,...input};
+    const title=String(merged.title||'').trim();
+    if(title.length<2||title.length>160)throw error('Invalid milestone');
+    if(merged.dueOn!==undefined&&merged.dueOn!==null&&!/^\d{4}-\d{2}-\d{2}$/.test(merged.dueOn))throw error('Invalid milestone');
+    return {title,dueOn:merged.dueOn||null,
+     status:['pendiente','completado','cancelado'].includes(merged.status)?merged.status:'pendiente'};
+   };
+   // ---- Tablero ----
+   if(seg.length===1&&seg[0]==='dashboard'&&method==='GET'){
+    const all=pj.projects;
+    const tasks=tenant.tasks.filter(t=>t.sourceToolId==='T025'&&!t.archivedAt);
+    const byStatus=s=>tasks.filter(t=>t.status===s).length;
+    return emit({kpis:{activeProjects:all.filter(p=>p.status==='en curso').length,totalProjects:all.length,
+      completedProjects:all.filter(p=>p.status==='completado').length,
+      tasksCompleted:byStatus('done'),tasksPending:byStatus('pending'),tasksInProgress:byStatus('in_progress'),tasksTotal:tasks.length,
+      teamMembers:tenant.members.filter(m=>m.status==='active').length},
+     projectProgress:[...all].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,8).map(p=>({id:p.id,name:p.name,status:p.status,
+      percent:progressOf(p).percent,milestonesDone:progressOf(p).milestones.done,milestonesTotal:progressOf(p).milestones.total,
+      tasksDone:progressOf(p).tasks.done,tasksTotal:progressOf(p).tasks.total})),
+     tasksByStatus:{done:byStatus('done'),pending:byStatus('pending'),inProgress:byStatus('in_progress')},
+     team:tenant.members.filter(m=>m.status==='active').map(m=>({userId:m.id,email:m.email,role:m.role,
+      activeTasks:tasks.filter(t=>t.assigneeUserId===m.id&&t.status!=='done').length}))});
+   }
+   // ---- Proyectos ----
+   if(seg.length===0){
+    if(method==='GET'){
+     const status=url.searchParams.get('status');
+     return emit({projects:pj.projects.filter(p=>!status||p.status===status).map(projectView)});
+    }
+    if(method==='POST'){
+     const p={id:uuid(),...validProject(input),createdAt:now(),updatedAt:now()};
+     pj.projects.unshift(p);demoAudit(tenant,'projects.project_created',p.id);return send({project:projectView(p)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg.length===1&&seg[0]!=='dashboard'){
+    const p=projectOf(seg[0]);
+    if(method==='GET')return emit({project:projectView(p),
+     milestones:pj.milestones.filter(m=>m.projectId===p.id),
+     tasks:projectTasks(p.id).map(t=>({...t,assigneeEmail:tenant.members.find(m=>m.id===t.assigneeUserId)?.email||null}))});
+    if(method==='PATCH'){
+     if(input&&Object.keys(input).length===1&&'status' in input){
+      if(!['planificado','en curso','en pausa','completado','cancelado'].includes(input.status))throw error('Invalid project');
+      p.status=input.status;p.updatedAt=now();return send({ok:true,status:input.status});
+     }
+     Object.assign(p,validProject(input,p),{updatedAt:now()});return send({project:projectView(p)});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Hitos ----
+   if(seg.length===2&&seg[1]==='milestones'){
+    const p=projectOf(seg[0]);
+    if(method==='GET')return emit({milestones:[...pj.milestones.filter(m=>m.projectId===p.id)]
+     .sort((a,b)=>(a.dueOn===null)-(b.dueOn===null)||(a.dueOn||'').localeCompare(b.dueOn||''))});
+    if(method==='POST'){
+     const m={id:uuid(),projectId:p.id,...validMilestone(input),createdAt:now(),updatedAt:now()};
+     pj.milestones.push(m);return send({milestone:m});
+    }
+    throw error('Not found',404);
+   }
+   if(seg.length===3&&seg[1]==='milestones'){
+    const m=milestoneOf(seg[0],seg[2]);
+    if(method==='PATCH'){
+     if(input&&Object.keys(input).length===1&&'status' in input){
+      if(!['pendiente','completado','cancelado'].includes(input.status))throw error('Invalid milestone');
+      m.status=input.status;m.updatedAt=now();
+      if(input.status==='completado')demoAudit(tenant,'projects.milestone_completed',m.id);
+      return send({ok:true,status:input.status});
+     }
+     Object.assign(m,validMilestone(input,m),{updatedAt:now()});return send({milestone:m});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Tareas del proyecto (T004 reales) ----
+   if(seg.length===2&&seg[1]==='tasks'){
+    const p=projectOf(seg[0]);
+    if(method==='GET')return emit({tasks:projectTasks(p.id).map(t=>({...t,assigneeEmail:tenant.members.find(m=>m.id===t.assigneeUserId)?.email||null}))});
+    if(method==='POST'){
+     const title=String(input.title||'').trim();
+     if(title.length<2||!['pending','in_progress','done'].includes(input.status||'pending')||!['low','normal','high'].includes(input.priority||'normal'))throw error('Invalid task');
+     if(input.assigneeUserId&&!tenant.members.some(m=>m.id===input.assigneeUserId&&m.status==='active'))throw error('Assignee not found',404);
+     const task={id:uuid(),title,notes:String(input.notes||'').trim(),assigneeUserId:input.assigneeUserId||null,
+      assigneeEmail:tenant.members.find(m=>m.id===(input.assigneeUserId||null))?.email||null,
+      dueOn:input.dueOn||null,status:input.status||'pending',priority:input.priority||'normal',
+      sourceToolId:'T025',sourceRecordId:p.id,notifiedAt:null,createdAt:now(),updatedAt:now()};
+     tenant.tasks.unshift(task);return send({task});
+    }
+    throw error('Not found',404);
+   }
+   if(seg.length===3&&seg[1]==='tasks'){
+    const p=projectOf(seg[0]);
+    const task=getRecord(projectTasks(p.id),seg[2]);
+    if(method==='PATCH'){
+     if(!input||Object.keys(input).length!==1||!['pending','in_progress','done'].includes(input.status))throw error('Invalid task');
+     task.status=input.status;task.updatedAt=now();return send({ok:true});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Tablero Kanban del proyecto ----
+   if(seg.length===2&&seg[1]==='board'){
+    const p=projectOf(seg[0]);
+    if(method==='POST'&&input?.boardId){
+     const board=tenant.kanbanBoards.find(b=>b.id===input.boardId);
+     if(!board)throw error('Not found',404);
+     p.kanbanBoardId=board.id;p.updatedAt=now();return send({ok:true,boardId:board.id,boardName:board.name});
+    }
+    if(method==='POST'){
+     if(p.kanbanBoardId){
+      const existing=tenant.kanbanBoards.find(b=>b.id===p.kanbanBoardId);
+      if(existing)return send({ok:true,boardId:existing.id,boardName:existing.name,alreadyLinked:true});
+     }
+     const board={id:uuid(),name:'Tablero: '+p.name,sourceToolId:'generic',
+      phases:[{id:uuid(),title:'Por hacer',position:0},{id:uuid(),title:'En curso',position:1},{id:uuid(),title:'Hecho',position:2}],createdAt:now()};
+     tenant.kanbanBoards.push(board);p.kanbanBoardId=board.id;p.updatedAt=now();
+     demoAudit(tenant,'projects.board_created',board.id);
+     return send({ok:true,boardId:board.id,boardName:board.name});
+    }
+    if(method==='PATCH'){
+     const board=tenant.kanbanBoards.find(b=>b.id===input?.boardId);
+     if(!board)throw error('Not found',404);
+     p.kanbanBoardId=board.id;p.updatedAt=now();return send({ok:true,boardId:board.id,boardName:board.name});
+    }
+    throw error('Not found',404);
+   }
+   throw error('Not found',404);
+  }
+  // Mesa de ayuda (T028): espejo en memoria del contrato real
+  // /api/app/<slug>/helpdesk/... (platform/helpdesk-store.mjs,
+  // helpdesk-domain.mjs, migración 033). Al asignar se avisa en la app
+  // con demoNotify (sin correo real, como el motor canónico).
+  const hdRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/helpdesk(?:\/(.*))?$/);
+  if(hdRoute){
+   const tenant=tenantBySlug(hdRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T028'))allowed(tenant,'T028');
+   const hd=tenant.helpdesk;
+   const seg=(hdRoute[2]||'').split('/').filter(Boolean);
+   const ticketOf=id=>getRecord(hd.tickets,id);
+   const ticketView=t=>({...t,replies:hd.replies.filter(r=>r.ticketId===t.id).length,
+    clientName:tenant.clients.find(c=>c.id===t.clientId)?.name||null,
+    assigneeEmail:tenant.members.find(m=>m.id===t.assigneeUserId)?.email||null});
+   const notifyAssignee=t=>{
+    if(!t.assigneeUserId)return false;
+    return demoNotify(tenant,'info','Ticket asignado: '+t.subject,
+     'Prioridad: '+t.priority+'. Estado: '+t.status+'.',
+     '/app/?tenant='+tenant.slug+'&tool=T028&record='+t.id);
+   };
+   const validTicket=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid ticket');
+    const merged={...base,...input};
+    const subject=String(merged.subject||'').trim();
+    if(subject.length<3||subject.length>200)throw error('Invalid ticket');
+    if(merged.clientId&&!tenant.clients.some(c=>c.id===merged.clientId&&!c.archivedAt))throw error('Client not found',404);
+    if(merged.assigneeUserId&&!tenant.members.some(m=>m.id===merged.assigneeUserId&&m.status==='active'))throw error('Assignee not found',404);
+    return {subject,description:String(merged.description||'').slice(0,4000),clientId:merged.clientId||null,
+     status:['abierto','en curso','en espera','resuelto','cerrado'].includes(merged.status)?merged.status:'abierto',
+     priority:['baja','media','alta','urgente'].includes(merged.priority)?merged.priority:'media',
+     assigneeUserId:merged.assigneeUserId||null};
+   };
+   // ---- Tablero ----
+   if(seg.length===1&&seg[0]==='dashboard'&&method==='GET'){
+    const all=hd.tickets;
+    const byStatus=s=>all.filter(t=>t.status===s).length;
+    const open=all.filter(t=>t.status==='abierto');
+    return emit({kpis:{open:byStatus('abierto'),inProgress:byStatus('en curso'),waiting:byStatus('en espera'),
+     resolved:byStatus('resuelto'),closed:byStatus('cerrado'),
+     urgentOpen:all.filter(t=>t.priority==='urgente'&&!['resuelto','cerrado'].includes(t.status)).length,
+     unassignedOpen:all.filter(t=>!t.assigneeUserId&&!['resuelto','cerrado'].includes(t.status)).length,
+     total:all.length},
+     recentOpen:[...open].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5).map(ticketView)});
+   }
+   // ---- Tickets ----
+   if(seg.length===0){
+    if(method==='GET'){
+     const q=url.searchParams;
+     return emit({tickets:hd.tickets.filter(t=>(!q.get('status')||t.status===q.get('status'))&&
+      (!q.get('priority')||t.priority===q.get('priority'))&&(!q.get('assignee')||t.assigneeUserId===q.get('assignee'))).map(ticketView)});
+    }
+    if(method==='POST'){
+     const t={id:uuid(),...validTicket(input),createdAt:now(),updatedAt:now()};
+     hd.tickets.unshift(t);demoAudit(tenant,'helpdesk.ticket_created',t.id);notifyAssignee(t);
+     return send({ticket:ticketView(t)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg.length===1&&seg[0]!=='dashboard'){
+    const t=ticketOf(seg[0]);
+    if(method==='GET')return emit({ticket:ticketView(t),
+     replies:hd.replies.filter(r=>r.ticketId===t.id).map(r=>({...r,authorEmail:tenant.members.find(m=>m.id===r.authorUserId)?.email||null}))});
+    if(method==='PATCH'){
+     if(input&&Object.keys(input).length===1&&'status' in input){
+      if(!['abierto','en curso','en espera','resuelto','cerrado'].includes(input.status))throw error('Invalid ticket');
+      t.status=input.status;t.updatedAt=now();return send({ok:true,status:input.status});
+     }
+     const prevAssignee=t.assigneeUserId;
+     Object.assign(t,validTicket(input,t),{updatedAt:now()});
+     if(t.assigneeUserId&&t.assigneeUserId!==prevAssignee)notifyAssignee(t);
+     return send({ticket:ticketView(t)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg.length===2&&seg[1]==='assign'&&method==='POST'){
+    const t=ticketOf(seg[0]);
+    const assigneeUserId=input?.assigneeUserId??null;
+    if(assigneeUserId!==null&&!tenant.members.some(m=>m.id===assigneeUserId&&m.status==='active'))throw error('Assignee not found',404);
+    t.assigneeUserId=assigneeUserId;t.updatedAt=now();
+    const notified=notifyAssignee(t);
+    demoAudit(tenant,'helpdesk.ticket_assigned',t.id);
+    return send({ticket:ticketView(t),notified});
+   }
+   if(seg.length===2&&seg[1]==='replies'){
+    const t=ticketOf(seg[0]);
+    if(method==='GET')return emit({replies:hd.replies.filter(r=>r.ticketId===t.id)
+     .map(r=>({...r,authorEmail:tenant.members.find(m=>m.id===r.authorUserId)?.email||null}))});
+    if(method==='POST'){
+     const body=String(input?.body||'').trim();
+     if(!body||body.length>4000)throw error('Invalid reply');
+     const r={id:uuid(),ticketId:t.id,authorUserId:'33333333-3333-4333-8333-333333333333',
+      authorEmail:'superadmin@ejemplo.invalid',body,createdAt:now()};
+     hd.replies.push(r);demoAudit(tenant,'helpdesk.reply_added',r.id);
+     return send({reply:r});
+    }
+    throw error('Not found',404);
+   }
+   throw error('Not found',404);
+  }
+  // Kanban (T005) mínimo en demo: listar, crear y abrir tablero con sus
+  // fases. Las tarjetas no se espejan (crear/mover tarjetas en demo no
+  // está cubierto); el tablero de un proyecto se crea desde T025.
+  const kbRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/workflows\/kanban(?:\/([a-z0-9-]+))?$/);
+  if(kbRoute){
+   const tenant=tenantBySlug(kbRoute[1]);
+   allowed(tenant,'T005');
+   const boardId=kbRoute[2];
+   if(!boardId){
+    if(method==='GET')return emit({boards:tenant.kanbanBoards.map(b=>({id:b.id,name:b.name,sourceToolId:b.sourceToolId,createdAt:b.createdAt}))});
+    if(method==='POST'){
+     const name=String(input?.name||'').trim();
+     if(name.length<2||!['C002','C003','generic'].includes(input?.sourceToolId??'generic'))throw error('Invalid kanban board');
+     const board={id:uuid(),name,sourceToolId:input.sourceToolId??'generic',
+      phases:[{id:uuid(),title:'Por hacer',position:0},{id:uuid(),title:'En curso',position:1},{id:uuid(),title:'Hecho',position:2}],createdAt:now()};
+     tenant.kanbanBoards.push(board);demoAudit(tenant,'kanban.board_created',board.id);
+     return send({board:{id:board.id,name:board.name,sourceToolId:board.sourceToolId,phases:board.phases.map(p=>({title:p.title,position:p.position}))}});
+    }
+    throw error('Not found',404);
+   }
+   if(method==='GET'){
+    const board=getRecord(tenant.kanbanBoards,boardId);
+    return emit({board:{id:board.id,sourceToolId:board.sourceToolId,phases:board.phases},cards:[]});
+   }
+   throw error('Not found',404);
+  }
+  // Empleados (T026): espejo en memoria del contrato real
+  // /api/app/<slug>/employees/... (platform/employees-store.mjs,
+  // employees-domain.mjs, migración 031). Los empleados SON los de T022
+  // (tenant.training.employees); los documentos viven en tenant.hr.
+  const empRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/employees(?:\/(.*))?$/);
+  if(empRoute){
+   const tenant=tenantBySlug(empRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T026'))allowed(tenant,'T026');
+   const tr=tenant.training,hr=tenant.hr;
+   const seg=(empRoute[2]||'').split('/').filter(Boolean);
+   const employeeOf=id=>getRecord(tr.employees,id);
+   const validEmployee=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid employee');
+    const merged={...base,...input};
+    const name=String(merged.name||'').trim(),email=String(merged.email||'').trim().toLowerCase();
+    if(name.length<2||name.length>160||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)||email.length>200)throw error('Invalid employee');
+    if(merged.fechaIngreso!==undefined&&merged.fechaIngreso!==null&&!/^\d{4}-\d{2}-\d{2}$/.test(merged.fechaIngreso))throw error('Invalid employee');
+    if(merged.tipoContrato!==undefined&&merged.tipoContrato!==null&&!['indefinido','temporal','por obra','prácticas'].includes(merged.tipoContrato))throw error('Invalid employee');
+    if(merged.salarioMensualCents!==undefined&&merged.salarioMensualCents!==null&&(!Number.isInteger(merged.salarioMensualCents)||merged.salarioMensualCents<0))throw error('Invalid employee');
+    return {name,email,position:String(merged.position||'').slice(0,120),area:String(merged.area||'').slice(0,120),
+     fechaIngreso:merged.fechaIngreso||null,tipoContrato:merged.tipoContrato||null,
+     salarioMensualCents:Number.isInteger(merged.salarioMensualCents)?merged.salarioMensualCents:null,
+     estado:['activo','inactivo'].includes(merged.estado)?merged.estado:'activo'};
+   };
+   const employeeView=e=>({...e,
+    documents:hr.documents.filter(d=>d.employeeId===e.id).length,
+    enrollments:tr.enrollments.filter(x=>x.employeeId===e.id&&x.status!=='cancelado').length});
+   const hrDashboard=()=>{
+    const today=new Date().toISOString().slice(0,10),month=today.slice(0,7);
+    const daysElapsed=new Date().getUTCDate();
+    const hires=new Map();
+    for(const e of tr.employees){
+     if(!e.fechaIngreso)continue;
+     const m=e.fechaIngreso.slice(0,7);
+     const since=new Date(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth()-5,1)).toISOString().slice(0,7);
+     if(m<since)continue;
+     hires.set(m,(hires.get(m)||0)+1);
+    }
+    const activity=tr.employees.filter(e=>(e.estado||'activo')==='activo')
+     .sort((a,b)=>a.name.localeCompare(b.name,'es')).slice(0,12).map(e=>{
+      const percents=tr.enrollments.filter(n=>n.employeeId===e.id&&['inscrito','en curso','completado'].includes(n.status))
+       .map(n=>tr.progress.find(p=>p.enrollmentId===n.id)).filter(Boolean).map(p=>p.percent);
+      const workdays=hr.workdays.filter(w=>w.employeeId===e.id&&w.fecha.slice(0,7)===month).length;
+      return {employeeId:e.id,name:e.name,position:e.position,area:e.area,estado:e.estado||'activo',
+       trainingProgress:percents.length?Math.round(percents.reduce((a,b)=>a+b,0)/percents.length):null,
+       workdaysThisMonth:workdays,attendanceMonthPct:Math.min(100,Math.round(100*workdays/Math.max(1,daysElapsed)))};
+     });
+    return {kpis:{total:tr.employees.length,activos:tr.employees.filter(e=>(e.estado||'activo')==='activo').length,
+     inactivos:tr.employees.filter(e=>(e.estado||'activo')==='inactivo').length,
+     conSalario:tr.employees.filter(e=>e.salarioMensualCents>0).length,documentos:hr.documents.length,
+     asistenciaHoy:hr.workdays.filter(w=>w.fecha===today).length,
+     vacacionesPendientes:hr.requests.filter(x=>x.estado==='pendiente').length},
+     hiresByMonth:[...hires.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([month,count])=>({month,count})),
+     activity,team:activity.map(a=>({employeeId:a.employeeId,name:a.name,position:a.position,area:a.area,estado:a.estado}))};
+   };
+   if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET')return emit(hrDashboard());
+   if(seg[0]==='employees'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     let list=[...tr.employees].sort((a,b)=>a.name.localeCompare(b.name,'es'));
+     if(q.get('estado'))list=list.filter(e=>(e.estado||'activo')===q.get('estado'));
+     if(q.get('search')){const needle=q.get('search').toLowerCase();list=list.filter(e=>[e.name,e.email,e.position,e.area].join(' ').toLowerCase().includes(needle));}
+     return emit({employees:list.map(employeeView)});
+    }
+    if(method==='POST'){
+     const data=validEmployee(input);
+     if(tr.employees.some(e=>e.email===data.email))throw error('Duplicate employee email',409);
+     const e={id:uuid(),...data,createdAt:now(),updatedAt:now()};
+     tr.employees.push(e);return send({employee:e});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='employees'&&seg.length===2){
+    const e=employeeOf(seg[1]);
+    if(method==='GET')return emit({employee:employeeView(e),documents:hr.documents.filter(d=>d.employeeId===e.id)});
+    if(method==='PATCH'){
+     const data=validEmployee(input,{name:e.name,email:e.email,position:e.position,area:e.area,
+      fechaIngreso:e.fechaIngreso??null,tipoContrato:e.tipoContrato??null,
+      salarioMensualCents:e.salarioMensualCents??null,estado:e.estado||'activo'});
+     if(tr.employees.some(x=>x.id!==e.id&&x.email===data.email))throw error('Duplicate employee email',409);
+     Object.assign(e,{...data,updatedAt:now()});return send({employee:e});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='employees'&&seg.length===3&&seg[2]==='status'&&method==='PATCH'){
+    const e=employeeOf(seg[1]);
+    if(!input||Object.keys(input).length!==1||!['activo','inactivo'].includes(input.estado))throw error('Invalid employee');
+    e.estado=input.estado;e.updatedAt=now();return send({ok:true,estado:input.estado});
+   }
+   if(seg[0]==='employees'&&seg.length===3&&seg[2]==='documents'){
+    const e=employeeOf(seg[1]);
+    if(method==='GET')return emit({documents:hr.documents.filter(d=>d.employeeId===e.id).map(d=>({...d,employeeName:e.name}))});
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid document');
+     if(!['contrato','identificación','comprobante','certificado','otro'].includes(input.tipo))throw error('Invalid document');
+     const nombre=String(input.nombre||'').trim();
+     if(nombre.length<2||nombre.length>160)throw error('Invalid document');
+     if(input.fecha!==undefined&&input.fecha!==null&&!/^\d{4}-\d{2}-\d{2}$/.test(input.fecha))throw error('Invalid document');
+     const d={id:uuid(),employeeId:e.id,tipo:input.tipo,nombre,fecha:input.fecha||null,notas:String(input.notas||'').slice(0,2000),employeeName:e.name,createdAt:now()};
+     hr.documents.push(d);return send({document:d});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='documents'&&seg.length===1&&method==='GET')
+    return emit({documents:hr.documents.map(d=>({...d,employeeName:tr.employees.find(e=>e.id===d.employeeId)?.name||''}))});
+   if(seg[0]==='documents'&&seg.length===2&&method==='DELETE'){
+    const d=getRecord(hr.documents,seg[1]);
+    hr.documents.splice(hr.documents.indexOf(d),1);return send({ok:true});
+   }
+   throw error('Not found',404);
+  }
+  // Asistencia y vacaciones (T027): espejo en memoria del contrato real
+  // /api/app/<slug>/attendance/... (platform/attendance-store.mjs,
+  // attendance-domain.mjs, migración 032). Solo registro y aprobación.
+  const attRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/attendance(?:\/(.*))?$/);
+  if(attRoute){
+   const tenant=tenantBySlug(attRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T027'))allowed(tenant,'T027');
+   const tr=tenant.training,hr=tenant.hr;
+   const seg=(attRoute[2]||'').split('/').filter(Boolean);
+   const employeeOf=id=>getRecord(tr.employees,id);
+   const minutesOf=(a,b)=>{
+    if(!a||!b)return null;
+    const d=(Number(b.slice(0,2))*60+Number(b.slice(3)))-(Number(a.slice(0,2))*60+Number(a.slice(3)));
+    return d>0?d:null;
+   };
+   const reqDays=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000)+1;
+   const workdayView=w=>({...w,employeeName:tr.employees.find(e=>e.id===w.employeeId)?.name||'',minutes:minutesOf(w.entrada,w.salida)});
+   const requestView=x=>({...x,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',days:reqDays(x.fechaInicio,x.fechaFin)});
+   const attDashboard=()=>{
+    const month=new Date().toISOString().slice(0,7),year=new Date().getFullYear();
+    const start=year+'-01-01',end=year+'-12-31';
+    let approved=0;
+    for(const x of hr.requests){
+     if(x.tipo!=='vacaciones'||x.estado!=='aprobada')continue;
+     const from=x.fechaInicio<start?start:x.fechaInicio,to=x.fechaFin>end?end:x.fechaFin;
+     if(to>=from)approved+=reqDays(from,to);
+    }
+    return {kpis:{pendingRequests:hr.requests.filter(x=>x.estado==='pendiente').length,
+     workdaysThisMonth:hr.workdays.filter(w=>w.fecha.slice(0,7)===month).length,
+     activeEmployees:tr.employees.filter(e=>(e.estado||'activo')==='activo').length,approvedVacationDays:approved},
+     vacationSummary:{year,employees:[]}};
+   };
+   if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET')return emit(attDashboard());
+   if(seg[0]==='workdays'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     let list=[...hr.workdays].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+     if(q.get('employeeId'))list=list.filter(w=>w.employeeId===q.get('employeeId'));
+     if(q.get('from'))list=list.filter(w=>w.fecha>=q.get('from'));
+     if(q.get('to'))list=list.filter(w=>w.fecha<=q.get('to'));
+     return emit({workdays:list.map(workdayView)});
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid workday');
+     const emp=employeeOf(input.employeeId);
+     if(!/^\d{4}-\d{2}-\d{2}$/.test(input.fecha||''))throw error('Invalid workday');
+     for(const t of ['entrada','salida']){
+      if(input[t]!==undefined&&input[t]!==null&&input[t]!==''&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(input[t]))throw error('Invalid workday');
+     }
+     if(input.entrada&&input.salida&&minutesOf(input.entrada,input.salida)===null)throw error('Invalid workday');
+     const existing=hr.workdays.find(w=>w.employeeId===emp.id&&w.fecha===input.fecha);
+     if(existing){
+      Object.assign(existing,{entrada:input.entrada||null,salida:input.salida||null,notas:String(input.notas||'').slice(0,2000)});
+      return send({workday:workdayView(existing)});
+     }
+     const w={id:uuid(),employeeId:emp.id,fecha:input.fecha,entrada:input.entrada||null,salida:input.salida||null,
+      notas:String(input.notas||'').slice(0,2000),employeeName:emp.name,createdAt:now()};
+     hr.workdays.push(w);return send({workday:workdayView(w)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='requests'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     let list=[...hr.requests].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+     if(q.get('employeeId'))list=list.filter(x=>x.employeeId===q.get('employeeId'));
+     if(q.get('estado'))list=list.filter(x=>x.estado===q.get('estado'));
+     if(q.get('tipo'))list=list.filter(x=>x.tipo===q.get('tipo'));
+     return emit({requests:list.map(requestView)});
+    }
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid request');
+     const emp=employeeOf(input.employeeId);
+     if(!['vacaciones','permiso'].includes(input.tipo))throw error('Invalid request');
+     if(!/^\d{4}-\d{2}-\d{2}$/.test(input.fechaInicio||'')||!/^\d{4}-\d{2}-\d{2}$/.test(input.fechaFin||'')||input.fechaFin<input.fechaInicio)throw error('Invalid request');
+     const motivo=String(input.motivo||'').trim();
+     if(motivo.length<2||motivo.length>500)throw error('Invalid request');
+     const x={id:uuid(),employeeId:emp.id,tipo:input.tipo,fechaInicio:input.fechaInicio,fechaFin:input.fechaFin,
+      motivo,estado:'pendiente',resueltaPor:null,resueltaAt:null,employeeName:emp.name,createdAt:now()};
+     hr.requests.push(x);return send({request:requestView(x)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='requests'&&seg.length===3&&seg[2]==='resolve'&&method==='PATCH'){
+    const x=getRecord(hr.requests,seg[1]);
+    if(!['aprobada','rechazada'].includes(input?.estado))throw error('Invalid request');
+    if(x.estado!=='pendiente')throw error('Invalid request');
+    x.estado=input.estado;x.resueltaPor='33333333-3333-4333-8333-333333333333';x.resueltaAt=now();
+    return send({ok:true,estado:x.estado});
+   }
+   if(seg[0]==='summary'&&seg.length===1&&method==='GET'){
+    const q=url.searchParams,y=Number(q.get('year'))||new Date().getFullYear();
+    const start=y+'-01-01',end=y+'-12-31';
+    const byEmployee=new Map();
+    for(const x of hr.requests){
+     if(x.tipo!=='vacaciones'||x.estado!=='aprobada')continue;
+     if(q.get('employeeId')&&x.employeeId!==q.get('employeeId'))continue;
+     const from=x.fechaInicio<start?start:x.fechaInicio,to=x.fechaFin>end?end:x.fechaFin;
+     if(to<from)continue;
+     const cur=byEmployee.get(x.employeeId)||{employeeId:x.employeeId,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',days:0};
+     cur.days+=reqDays(from,to);byEmployee.set(x.employeeId,cur);
+    }
+    return emit({year:y,employees:[...byEmployee.values()]});
+   }
+   throw error('Not found',404);
+  }
+  // Nómina (T031): espejo en memoria del contrato real
+  // /api/app/<slug>/payroll/... (platform/payroll-store.mjs,
+  // payroll-domain.mjs, migración 036). Cálculo básico, sin CFDI ni IMSS/ISR.
+  const payRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/payroll(?:\/(.*))?$/);
+  if(payRoute){
+   const tenant=tenantBySlug(payRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T031'))allowed(tenant,'T031');
+   const tr=tenant.training,hr=tenant.hr;
+   const seg=(payRoute[2]||'').split('/').filter(Boolean);
+   const periodOf=id=>getRecord(hr.periods,id);
+   const conceptOf=id=>getRecord(hr.concepts,id);
+   const periodView=pp=>({...pp,receipts:hr.receipts.filter(x=>x.periodId===pp.id).length,
+    totalNetoCents:hr.receipts.filter(x=>x.periodId===pp.id).reduce((a,x)=>a+x.netoCents,0)});
+   const receiptView=x=>({...x,employeeName:tr.employees.find(e=>e.id===x.employeeId)?.name||'',
+    periodTipo:hr.periods.find(pp=>pp.id===x.periodId)?.tipo||'',
+    periodInicio:hr.periods.find(pp=>pp.id===x.periodId)?.fechaInicio||'',
+    periodFin:hr.periods.find(pp=>pp.id===x.periodId)?.fechaFin||'',
+    items:hr.receiptItems.filter(i=>i.receiptId===x.id)});
+   const validConcept=(input,base={})=>{
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid concept');
+    const merged={...base,...input};
+    const nombre=String(merged.nombre||'').trim();
+    if(nombre.length<2||nombre.length>120)throw error('Invalid concept');
+    if(!['percepcion','deduccion'].includes(merged.tipo)||!['fijo','porcentaje'].includes(merged.modo))throw error('Invalid concept');
+    if(merged.modo==='fijo'&&(!Number.isInteger(merged.montoCents)||merged.montoCents<0))throw error('Invalid concept');
+    if(merged.modo==='porcentaje'&&(typeof merged.porcentaje!=='number'||merged.porcentaje<0||merged.porcentaje>100))throw error('Invalid concept');
+    return {nombre,tipo:merged.tipo,modo:merged.modo,
+     montoCents:merged.modo==='fijo'?merged.montoCents:null,
+     porcentaje:merged.modo==='porcentaje'?merged.porcentaje:null,activo:merged.activo!==false};
+   };
+   const payDashboard=()=>{
+    const last=[...hr.periods].sort((a,b)=>b.fechaInicio.localeCompare(a.fechaInicio))[0]||null;
+    const total=last?hr.receipts.filter(x=>x.periodId===last.id).reduce((a,x)=>a+x.netoCents,0):0;
+    return {kpis:{periods:hr.periods.length,activeConcepts:hr.concepts.filter(c=>c.activo).length,
+     employeesWithSalary:tr.employees.filter(e=>(e.estado||'activo')==='activo'&&e.salarioMensualCents>0).length,
+     lastPeriodNetoCents:total},
+     lastPeriod:last?{id:last.id,tipo:last.tipo,fechaInicio:last.fechaInicio,fechaFin:last.fechaFin,estado:last.estado,totalNetoCents:total}:null};
+   };
+   if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET')return emit(payDashboard());
+   if(seg[0]==='periods'&&seg.length===1){
+    if(method==='GET')return emit({periods:[...hr.periods].sort((a,b)=>b.fechaInicio.localeCompare(a.fechaInicio)).map(periodView)});
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid period');
+     if(!['quincenal','mensual'].includes(input.tipo))throw error('Invalid period');
+     if(!/^\d{4}-\d{2}-\d{2}$/.test(input.fechaInicio||'')||!/^\d{4}-\d{2}-\d{2}$/.test(input.fechaFin||'')||input.fechaFin<input.fechaInicio)throw error('Invalid period');
+     if(hr.periods.some(pp=>pp.tipo===input.tipo&&pp.fechaInicio===input.fechaInicio))throw error('Duplicate period',409);
+     const pp={id:uuid(),tipo:input.tipo,fechaInicio:input.fechaInicio,fechaFin:input.fechaFin,estado:'borrador',createdAt:now(),updatedAt:now()};
+     hr.periods.push(pp);return send({period:pp});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='periods'&&seg.length===3&&seg[2]==='calculate'&&method==='POST'){
+    const pp=periodOf(seg[1]);
+    if(pp.estado!=='borrador')throw error('Invalid period');
+    hr.receipts=hr.receipts.filter(x=>x.periodId!==pp.id);
+    hr.receiptItems=hr.receiptItems.filter(i=>hr.receipts.some(x=>x.id===i.receiptId));
+    const concepts=hr.concepts.filter(c=>c.activo);
+    const receipts=[],skipped=[];
+    for(const e of tr.employees.filter(x=>(x.estado||'activo')==='activo')){
+     if(!e.salarioMensualCents||e.salarioMensualCents<=0){skipped.push({employeeId:e.id,employeeName:e.name,reason:'sin salario'});continue;}
+     const base=pp.tipo==='quincenal'?Math.round(e.salarioMensualCents/2):e.salarioMensualCents;
+     let percepciones=0,deducciones=0;
+     const items=concepts.map(c=>{
+      const monto=c.modo==='porcentaje'?Math.round(base*c.porcentaje/100):c.montoCents;
+      if(c.tipo==='percepcion')percepciones+=monto;else deducciones+=monto;
+      return {conceptId:c.id,nombre:c.nombre,tipo:c.tipo,montoCents:monto};
+     });
+     const r={id:uuid(),periodId:pp.id,employeeId:e.id,salarioBaseCents:base,
+      percepcionesCents:percepciones,deduccionesCents:deducciones,
+      netoCents:Math.max(0,base+percepciones-deducciones),estado:'calculado',createdAt:now()};
+     hr.receipts.push(r);
+     for(const item of items)hr.receiptItems.push({id:uuid(),receiptId:r.id,...item,createdAt:now()});
+     receipts.push({...r,employeeName:e.name});
+    }
+    pp.estado='calculado';pp.updatedAt=now();
+    return send({period:pp,receipts,skipped});
+   }
+   if(seg[0]==='periods'&&seg.length===3&&seg[2]==='pay'&&method==='POST'){
+    const pp=periodOf(seg[1]);
+    if(pp.estado!=='calculado')throw error('Invalid period');
+    for(const x of hr.receipts.filter(r=>r.periodId===pp.id))x.estado='pagado';
+    pp.estado='pagado';pp.updatedAt=now();
+    return send({ok:true,estado:'pagado',receipts:hr.receipts.filter(r=>r.periodId===pp.id).length});
+   }
+   if(seg[0]==='concepts'&&seg.length===1){
+    if(method==='GET'){
+     const q=url.searchParams;
+     let list=[...hr.concepts].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+     if(q.get('activo')!==null)list=list.filter(c=>c.activo===(q.get('activo')==='1'));
+     return emit({concepts:list});
+    }
+    if(method==='POST'){
+     const data=validConcept(input);
+     const c={id:uuid(),...data,createdAt:now(),updatedAt:now()};
+     hr.concepts.push(c);return send({concept:c});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='concepts'&&seg.length===2){
+    const c=conceptOf(seg[1]);
+    if(method==='PATCH'){
+     const data=validConcept(input,{nombre:c.nombre,tipo:c.tipo,modo:c.modo,montoCents:c.montoCents,porcentaje:c.porcentaje,activo:c.activo});
+     Object.assign(c,{...data,updatedAt:now()});return send({concept:c});
+    }
+    if(method==='DELETE'){
+     if(hr.receiptItems.some(i=>i.conceptId===c.id))throw error('Invalid concept');
+     hr.concepts.splice(hr.concepts.indexOf(c),1);return send({ok:true});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='receipts'&&seg.length===1&&method==='GET'){
+    const q=url.searchParams;
+    let list=[...hr.receipts].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+    if(q.get('periodId'))list=list.filter(x=>x.periodId===q.get('periodId'));
+    if(q.get('employeeId'))list=list.filter(x=>x.employeeId===q.get('employeeId'));
+    return emit({receipts:list.map(receiptView)});
+   }
+   if(seg[0]==='receipts'&&seg.length===2&&method==='GET'){
+    const x=getRecord(hr.receipts,seg[1]);
+    return emit({receipt:receiptView(x)});
+   }
+   throw error('Not found',404);
+  }
+  // Marketing (T029): espejo en memoria del contrato real
+  // /api/app/<slug>/marketing/... (platform/marketing-store.mjs,
+  // marketing-domain.mjs, migración 034). Los datos viven solo en
+  // sessionStorage de esta pestaña (demo). Sin clave Resend en la demo,
+  // el envío siempre degrada con gracia: se registra como 'sin_envio' y
+  // la campaña NO se marca como enviada (igual que el servidor real).
+  const mkRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/marketing(?:\/(.*))?$/);
+  if(mkRoute){
+   const tenant=tenantBySlug(mkRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T029'))allowed(tenant,'T029');
+   const mk=tenant.marketing;
+   const seg=(mkRoute[2]||'').split('/').filter(Boolean);
+   const live=list=>list.filter(x=>!x.archivedAt);
+   const segmentOf=id=>getRecord(mk.segments,id);
+   const campaignOf=id=>getRecord(mk.campaigns,id);
+   const matchesSegment=(s,c)=>{
+    if(s.status&&c.status!==s.status)return false;
+    if(s.companyContains&&!String(c.company||'').toLowerCase().includes(s.companyContains.toLowerCase()))return false;
+    return true;
+   };
+   const recipientsOf=campaign=>{
+    const segment=campaign.segmentId?segmentOf(campaign.segmentId):null;
+    return live(tenant.clients)
+     .filter(c=>c.email&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)&&(!segment||matchesSegment(segment,c)))
+     .map(c=>({clientId:c.id,name:c.name,email:c.email.toLowerCase(),company:c.company||'',status:c.status||''}));
+   };
+   const segmentView=s=>({...s,recipients:live(tenant.clients).filter(c=>matchesSegment(s,c)).length});
+   const campaignView=c=>({...c,segmentName:mk.segments.find(s=>s.id===c.segmentId)?.name||null,
+    sends:mk.sends.filter(d=>d.campaignId===c.id).length,
+    sent:mk.sends.filter(d=>d.campaignId===c.id&&d.status==='enviado').length});
+   const validSegment=(body,base={})=>{
+    if(!body||typeof body!=='object'||Array.isArray(body))throw error('Invalid segment');
+    const merged={...base,...body};
+    const name=String(merged.name||'').trim();
+    if(name.length<2||name.length>120)throw error('Invalid segment');
+    if(merged.status!==undefined&&merged.status!==null&&merged.status!==''&&!['prospect','active','inactive'].includes(merged.status))throw error('Invalid segment');
+    return {name,description:String(merged.description||'').slice(0,2000),
+     status:merged.status||'',companyContains:String(merged.companyContains||'').trim().slice(0,160)};
+   };
+   const validCampaign=(body,base={})=>{
+    if(!body||typeof body!=='object'||Array.isArray(body))throw error('Invalid campaign');
+    const merged={...base,...body};
+    const name=String(merged.name||'').trim(),subject=String(merged.subject||'').trim();
+    if(name.length<2||name.length>140||subject.length<2||subject.length>200)throw error('Invalid campaign');
+    if(merged.segmentId!==undefined&&merged.segmentId!==null&&merged.segmentId!=='')segmentOf(merged.segmentId);
+    if(merged.scheduledAt!==undefined&&merged.scheduledAt!==null&&merged.scheduledAt!==''&&isNaN(Date.parse(merged.scheduledAt)))throw error('Invalid campaign');
+    if(merged.status!==undefined&&!['borrador','programada','enviada'].includes(merged.status))throw error('Invalid campaign');
+    return {name,subject,content:String(merged.content||'').slice(0,20000),
+     segmentId:merged.segmentId||null,scheduledAt:merged.scheduledAt||null,
+     status:merged.status||'borrador'};
+   };
+   // ---- Tablero ----
+   if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET'){
+    return emit({kpis:{draftCampaigns:mk.campaigns.filter(c=>c.status==='borrador').length,
+     scheduledCampaigns:mk.campaigns.filter(c=>c.status==='programada').length,
+     sentCampaigns:mk.campaigns.filter(c=>c.status==='enviada').length,
+     segments:mk.segments.length,totalSends:mk.sends.length,
+     deliveredSends:mk.sends.filter(d=>d.status==='enviado').length,
+     unsentSends:mk.sends.filter(d=>d.status==='sin_envio').length},
+     recentCampaigns:[...mk.campaigns].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5).map(campaignView)});
+   }
+   // ---- Segmentos ----
+   if(seg[0]==='segments'&&seg.length===1){
+    if(method==='GET')return emit({segments:[...mk.segments].sort((a,b)=>a.name.localeCompare(b.name)).map(segmentView)});
+    if(method==='POST'){const s={id:uuid(),...validSegment(input),createdAt:now(),updatedAt:now()};mk.segments.push(s);return send({segment:segmentView(s)});}
+    throw error('Not found',404);
+   }
+   if(seg[0]==='segments'&&seg.length===2){
+    const s=segmentOf(seg[1]);
+    if(method==='PATCH'){Object.assign(s,validSegment(input,s),{updatedAt:now()});return send({segment:segmentView(s)});}
+    if(method==='DELETE'){
+     for(const c of mk.campaigns.filter(c=>c.segmentId===s.id)){c.segmentId=null;c.updatedAt=now();}
+     mk.segments.splice(mk.segments.indexOf(s),1);return send({ok:true});
+    }
+    throw error('Not found',404);
+   }
+   // ---- Campañas ----
+   if(seg[0]==='campaigns'&&seg.length===1){
+    if(method==='GET'){
+     const status=url.searchParams.get('status');
+     return emit({campaigns:[...mk.campaigns].filter(c=>!status||c.status===status)
+      .sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(campaignView)});
+    }
+    if(method==='POST'){
+     const c={id:uuid(),...validCampaign(input),sentAt:null,createdAt:now(),updatedAt:now()};
+     mk.campaigns.unshift(c);demoAudit(tenant,'marketing.campaign_created',c.id);return send({campaign:c});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='campaigns'&&seg.length===2){
+    const c=campaignOf(seg[1]);
+    if(method==='GET')return emit({campaign:campaignView(c),
+     segment:c.segmentId?segmentOf(c.segmentId):null,
+     recipients:recipientsOf(c),sends:mk.sends.filter(d=>d.campaignId===c.id)});
+    if(method==='PATCH'){
+     if(c.status==='enviada')throw error('Invalid campaign');
+     if(input&&Object.keys(input).length===1&&'status' in input){
+      if(!['borrador','programada'].includes(input.status))throw error('Invalid campaign');
+      c.status=input.status;c.updatedAt=now();return send({ok:true,status:input.status});
+     }
+     const next=validCampaign(input,c);
+     if(next.status==='enviada')throw error('Invalid campaign');
+     Object.assign(c,next,{updatedAt:now()});return send({campaign:campaignView(c)});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='campaigns'&&seg.length===3&&seg[2]==='preview'&&method==='GET'){
+    const c=campaignOf(seg[1]);
+    const recipients=recipientsOf(c);
+    return emit({recipients,count:recipients.length,campaignId:c.id,
+     segmentId:c.segmentId,segmentName:mk.segments.find(s=>s.id===c.segmentId)?.name||null});
+   }
+   if(seg[0]==='campaigns'&&seg.length===3&&seg[2]==='sends'&&method==='GET'){
+    const c=campaignOf(seg[1]);
+    return emit({sends:mk.sends.filter(d=>d.campaignId===c.id)});
+   }
+   if(seg[0]==='campaigns'&&seg.length===3&&seg[2]==='send'&&method==='POST'){
+    const c=campaignOf(seg[1]);
+    if(c.status==='enviada')throw error('Invalid campaign');
+    const recipients=recipientsOf(c);
+    if(!recipients.length)throw error('Invalid campaign');
+    // Sin clave Resend en la demo: nunca se envía nada real.
+    for(const r of recipients){
+     mk.sends.push({id:uuid(),campaignId:c.id,clientId:r.clientId,recipientName:r.name,
+      recipientEmail:r.email,status:'sin_envio',
+      error:'Sin envío real (falta clave Resend). Configura la clave Resend para enviar.',
+      sentAt:null,createdAt:now()});
+    }
+    return send({sent:false,reason:'email-not-configured',campaignId:c.id,recipients:recipients.length,
+     sendsCreated:recipients.length,sentCount:0,failedCount:0,
+     message:'Sin envío real (falta clave Resend). Configura la clave Resend para enviar.'});
+   }
+   throw error('Not found',404);
+  }
+  // Punto de venta (T030): espejo en memoria del contrato real
+  // /api/app/<slug>/pos/... (platform/pos-store.mjs, pos-domain.mjs,
+  // migración 035). Los datos viven solo en sessionStorage de esta
+  // pestaña (demo). Precios base SIN IVA del catálogo; IVA 16% al cobrar.
+  // El cobro va a tenant.payments (tabla de T014) y el efectivo con caja
+  // abierta a tenant.cashboxMovements (T016).
+  const posRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/pos(?:\/(.*))?$/);
+  if(posRoute){
+   const tenant=tenantBySlug(posRoute[1]);
+   if(catalog.tools.some(t=>t.id==='T030'))allowed(tenant,'T030');
+   const pos=tenant.pos;
+   const seg=(posRoute[2]||'').split('/').filter(Boolean);
+   const live=list=>list.filter(x=>!x.archivedAt);
+   const saleOf=id=>getRecord(pos.sales,id);
+   const stockBySku=sku=>{
+    const item=tenant.items.find(i=>i.sku===sku&&!i.archivedAt);
+    if(!item)return {item:null,quantity:null,variants:[]};
+    return {item,quantity:item.quantity,variants:tenant.variants.filter(v=>v.itemId===item.id&&!v.archivedAt)};
+   };
+   const saleView=s=>({...s,folioText:'POS-'+String(s.folio).padStart(4,'0'),
+    lines:pos.saleLines.filter(l=>l.saleId===s.id).length});
+   const saleDetail=s=>({...s,folioText:'POS-'+String(s.folio).padStart(4,'0'),
+    lines:pos.saleLines.filter(l=>l.saleId===s.id)});
+   // ---- Catálogo para vender ----
+   if(seg[0]==='catalog'&&seg.length===1&&method==='GET'){
+    const items=live(tenant.catalogItems).filter(i=>i.active!==false)
+     .map(i=>{const stock=stockBySku(i.sku);
+      return {...i,priceCents:i.priceCents,photoUrl:null,stock:stock.quantity,variants:stock.variants};})
+     .sort((a,b)=>a.name.localeCompare(b.name));
+    return emit({items,categories:[...new Set(items.map(i=>i.category))].sort()});
+   }
+   // ---- Tablero ----
+   if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET'){
+    const day=now().slice(0,10);
+    const todaySales=pos.sales.filter(s=>s.createdAt.slice(0,10)===day&&s.status==='completada');
+    const all=pos.sales.filter(s=>s.status==='completada');
+    const byMethod={};
+    for(const s of all){byMethod[s.method]=byMethod[s.method]||{count:0,totalCents:0};byMethod[s.method].count++;byMethod[s.method].totalCents+=s.totalCents;}
+    return emit({today:{count:todaySales.length,totalCents:todaySales.reduce((a,s)=>a+s.totalCents,0)},
+     totals:{count:all.length,totalCents:all.reduce((a,s)=>a+s.totalCents,0)},byMethod,
+     recent:[...pos.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,10).map(saleView)});
+   }
+   // ---- Ventas ----
+   if(seg[0]==='sales'&&seg.length===1){
+    if(method==='GET')return emit({sales:[...pos.sales].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(saleView)});
+    if(method==='POST'){
+     if(!input||typeof input!=='object'||Array.isArray(input)||!Array.isArray(input.lines)||!input.lines.length||input.lines.length>50)throw error('Invalid sale');
+     const method=input.method||'efectivo',mode=input.mode||'para_llevar';
+     if(!['efectivo','tarjeta','transferencia'].includes(method))throw error('Invalid sale');
+     if(!['para_llevar','en_local','a_domicilio'].includes(mode))throw error('Invalid sale');
+     const priced=[];
+     for(const l of input.lines){
+      const item=getRecord(live(tenant.catalogItems).filter(i=>i.active!==false),l.catalogItemId);
+      if(!Number.isInteger(l.quantity)||l.quantity<1||l.quantity>10000)throw error('Invalid sale');
+      let variant=null;
+      if(l.variantId){
+       variant=getRecord(tenant.variants,l.variantId);
+       const parent=tenant.items.find(i=>i.id===variant.itemId);
+       if(!parent||parent.sku!==item.sku)throw error('Invalid sale');
+      }
+      priced.push({item,variant,quantity:l.quantity,lineTotalCents:l.quantity*item.priceCents});
+     }
+     const subtotal=priced.reduce((a,l)=>a+l.lineTotalCents,0);
+     const vat=Math.round(subtotal*16/100),total=subtotal+vat;
+     const folio=(pos.sales.reduce((m,s)=>Math.max(m,s.folio),0))+1;
+     const folioText='POS-'+String(folio).padStart(4,'0');
+     const saleId=uuid();
+     const sale={id:saleId,folio,clientId:input.clientId||null,clientName:String(input.clientName||'').slice(0,160),
+      method,mode,subtotalCents:subtotal,vatCents:vat,totalCents:total,paymentId:null,cashboxId:null,
+      cashboxMovementId:null,status:'completada',notes:String(input.notes||'').slice(0,1000),createdAt:now(),updatedAt:now()};
+     pos.sales.unshift(sale);
+     const warnings=[],stockDeducted=[];
+     for(const l of priced){
+      const lineId=uuid();
+      pos.saleLines.push({id:lineId,saleId,catalogItemId:l.item.id,variantId:l.variant?.id||null,
+       sku:l.item.sku,name:l.item.name,quantity:l.quantity,unitPriceCents:l.item.priceCents,
+       lineTotalCents:l.lineTotalCents,stockDeducted:false,createdAt:now()});
+      const line=pos.saleLines.find(x=>x.id===lineId);
+      let variant=l.variant;
+      if(!variant){
+       const stock=stockBySku(l.item.sku);
+       variant=stock.variants.find(v=>v.sku===l.item.sku)||null;
+      }
+      if(!variant){warnings.push('Sin inventario para '+l.item.sku+' ('+l.item.name+'): se vendió sin descontar existencias.');continue;}
+      if(variant.quantity<l.quantity){warnings.push('Existencias insuficientes para '+variant.sku+' ('+l.item.name+'): hay '+variant.quantity+' y se vendieron '+l.quantity+'. Se vendió sin descontar.');continue;}
+      variant.quantity-=l.quantity;
+      const parent=tenant.items.find(i=>i.id===variant.itemId);
+      if(parent)parent.quantity=Math.max(0,parent.quantity-l.quantity);
+      tenant.variantMovements=tenant.variantMovements||[];
+      line.stockDeducted=true;line.variantId=variant.id;
+      stockDeducted.push({sku:variant.sku,quantity:l.quantity,variantId:variant.id});
+     }
+     const payment={id:uuid(),clientId:sale.clientId,clientName:sale.clientName,amountCents:total,
+      paidOn:now().slice(0,10),method,reference:folioText,notes:'Venta punto de venta '+folioText,createdAt:now()};
+     tenant.payments.unshift(payment);
+     sale.paymentId=payment.id;
+     let cashboxNote=null;
+     if(method==='efectivo'){
+      const box=tenant.cashboxes.find(b=>b.status==='open');
+      if(box){
+       const move={id:uuid(),cashboxId:box.id,direction:'in',kind:'venta',amountCents:total,
+        sourceType:'collection',sourceId:payment.id,notes:'Venta '+folioText,createdAt:now()};
+       tenant.cashboxMovements.push(move);
+       sale.cashboxId=box.id;sale.cashboxMovementId=move.id;
+      }else{
+       warnings.push('Sin caja abierta: la venta se registró sin movimiento de caja. Abre la caja (T016) para registrar el efectivo.');
+      }
+     }else{
+      cashboxNote='Cobro con '+method+': no genera movimiento de caja (solo el efectivo pasa por caja).';
+     }
+     demoAudit(tenant,'pos.sale_created',sale.id);
+     return send({sale:saleDetail(sale),payment:{id:payment.id,amountCents:total,method,reference:folioText},
+      warnings,stockDeducted,cashboxNote});
+    }
+    throw error('Not found',404);
+   }
+   if(seg[0]==='sales'&&seg.length===2&&method==='GET'){
+    return emit({sale:saleDetail(saleOf(seg[1]))});
+   }
+   throw error('Not found',404);
+  }
+ // Contabilidad (T023): espejo en memoria del contrato real
+ // /api/app/<slug>/accounting/... (platform/accounting-store.mjs,
+ // accounting-domain.mjs, migración 028). Los datos viven solo en
+ // sessionStorage de esta pestaña (demo).
+ const acRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/accounting(?:\/(.*))?$/);
+ if(acRoute){
+  const tenant=tenantBySlug(acRoute[1]);
+  if(catalog.tools.some(t=>t.id==='T023'))allowed(tenant,'T023');
+  const ac=tenant.accounting;
+  const seg=(acRoute[2]||'').split('/').filter(Boolean);
+  const acEsc=v=>{const x=String(v??'');return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
+  const acCsvRow=vals=>vals.map(acEsc).join(',');
+  const acMoney=c=>(Number(c||0)/100).toFixed(2);
+  const acAccountOf=id=>getRecord(ac.accounts,id);
+  const acEntryOf=id=>getRecord(ac.entries,id);
+  const acEntryLines=id=>ac.lines.filter(l=>l.entryId===id);
+  const acNature=type=>type==='activo'||type==='gasto'?'deudora':'acreedora';
+  const acMovements=(from,to)=>{
+   const map={};
+   for(const l of ac.lines){
+    const e=ac.entries.find(x=>x.id===l.entryId);
+    if(!e||e.status!=='registrada'||e.entryDate<(from||'0000-01-01')||e.entryDate>(to||'9999-12-31'))continue;
+    const m=map[l.accountId]||{debitCents:0,creditCents:0};
+    m.debitCents+=l.debitCents;m.creditCents+=l.creditCents;map[l.accountId]=m;
+   }
+   return map;
+  };
+  const acBalance=(a,m)=>{const d=m[a.id]||{debitCents:0,creditCents:0};return a.nature==='deudora'?d.debitCents-d.creditCents:d.creditCents-d.debitCents;};
+  const acTrial=(from,to)=>{
+   const m=acMovements(from,to);
+   const rows=ac.accounts.map(a=>{const d=m[a.id]||{debitCents:0,creditCents:0};
+    return {accountId:a.id,code:a.code,name:a.name,type:a.type,nature:a.nature,debitCents:d.debitCents,creditCents:d.creditCents,balanceCents:acBalance(a,m)};});
+   const totalDebitCents=rows.reduce((s,r)=>s+r.debitCents,0),totalCreditCents=rows.reduce((s,r)=>s+r.creditCents,0);
+   return {rows,totalDebitCents,totalCreditCents,balanced:totalDebitCents===totalCreditCents};
+  };
+  const acIncome=(from,to)=>{
+   const m=acMovements(from,to);let incomeCents=0,expenseCents=0;
+   for(const a of ac.accounts){if(a.type==='ingreso')incomeCents+=acBalance(a,m);if(a.type==='gasto')expenseCents+=acBalance(a,m);}
+   return {incomeCents,expenseCents,profitCents:incomeCents-expenseCents};
+  };
+  const acSheet=asOf=>{
+   const m=acMovements(null,asOf);let assetsCents=0,liabilitiesCents=0,equityCents=0;
+   for(const a of ac.accounts){const b=acBalance(a,m);
+    if(a.type==='activo')assetsCents+=b;else if(a.type==='pasivo')liabilitiesCents+=b;else if(a.type==='capital')equityCents+=b;}
+   const {profitCents}=acIncome(null,asOf);
+   return {assetsCents,liabilitiesCents,equityCents,profitCents,
+    totalLiabilitiesEquityCents:liabilitiesCents+equityCents+profitCents,
+    balanced:assetsCents===liabilitiesCents+equityCents+profitCents};
+  };
+  const acEntryView=e=>{const lines=acEntryLines(e.id);
+   return {...e,folioLabel:'P-'+String(e.folio).padStart(4,'0'),lines:lines.map(l=>({...l,
+    accountCode:ac.accounts.find(a=>a.id===l.accountId)?.code||'',
+    accountName:ac.accounts.find(a=>a.id===l.accountId)?.name||''})),
+    totalDebitCents:lines.reduce((a,l)=>a+l.debitCents,0),totalCreditCents:lines.reduce((a,l)=>a+l.creditCents,0)};};
+  const acMonthStart=()=>new Date().toISOString().slice(0,8)+'01';
+  const acToday=()=>new Date().toISOString().slice(0,10);
+  const acPrevMonth=()=>{const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);
+   const from=d.toISOString().slice(0,8)+'01';
+   const end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));
+   return {from,to:end.toISOString().slice(0,10)};};
+  // ---- Tablero ----
+  if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET'){
+   const from=acMonthStart(),to=acToday(),prev=acPrevMonth();
+   const income=acIncome(from,to),prevIncome=acIncome(prev.from,prev.to),balance=acTrial(from,to);
+   const delta=(n,p)=>p>0?Math.round(100*(n-p)/p):null;
+   const incomeDailyMap={};
+   for(const l of ac.lines){
+    const e=ac.entries.find(x=>x.id===l.entryId),a=ac.accounts.find(x=>x.id===l.accountId);
+    if(!e||e.status!=='registrada'||a?.type!=='ingreso'||e.entryDate<from||e.entryDate>to)continue;
+    incomeDailyMap[e.entryDate]=(incomeDailyMap[e.entryDate]||0)+(l.creditCents-l.debitCents);
+   }
+   const incomeDaily=Object.entries(incomeDailyMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([day,cents])=>({day,cents}));
+   const paidForQuote=qid=>tenant.payments.filter(x=>x.quoteId===qid&&!x.archivedAt).reduce((s,x)=>s+x.amountCents,0);
+   const recs=(tenant.receivables||[]).filter(r=>!r.archivedAt).map(r=>({...r,paidCents:paidForQuote(r.quote_id),balanceCents:Math.max(0,r.total_cents-paidForQuote(r.quote_id))}));
+   const overdue=recs.filter(r=>r.balanceCents>0&&r.due_on&&r.due_on<to);
+   const topMap={};
+   for(const o of tenant.salesOrders.orders.filter(o=>o.status!=='cancelado')){
+    const m=topMap[o.clientName]||{clientName:o.clientName,totalCents:0,orders:0};
+    m.totalCents+=o.totalCents;m.orders++;topMap[o.clientName]=m;
+   }
+   const topClients=Object.values(topMap).sort((a,b)=>b.totalCents-a.totalCents).slice(0,5);
+   return emit({kpis:{activeAccounts:ac.accounts.filter(a=>a.active).length,totalEntries:ac.entries.length,
+    registeredEntries:ac.entries.filter(e=>e.status==='registrada').length,
+    monthIncomeCents:income.incomeCents,monthIncomeDelta:delta(income.incomeCents,prevIncome.incomeCents),
+    monthExpenseCents:income.expenseCents,monthExpenseDelta:delta(income.expenseCents,prevIncome.expenseCents),
+    monthProfitCents:income.profitCents,monthProfitDelta:delta(income.profitCents,prevIncome.profitCents),
+    receivablesCents:recs.reduce((s,r)=>s+r.balanceCents,0),receivablesCount:recs.filter(r=>r.balanceCents>0).length,
+    monthDebitCents:balance.totalDebitCents,monthCreditCents:balance.totalCreditCents},
+    month:{from,to},prevMonth:prev,prevMonthIncomeCents:prevIncome.incomeCents,prevMonthExpenseCents:prevIncome.expenseCents,
+    incomeDaily,alerts:{overdueReceivables:overdue,draftEntries:ac.entries.filter(e=>e.status==='borrador').length},topClients});
+  }
+  // ---- Exportar CSV ----
+  if(seg[0]==='export'&&method==='GET'){
+   const kind=url.searchParams.get('kind');
+   if(kind==='trial-balance'){
+    const report=acTrial(url.searchParams.get('from'),url.searchParams.get('to'));
+    const lines=[acCsvRow(['Código','Cuenta','Tipo','Debe MXN','Haber MXN','Saldo MXN'])];
+    for(const r of report.rows)lines.push(acCsvRow([r.code,r.name,r.type,acMoney(r.debitCents),acMoney(r.creditCents),acMoney(r.balanceCents)]));
+    return emit({csv:lines.join('\n'),filename:'hubie-contabilidad-balanza.csv'});
+   }
+   throw error('Invalid export',400);
+  }
+  // ---- Plan de cuentas ----
+  if(seg[0]==='accounts'&&seg.length===1){
+   if(method==='GET'){
+    const type=url.searchParams.get('type'),activeOnly=url.searchParams.get('activeOnly')==='1';
+    return emit({accounts:[...ac.accounts].sort((a,b)=>a.code.localeCompare(b.code))
+     .filter(a=>(!type||a.type===type)&&(!activeOnly||a.active))});
+   }
+   if(method==='POST'){
+    if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid account');
+    const code=String(input.code||'').trim(),name=String(input.name||'').trim(),type=input.type||'activo';
+    if(code.length<1||code.length>20||name.length<2||name.length>160||!['activo','pasivo','capital','ingreso','gasto'].includes(type))throw error('Invalid account');
+    const nature=input.nature||acNature(type);
+    if(nature!==acNature(type))throw error('Invalid account');
+    if(ac.accounts.some(a=>a.code===code))throw error('Duplicate account code',409);
+    if(input.parentId&&!ac.accounts.some(a=>a.id===input.parentId))throw error('Not found',404);
+    const a={id:uuid(),code,name,type,nature,parentId:input.parentId||null,active:input.active??true,createdAt:now(),updatedAt:now()};
+    ac.accounts.push(a);demoAudit(tenant,'accounting.account_created',a.id);return send({account:a});
+   }
+   throw error('Not found',404);
+  }
+  if(seg[0]==='accounts'&&seg[1]==='seed'&&seg.length===2&&method==='POST'){
+   const chart=[['1000','Caja','activo'],['1010','Bancos','activo'],['1100','Clientes','activo'],['1200','Inventario','activo'],
+    ['2000','Proveedores','pasivo'],['2100','IVA por pagar','pasivo'],['3000','Capital social','capital'],
+    ['3200','Resultados de ejercicios anteriores','capital'],['4000','Ventas','ingreso'],['5000','Costo de ventas','gasto'],['5100','Gastos de operación','gasto']];
+   for(const [code,name,type] of chart){
+    if(ac.accounts.some(a=>a.code===code))continue;
+    ac.accounts.push({id:uuid(),code,name,type,nature:acNature(type),parentId:null,active:true,createdAt:now(),updatedAt:now()});
+   }
+   return send({accounts:[...ac.accounts].sort((a,b)=>a.code.localeCompare(b.code))});
+  }
+  if(seg[0]==='accounts'&&seg.length===3&&seg[2]==='active'&&method==='PATCH'){
+   const a=acAccountOf(seg[1]);
+   if(!input||Object.keys(input).length!==1||typeof input.active!=='boolean')throw error('Invalid account');
+   a.active=input.active;a.updatedAt=now();return send({ok:true,active:a.active});
+  }
+  if(seg[0]==='accounts'&&seg.length===2&&method==='PATCH'){
+   const a=acAccountOf(seg[1]);
+   if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid account');
+   if(input.code&&input.code!==a.code)throw error('Invalid account');
+   if(input.parentId===a.id)throw error('Invalid account');
+   const merged={...a,...input};
+   const name=String(merged.name||'').trim();
+   if(name.length<2||name.length>160||!['activo','pasivo','capital','ingreso','gasto'].includes(merged.type))throw error('Invalid account');
+   if(merged.nature!==acNature(merged.type))throw error('Invalid account');
+   if(ac.lines.some(l=>l.accountId===a.id)&&(merged.type!==a.type||merged.nature!==a.nature))throw error('Invalid account');
+   Object.assign(a,{name,type:merged.type,nature:merged.nature,parentId:merged.parentId??null,active:merged.active??true,updatedAt:now()});
+   return send({account:a});
+  }
+  // ---- Pólizas ----
+  if(seg[0]==='entries'&&seg.length===1){
+   if(method==='GET'){
+    const status=url.searchParams.get('status'),from=url.searchParams.get('from'),to=url.searchParams.get('to');
+    const list=ac.entries.filter(e=>(!status||e.status===status)&&(!from||e.entryDate>=from)&&(!to||e.entryDate<=to))
+     .sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.folio-a.folio);
+    return emit({entries:list.map(e=>{const v=acEntryView(e);return {...v,lines:v.lines.length};})});
+   }
+   if(method==='POST'){
+    if(!input||typeof input!=='object'||Array.isArray(input)||!Array.isArray(input.lines)||input.lines.length<2||input.lines.length>100)throw error('Invalid entry');
+    const concept=String(input.concept||'').trim();
+    const entryDate=input.entryDate||acToday();
+    if(concept.length<2||concept.length>300||!validExpiry(entryDate))throw error('Invalid entry');
+    const lines=input.lines.map(l=>{
+     const accountId=l.accountId,debitCents=l.debitCents??0,creditCents=l.creditCents??0;
+     const account=ac.accounts.find(a=>a.id===accountId);
+     if(!account||!account.active)throw error('Invalid entry');
+     if(!Number.isSafeInteger(debitCents)||!Number.isSafeInteger(creditCents)||debitCents<0||creditCents<0)throw error('Invalid entry');
+     if(!((debitCents>0&&creditCents===0)||(creditCents>0&&debitCents===0)))throw error('Invalid entry');
+     return {accountId,debitCents,creditCents,memo:String(l.memo||'').slice(0,300)};
+    });
+    const totalDebit=lines.reduce((s,l)=>s+l.debitCents,0),totalCredit=lines.reduce((s,l)=>s+l.creditCents,0);
+    if(totalDebit!==totalCredit||totalDebit<=0)throw error('Invalid entry');
+    const folio=Math.max(0,...ac.entries.map(e=>e.folio))+1;
+    const e={id:uuid(),folio,entryDate,concept,sourceType:input.sourceType||'manual',sourceId:input.sourceId||null,status:'borrador',createdAt:now(),updatedAt:now()};
+    ac.entries.push(e);
+    for(const l of lines)ac.lines.push({id:uuid(),entryId:e.id,...l,createdAt:now()});
+    demoAudit(tenant,'accounting.entry_created',e.id);
+    return send({entry:{...acEntryView(e),lines:lines.length}});
+   }
+   throw error('Not found',404);
+  }
+  if(seg[0]==='entries'&&seg.length===2&&method==='GET')return emit({entry:acEntryView(acEntryOf(seg[1]))});
+  if(seg[0]==='entries'&&seg.length===3&&seg[2]==='status'&&method==='PATCH'){
+   const e=acEntryOf(seg[1]);
+   const allowedNext={borrador:['registrada','cancelada'],registrada:['cancelada'],cancelada:[]};
+   if(!input||Object.keys(input).length!==1||!['borrador','registrada','cancelada'].includes(input.status)||!allowedNext[e.status].includes(input.status))throw error('Invalid entry status');
+   e.status=input.status;e.updatedAt=now();
+   if(input.status==='registrada')demoAudit(tenant,'accounting.entry_registered',e.id);
+   return send({ok:true,status:e.status});
+  }
+  // ---- Reportes ----
+  if(seg[0]==='trial-balance'&&seg.length===1&&method==='GET'){
+   const from=url.searchParams.get('from'),to=url.searchParams.get('to');
+   return emit({from:from||null,to:to||null,...acTrial(from,to)});
+  }
+  if(seg[0]==='income-statement'&&seg.length===1&&method==='GET'){
+   const from=url.searchParams.get('from'),to=url.searchParams.get('to');
+   return emit({from:from||null,to:to||null,...acIncome(from,to)});
+  }
+  if(seg[0]==='balance-sheet'&&seg.length===1&&method==='GET'){
+   const asOf=url.searchParams.get('asOf')||acToday();
+   return emit({asOf,...acSheet(asOf)});
+  }
+  throw error('Not found',404);
+ }
+ // Pedidos de venta (T024): espejo en memoria del contrato real
+ // /api/app/<slug>/sales-orders/... (platform/sales-orders-store.mjs,
+ // sales-orders-domain.mjs, migración 029). Los datos viven solo en
+ // sessionStorage de esta pestaña (demo). Orquesta las colecciones demo de
+ // T013/T014/T015/T017 (tenant.quotes/payments/invoices/receivables).
+ const soRoute=p.match(/^\/api\/app\/([a-z0-9-]+)\/sales-orders(?:\/(.*))?$/);
+ if(soRoute){
+  const tenant=tenantBySlug(soRoute[1]);
+  if(catalog.tools.some(t=>t.id==='T024'))allowed(tenant,'T024');
+  const so=tenant.salesOrders;
+  const seg=(soRoute[2]||'').split('/').filter(Boolean);
+  const soPaidFor=qid=>tenant.payments.filter(x=>x.quoteId===qid&&!x.archivedAt).reduce((s,x)=>s+x.amountCents,0);
+  const soOrderOf=id=>getRecord(so.orders,id);
+  const soOrderLines=id=>so.lines.filter(l=>l.orderId===id).sort((a,b)=>a.position-b.position);
+  const soOrderView=o=>({...o,folioLabel:'PV-'+String(o.folio).padStart(4,'0'),
+   paidCents:soPaidFor(o.quoteId),balanceCents:Math.max(0,o.totalCents-soPaidFor(o.quoteId))});
+  const soOrderDetail=o=>{
+   const invoice=o.invoiceId?tenant.invoices.find(x=>x.id===o.invoiceId&&!x.archivedAt)||null:null;
+   const receivable=o.receivableId?tenant.receivables.find(x=>x.id===o.receivableId&&!x.archivedAt)||null:null;
+   return {...soOrderView(o),lines:soOrderLines(o.id),
+    invoice:invoice?{...invoice,items:JSON.parse(invoice.items_json||'[]')}:null,
+    receivable:receivable?{id:receivable.id,quoteId:receivable.quote_id,clientId:receivable.client_id||null,
+    clientName:receivable.client_name,totalCents:receivable.total_cents,dueOn:receivable.due_on||null,
+    notes:receivable.notes,createdAt:receivable.created_at,paidCents:soPaidFor(receivable.quote_id),
+    balanceCents:Math.max(0,receivable.total_cents-soPaidFor(receivable.quote_id))}:null};
+  };
+  const soTransitions={borrador:['confirmado','cancelado'],confirmado:['en preparación','cancelado'],
+   'en preparación':['enviado','cancelado'],enviado:['entregado','cancelado'],entregado:[],cancelado:[]};
+  const soToday=()=>new Date().toISOString().slice(0,10);
+  const soMonthStart=()=>new Date().toISOString().slice(0,8)+'01';
+  // ---- Tablero ----
+  if((seg.length===0||seg[0]==='dashboard')&&seg.length<=1&&method==='GET'){
+   const from=soMonthStart(),to=soToday();
+   const monthOrders=so.orders.filter(o=>(o.createdAt||'').slice(0,10)>=from&&(o.createdAt||'').slice(0,10)<=to);
+   const byStatus={};
+   for(const o of so.orders)byStatus[o.status]=(byStatus[o.status]||0)+1;
+   const dailyMap={};
+   for(const o of monthOrders){const day=(o.createdAt||'').slice(0,10);dailyMap[day]=(dailyMap[day]||0)+1;}
+   const daily=[];
+   const cursor=new Date(from+'T00:00:00Z');
+   while(cursor.toISOString().slice(0,10)<=to){const day=cursor.toISOString().slice(0,10);daily.push({day,count:dailyMap[day]||0});cursor.setUTCDate(cursor.getUTCDate()+1);}
+   const openOrders=so.orders.filter(o=>!['entregado','cancelado'].includes(o.status));
+   return emit({kpis:{monthOrders:monthOrders.length,preparing:byStatus['en preparación']||0,shipped:byStatus['enviado']||0,
+    delivered:byStatus['entregado']||0,total:so.orders.length,
+    openCents:openOrders.reduce((s,o)=>s+o.totalCents,0),
+    openBalanceCents:openOrders.reduce((s,o)=>s+soOrderView(o).balanceCents,0)},
+    byStatus,daily,month:{from,to}});
+  }
+  // ---- Pedidos ----
+  if(seg[0]==='orders'&&seg.length===1){
+   if(method==='GET'){
+    const status=url.searchParams.get('status');
+    const orders=[...so.orders].sort((a,b)=>b.folio-a.folio)
+     .filter(o=>!status||o.status===status).map(soOrderView);
+    const availableQuotes=tenant.quotes.filter(q=>!q.archivedAt&&q.status==='accepted'&&
+     !so.orders.some(o=>o.quoteId===q.id&&o.status!=='cancelado'))
+     .map(q=>({id:q.id,title:q.title,clientName:q.clientName,totalCents:q.totalCents}));
+    return emit({orders,availableQuotes});
+   }
+   if(method==='POST'){
+    if(!input||typeof input!=='object'||Array.isArray(input)||!input.quoteId)throw error('Invalid order');
+    const quote=tenant.quotes.find(q=>q.id===input.quoteId&&!q.archivedAt);
+    if(!quote)throw error('Not found',404);
+    if(quote.status!=='accepted')throw error('Invalid order');
+    if(!Array.isArray(quote.lines)||!quote.lines.length)throw error('Invalid order');
+    if(so.orders.some(o=>o.quoteId===quote.id&&o.status!=='cancelado'))throw error('Duplicate order',409);
+    const lines=quote.lines.map((l,i)=>({description:l.description,quantity:l.quantity,unitPriceCents:l.unitPriceCents,
+     lineTotalCents:l.quantity*l.unitPriceCents,position:i}));
+    const subtotal=lines.reduce((s,l)=>s+l.lineTotalCents,0),vat=Math.round(subtotal*quote.vatRate/100);
+    if(subtotal+vat!==quote.totalCents)throw error('Invalid order');
+    const folio=Math.max(0,...so.orders.map(o=>o.folio))+1;
+    const o={id:uuid(),folio,quoteId:quote.id,clientId:quote.clientId||null,clientName:quote.clientName,title:quote.title,
+     subtotalCents:subtotal,vatCents:vat,totalCents:subtotal+vat,vatRate:quote.vatRate,status:'borrador',
+     deliveryDate:null,carrier:'',trackingCode:'',notes:'',invoiceId:null,receivableId:null,createdAt:now(),updatedAt:now()};
+    so.orders.push(o);
+    for(const l of lines)so.lines.push({id:uuid(),orderId:o.id,...l});
+    demoAudit(tenant,'sales_orders.order_created',o.id);
+    return send({order:soOrderDetail(o)});
+   }
+   throw error('Not found',404);
+  }
+  if(seg[0]==='orders'&&seg.length===2&&method==='GET')return emit({order:soOrderDetail(soOrderOf(seg[1]))});
+  if(seg[0]==='orders'&&seg.length===3&&seg[2]==='notes'&&method==='PATCH'){
+   const o=soOrderOf(seg[1]);
+   if(o.status==='cancelado')throw error('Invalid order');
+   if(!input||Object.keys(input).length!==1||typeof input.notes!=='string'||input.notes.length>2000)throw error('Invalid order');
+   o.notes=input.notes.trim();o.updatedAt=now();return send({ok:true});
+  }
+  if(seg[0]==='orders'&&seg.length===3&&seg[2]==='status'&&method==='PATCH'){
+   const o=soOrderOf(seg[1]);
+   if(!input||Object.keys(input).length!==1||!soTransitions[o.status].includes(input.status))throw error('Invalid order status');
+   o.status=input.status;o.updatedAt=now();return send({ok:true,status:o.status});
+  }
+  if(seg[0]==='orders'&&seg.length===3&&seg[2]==='delivery'&&method==='PATCH'){
+   const o=soOrderOf(seg[1]);
+   if(!['confirmado','en preparación','enviado'].includes(o.status))throw error('Invalid order');
+   if(!input||typeof input!=='object'||Array.isArray(input))throw error('Invalid order');
+   if(input.deliveryDate&&!validExpiry(input.deliveryDate))throw error('Invalid order');
+   if(String(input.carrier||'').length>80||String(input.trackingCode||'').length>80)throw error('Invalid order');
+   o.deliveryDate=input.deliveryDate||null;o.carrier=String(input.carrier||'').trim();o.trackingCode=String(input.trackingCode||'').trim();
+   o.updatedAt=now();return send({ok:true,deliveryDate:o.deliveryDate,carrier:o.carrier,trackingCode:o.trackingCode});
+  }
+  if(seg[0]==='orders'&&seg.length===3&&seg[2]==='payment'&&method==='POST'){
+   const o=soOrderOf(seg[1]);
+   if(!['confirmado','en preparación','enviado','entregado'].includes(o.status))throw error('Invalid order');
+   const amountCents=input.amountCents,paidOn=input.paidOn,methodPay=input.method||'efectivo';
+   const clientName=String(input.clientName||o.clientName||'').trim();
+   if(!Number.isSafeInteger(amountCents)||amountCents<=0||!validExpiry(paidOn)||!['efectivo','transferencia','tarjeta'].includes(methodPay))throw error('Invalid payment');
+   if(amountCents>Math.max(0,o.totalCents-soPaidFor(o.quoteId)))throw error('Invalid payment');
+   const pay={id:uuid(),quoteId:o.quoteId,clientId:o.clientId||null,clientName,amountCents,paidOn,method:methodPay,
+    reference:String(input.reference||'').trim(),notes:String(input.notes||'').trim(),createdAt:now(),updatedAt:now()};
+   tenant.payments.unshift(pay);demoAudit(tenant,'sales_orders.payment_created',pay.id);
+   return send({payment:pay,balanceCents:o.totalCents-soPaidFor(o.quoteId)});
+  }
+  if(seg[0]==='orders'&&seg.length===3&&seg[2]==='invoice'&&method==='POST'){
+   const o=soOrderOf(seg[1]);
+   if(!['confirmado','en preparación','enviado','entregado'].includes(o.status))throw error('Invalid order');
+   if(o.invoiceId){
+    const existing=tenant.invoices.find(x=>x.id===o.invoiceId&&!x.archivedAt);
+    if(existing)return send({invoice:{...existing,items:JSON.parse(existing.items_json||'[]')},existing:true});
+   }
+   const rfc=String(input?.rfc||'').trim().toUpperCase();
+   if(rfc&&!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc))throw error('Invalid invoice');
+   const lines=soOrderLines(o.id).map((l,i)=>({id:uuid(),description:l.description,quantity:l.quantity,unitPriceCents:l.unitPriceCents,lineTotalCents:l.lineTotalCents,position:i}));
+   const subtotal=lines.reduce((s,l)=>s+l.lineTotalCents,0),vat=Math.round(subtotal*o.vatRate/100);
+   if(subtotal+vat!==o.totalCents)throw error('Invalid invoice');
+   const folio=Math.max(0,...tenant.invoices.filter(x=>!x.archivedAt).map(x=>x.folio))+1;
+   const inv={id:uuid(),folio,folioLabel:'F-'+String(folio).padStart(4,'0'),quoteId:o.quoteId,clientName:o.clientName,rfc,
+    items_json:JSON.stringify(lines),subtotalCents:subtotal,vatCents:vat,totalCents:subtotal+vat,vatRate:o.vatRate,
+    status:'draft',notes:String(input?.notes||'').trim(),createdAt:now(),updatedAt:now(),cfdi:false,cfdiNote:'Sin CFDI (pendiente PAC)'};
+   tenant.invoices.unshift(inv);o.invoiceId=inv.id;o.updatedAt=now();
+   demoAudit(tenant,'sales_orders.invoice_created',inv.id);
+   return send({invoice:{...inv,items:lines},existing:false});
+  }
+  if(seg[0]==='orders'&&seg.length===3&&seg[2]==='receivable'&&method==='POST'){
+   const o=soOrderOf(seg[1]);
+   if(!['confirmado','en preparación','enviado','entregado'].includes(o.status))throw error('Invalid order');
+   if(o.receivableId){
+    const existing=tenant.receivables.find(x=>x.id===o.receivableId&&!x.archivedAt);
+    if(existing)return send({receivable:{...existing,paidCents:soPaidFor(existing.quote_id),balanceCents:Math.max(0,existing.total_cents-soPaidFor(existing.quote_id)),bucket:'corriente'},existing:true});
+   }
+   if(input?.dueOn&&!validExpiry(input.dueOn))throw error('Invalid receivable');
+   if(tenant.receivables.some(r=>r.quote_id===o.quoteId&&!r.archivedAt))throw error('Receivable already exists',409);
+   const rec={id:uuid(),quote_id:o.quoteId,client_id:o.clientId||null,client_name:o.clientName,total_cents:o.totalCents,
+    due_on:input?.dueOn||null,notes:String(input?.notes||'').trim(),created_at:now(),updated_at:now()};
+   tenant.receivables.unshift(rec);o.receivableId=rec.id;o.updatedAt=now();
+   demoAudit(tenant,'sales_orders.receivable_created',rec.id);
+   const paidNow=soPaidFor(o.quoteId);
+   return send({receivable:{id:rec.id,quoteId:rec.quote_id,clientId:rec.client_id,clientName:rec.client_name,totalCents:rec.total_cents,dueOn:rec.due_on,paidCents:paidNow,balanceCents:Math.max(0,rec.total_cents-paidNow),bucket:'corriente'},existing:false});
+  }
+  throw error('Not found',404);
+ }
   throw error('Not found',404);
  }
  return {request};

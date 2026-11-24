@@ -5,6 +5,15 @@ import {renderAgenda} from './operational-agenda.js';
 import {renderStock} from './operational-stock.js';
 import {renderSurveys} from './operational-surveys.js';
 import {renderTraining} from './operational-training.js';
+import {renderAccounting} from './operational-accounting.js';
+import {renderSalesOrders} from './operational-sales-orders.js';
+import {renderProjects} from './operational-projects.js';
+import {renderHelpdesk} from './operational-helpdesk.js';
+import {renderEmployees} from './operational-employees.js';
+import {renderAttendance} from './operational-attendance.js';
+import {renderPayroll} from './operational-payroll.js';
+import {renderMarketing} from './operational-marketing.js';
+import {renderPos} from './operational-pos.js';
 import {renderQuotes,renderCatalog,renderExpenses,renderPayments,renderInvoices,renderReports} from './operational-commerce.js';
 import {renderChecklists} from './operational-checklists.js';
 import {renderTasks} from './operational-tasks.js';
@@ -57,7 +66,7 @@ export async function openOperationalModule(ctx){
  search.value='';
  document.getElementById('add-record').hidden=true;
  const key=ctx.tool.id;
- const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:key==='T022'?renderTraining:
+ const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:key==='T022'?renderTraining:key==='T023'?renderAccounting:key==='T024'?renderSalesOrders:key==='T025'?renderProjects:key==='T026'?renderEmployees:key==='T027'?renderAttendance:key==='T028'?renderHelpdesk:key==='T029'?renderMarketing:key==='T030'?renderPos:key==='T031'?renderPayroll:
   key==='C006'?renderCatalog:key==='C007'?renderExpenses:key==='T013'?renderQuotes:key==='T014'?renderPayments:key==='T015'?renderInvoices:key==='T020'?renderReports:
   key==='C008'?renderDashboard:key==='T003'?renderChecklists:key==='T004'?renderTasks:key==='T007'?renderForms:
   key==='T008'?renderPurchases:key==='T009'?renderSuppliers:key==='T010'?renderWarehouses:key==='T016'?renderCashbox:key==='T017'?renderReceivables:key==='T018'?renderPayables:

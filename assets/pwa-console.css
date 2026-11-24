@@ -7,3 +7,21 @@
 .card-soft{background:#fff;border:1px solid #eceaf6;border-radius:20px;padding:18px;box-shadow:0 8px 28px rgba(22,18,58,.06)}.record-actions{flex-wrap:wrap;align-items:center;justify-content:flex-end}.record .stack{flex:1;min-width:180px}.record .record-actions select{flex:1;min-width:120px}.line{justify-content:space-between;flex-wrap:wrap}.line p{margin:0}@media(max-width:760px){.card-soft{padding:15px}.record-actions{width:100%;justify-content:flex-start}}
 
 .demo-banner{position:sticky;top:0;z-index:50;padding:10px clamp(14px,4vw,50px);background:#fff4d8;border-bottom:2px solid #f1bb52;color:#6b461b;font-size:12px;font-weight:800;line-height:1.5}.demo-banner a{margin-left:10px;color:#91500b;text-decoration:underline}.demo-banner[hidden]{display:none!important}
+
+/* T025 Proyectos (FlowTask, ref de Julio 2026-11-24): fila de 4 KPI en
+escritorio, apilada en móvil; barra de avance con gradiente Hubie y
+píldoras semánticas de prioridad/estado. Sin barras visibles (regla
+global) y sin azul en texto. */
+.kpi-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:14px}
+.kpi{display:flex;align-items:center;gap:13px;background:#fbf9ff;border:1px solid #eceaf6;padding:19px;border-radius:20px;min-width:0}
+.kpi-icon{flex:none;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#a855f7 45%,#ec4899);color:#fff;display:flex;align-items:center;justify-content:center}
+.kpi-label{color:var(--muted);font-size:11px;font-weight:800}
+.kpi-number{font-size:28px;font-weight:800;line-height:1.1}
+.progress-track{height:8px;border-radius:8px;background:#eceaf6;overflow:hidden}
+.progress-bar{height:100%;border-radius:8px;background:linear-gradient(90deg,#7c5cfc,#a855f7 45%,#ec4899)}
+.pill-ok{background:#d8f6e9;color:#117751}
+.pill-warn{background:#fff3d6;color:#7a5b00}
+.pill-bad{background:#f6e1eb;color:#9e4765}
+.pill-info{background:#ece9ff;color:#5b34f0}
+@media(min-width:761px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1025px){.kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}

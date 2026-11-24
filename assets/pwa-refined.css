@@ -122,6 +122,30 @@ h3{letter-spacing:-.02em}
 .card{border-radius:20px;padding:24px}
 .card-soft{border-radius:20px}
 .cards{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:15px}
+/* T026 Empleados — composición de la referencia de Julio (dashboard fitness
+   morado, suite Health): tarjeta héroe con gráfica de área y 3 chips KPI,
+   tarjetas de actividad con barra de progreso y lista lateral del equipo.
+   Solo composición; la marca sigue siendo Hubie (gradiente morado-rosa). */
+.hr-hero-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:15px;align-items:start}
+.hr-hero{border-radius:20px;padding:22px;color:#fff;
+ background:linear-gradient(135deg,#7c5cfc,#a855f7 55%,#ec4899);
+ box-shadow:0 12px 32px rgba(27,56,101,.18)}
+.hr-hero h3{color:#fff;margin:0 0 4px}
+.hr-hero .help{color:rgba(255,255,255,.85)}
+.hr-hero-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.hr-hero-kpi{background:rgba(255,255,255,.16);border-radius:14px;padding:12px 14px}
+.hr-hero-kpi b{display:block;font-size:26px;font-weight:800;line-height:1.1}
+.hr-hero-kpi span{font-size:11px;opacity:.9}
+.hr-progress{height:8px;border-radius:99px;background:#eceaf6;overflow:hidden}
+.hr-progress i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c5cfc,#ec4899)}
+.hr-activity-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;flex:none;
+ background:linear-gradient(135deg,#7c5cfc,#ec4899);color:#fff}
+.hr-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#ec4899);
+ color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.hr-avatar--inactive{background:#b9b6cc}
+.hr-status{font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:#e9f7ee;color:#1e7a3c;white-space:nowrap}
+.hr-status--inactive{background:#f3e8e8;color:#8a3b3b}
+@media(max-width:760px){.hr-hero-grid{grid-template-columns:minmax(0,1fr)}.hr-hero-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .stat{min-height:132px;border-radius:20px;padding:22px 22px 17px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;width:130px;height:130px;right:-35px;bottom:-88px;
  border-radius:50%;background:radial-gradient(circle,rgba(124,92,252,.14),transparent 75%);
