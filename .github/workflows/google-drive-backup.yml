@@ -1,0 +1,45 @@
+name: Google Drive Backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create full Git bundle
+        shell: bash
+        run: |
+          git fetch --all --tags --prune
+          REPO="${GITHUB_REPOSITORY#*/}"
+          TS="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+          FILE="${REPO}-${TS}.bundle"
+          git bundle create "$FILE" --all
+          gzip "$FILE"
+          echo "BACKUP_FILE=${FILE}.gz" >> "$GITHUB_ENV"
+          echo "REPO_NAME=$REPO" >> "$GITHUB_ENV"
+
+      - name: Install rclone
+        run: sudo apt-get update && sudo apt-get install -y rclone
+
+      - name: Configure Google Drive
+        shell: bash
+        env:
+          RCLONE_CONFIG_BASE64: ${{ secrets.RCLONE_CONFIG_BASE64 }}
+        run: |
+          test -n "$RCLONE_CONFIG_BASE64"
+          mkdir -p "$HOME/.config/rclone"
+          printf '%s' "$RCLONE_CONFIG_BASE64" | base64 --decode > "$HOME/.config/rclone/rclone.conf"
+
+      - name: Upload backup to Google Drive
+        run: |
+          rclone copy "$BACKUP_FILE" "gdrive:Backups Repos/$REPO_NAME" --checksum
