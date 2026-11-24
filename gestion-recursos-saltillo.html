@@ -1,0 +1,137 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hubie · Gestión de recursos para la PyME industrial de Saltillo | ERP industrial sin MRP</title>
+<meta name="description" content="Plataforma de gestión de recursos en Saltillo para la PyME industrial: inventario multialmacén con lotes, compras y proveedores, personal, proyectos y caja en un solo lugar. Sin MRP, sin PPAP y sin implementación de $25,000+. Desde $949 MXN/mes + IVA.">
+<link rel="canonical" href="https://hubie-pwa-staging.onrender.com/gestion-recursos-saltillo.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg"><link rel="stylesheet" href="assets/styles.css"><link rel="stylesheet" href="/assets/compact.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Hubie","applicationCategory":"BusinessApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"949","priceCurrency":"MXN","description":"Mensualidad de plataforma + IVA; configuración inicial de pago único según Suite y herramientas"},"areaServed":[{"@type":"City","name":"Saltillo"},{"@type":"City","name":"Ramos Arizpe"},{"@type":"City","name":"Arteaga"}],"provider":{"@type":"Organization","name":"Hubie","areaServed":"Saltillo, Coahuila, México"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"¿Hubie es un MRP?","acceptedAnswer":{"@type":"Answer","text":"No. Hubie no es un MRP: no hace planeación de requerimientos de materiales, ni PPAP, ni costeo por pieza, ni EDI de armadora. Hubie gestiona recursos: inventario multialmacén con lotes, compras y proveedores, personal, proyectos, caja y cuentas por cobrar y por pagar."}},{"@type":"Question","name":"¿Qué es la gestión de recursos empresariales?","acceptedAnswer":{"@type":"Answer","text":"Es gestionar en un solo lugar los recursos reales de tu negocio: el inventario y los almacenes, el dinero (caja, cuentas por cobrar y por pagar), el personal, los clientes y los proyectos. Hubie reúne esos recursos en una plataforma con 41 herramientas, en vez de tenerlos regados en hojas de cálculo y libretas."}},{"@type":"Question","name":"¿Cuánto cuesta la gestión de recursos con Hubie?","acceptedAnswer":{"@type":"Answer","text":"La plataforma cuesta $949 MXN/mes + IVA, más un pago único de configuración según la Suite y las herramientas que elijas (desde $9,900 base sin IVA, con anticipo del 50% y saldo hasta en 6 pagos). El cotizador en precios.html calcula tu inversión exacta."}},{"@type":"Question","name":"¿Hubie maneja varios almacenes y lotes?","acceptedAnswer":{"@type":"Answer","text":"Sí. Hubie tiene inventario multialmacén, control de lotes y escáner, además de compras y proveedores, para que sepas qué tienes, dónde está y a quién le compraste."}},{"@type":"Question","name":"¿Incluye nómina y facturación CFDI?","acceptedAnswer":{"@type":"Answer","text":"Incluye nómina básica, sin timbrado CFDI ni cálculo de IMSS/ISR. La facturación CFDI timbrada está en desarrollo: hoy Hubie genera cotizaciones y facturas internas y lo etiqueta con honestidad en la plataforma."}},{"@type":"Question","name":"¿Cuánto tarda en arrancar Hubie?","acceptedAnswer":{"@type":"Answer","text":"Días, no meses: la implementación configura tu Suite, carga tus clientes, tu catálogo y tu inventario y te capacita. Un ERP industrial con implementación de $25,000 MXN o más suele tomar meses de levantamiento, desarrollo y pruebas."}}]}</script>
+</head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4facfe"/><stop offset=".5" stop-color="#667eea"/><stop offset="1" stop-color="#f093fb"/></linearGradient>
+</defs>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-people" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+<symbol id="i-barchart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+<symbol id="i-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></symbol>
+<symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+</svg>
+<header class="site-header"><div class="container nav">
+<a href="index.html" class="logo"><svg class="logo__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M10 7 L24 16 L10 25" fill="none" stroke="url(#lg)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="logo__type logo__i">Hubie</span></a>
+<nav class="nav__menu"><a href="index.html" class="nav__link">Inicio</a><a href="suite.html" class="nav__link">Suite Hubie</a><a href="servicios.html" class="nav__link">Servicios Hubie<span class="badge-nuevo">Nuevo</span></a><a href="precios.html" class="nav__link">Precios</a><a href="contacto.html" class="nav__link">Contacto Hubie</a></nav>
+<a href="contacto.html" class="btn btn--primary btn--sm">Solicitar demo</a>
+</div></header>
+
+<section class="hero"><div class="container hero__grid">
+<div>
+<span class="tag">GESTIÓN DE RECURSOS · SALTILLO, COAHUILA</span>
+<h1 class="h-hero">Gestión de recursos para la PyME industrial de Saltillo</h1>
+<p class="lead">Taller, maquiladora pequeña, proveedor tier 2/3 o comercializadora industrial: tu negocio necesita gestionar recursos — inventario, compras, personal, proyectos y dinero — sin pagar un ERP de manufactura pesada. Hubie ordena esos recursos en un solo lugar desde $949 MXN/mes + IVA, y arranca en días. Hubie no es un MRP, y te lo decimos de frente.</p>
+<div class="hero__cta">
+<a href="precios.html" class="btn btn--primary">Cotizar mi Hubie <svg class="play-ic" viewBox="0 0 24 24"><use href="#i-arrow-right"/></svg></a>
+<a href="contacto.html" class="btn btn--ghost">Hablar con un asesor</a>
+</div></div>
+<div class="mock"><div class="mock__bar"><i></i><i></i><i></i></div><div class="mock__body">
+<p style="font-weight:800;margin-bottom:12px">Hubie en una línea</p>
+<ul class="checklist">
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>41 herramientas a elegir, según tu giro</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Inventario multialmacén con lotes y escáner</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Plataforma $949 MXN/mes + IVA, sin costo por usuario</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Implementación en días, con tus datos cargados</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Soporte local en Saltillo, Ramos Arizpe y Arteaga</li>
+</ul>
+</div></div></div></div></section>
+
+<section><div class="container">
+<div class="section-head"><h2 class="h-sec">Para quién sí, para quién no</h2><p class="lead lead--center">La honestidad primero: si necesitas MRP, Hubie no es tu plataforma.</p></div>
+<div class="impl-grid">
+<div>
+<h3 style="margin-bottom:12px">Para quién sí</h3>
+<p class="lead">La PyME industrial que gestiona recursos, no líneas de producción.</p>
+<ul class="checklist">
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Talleres y maquiladoras pequeñas de Saltillo y Ramos Arizpe</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Proveedores tier 2/3 que surten material y refacciones</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Comercializadoras industriales y distribuidoras</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Empresas que hoy llevan inventario, compras y caja en hojas de cálculo</li>
+</ul></div>
+<div>
+<h3 style="margin-bottom:12px">Para quién no</h3>
+<p class="lead">Hubie NO es un MRP. Dilo de frente, antes de que compres.</p>
+<ul class="checklist">
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Sin planeación de requerimientos de materiales (MRP)</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Sin PPAP ni trazabilidad de pieza para armadora</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Sin costeo por pieza ni EDI de armadora</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Si necesitas eso, un ERP industrial con MRP es lo correcto</li>
+</ul></div>
+</div>
+<p class="lead lead--center" style="margin-top:28px">Los ERP industriales de Saltillo venden manufactura pesada: MRP, PPAP, trazabilidad, costeo por pieza y EDI, con implementaciones desde $25,000 MXN. Si tu día a día es gestionar inventario, proveedores, personal y caja, pagar por un MRP es pagar por algo que no vas a usar.</p>
+</div></section>
+
+<section style="background:var(--bg-soft)"><div class="container feature-split">
+<div>
+<span class="tag tag--pink">RECURSOS REALES, EN UN SOLO LUGAR</span>
+<h2 class="h-sec" style="margin-top:14px">Qué recursos gestiona Hubie.</h2>
+<p class="lead">Gestión de recursos no es un módulo: son tus recursos reales — lo que tienes, lo que debes, a quién le debes, quién trabaja contigo y en qué va cada proyecto — ordenados en una plataforma con 41 herramientas.</p>
+<div class="benefits">
+<div class="benefit"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-box"/></svg></span><div><h4>Inventario y almacenes</h4><p>Multialmacén, lotes, escáner, catálogo y existencias en tiempo real.</p></div></div>
+<div class="benefit"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-file"/></svg></span><div><h4>Compras y proveedores</h4><p>Órdenes de compra, proveedores y cotizaciones en un solo flujo.</p></div></div>
+<div class="benefit"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-people"/></svg></span><div><h4>Personal y proyectos</h4><p>Empleados, asistencia y vacaciones, nómina básica, proyectos, tareas y kanban.</p></div></div>
+<div class="benefit"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-barchart"/></svg></span><div><h4>Dinero: caja, CxC y CxP</h4><p>Caja, cuentas por cobrar y por pagar, cobros, control de gastos y contabilidad.</p></div></div>
+</div>
+<a href="suite.html" class="link-arrow">Conoce las Suites <svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-arrow-right"/></svg></a>
+</div>
+<div class="mock"><div class="mock__bar"><i></i><i></i><i></i></div><div class="mock__body">
+<p style="font-weight:800;margin-bottom:12px">Suites desde (base, sin IVA)</p>
+<ul class="checklist">
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Beauty $9,900 · Commerce $11,900</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Food $12,900 · Office $14,900</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Events $14,900 · Pet $16,900</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Academy $16,900 · Realty $18,900</li>
+<li><span class="dot"><svg width="12" height="12" viewBox="0 0 24 24"><use href="#i-check"/></svg></span>Jobs $24,900 · Health $29,900</li>
+</ul>
+<a href="precios.html" class="btn btn--primary" style="margin-top:20px">Cotizar mi Suite <svg width="18" height="18" viewBox="0 0 24 24"><use href="#i-arrow-right"/></svg></a>
+<p class="fineprint">Precios base sin IVA. Mensualidad de plataforma $949 MXN/mes + IVA.</p>
+</div></div></div></div></section>
+
+<section><div class="container">
+<div class="section-head"><h2 class="h-sec">Preguntas frecuentes</h2><p class="lead lead--center">Sobre gestión de recursos y ERP industrial en Saltillo.</p></div>
+<div class="steps" style="max-width:820px;margin:0 auto">
+<div class="step"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-file"/></svg></span><div><b>¿Hubie es un MRP?</b><br><small>No. Hubie no es un MRP: no hace planeación de requerimientos de materiales, ni PPAP, ni costeo por pieza, ni EDI de armadora. Gestiona recursos: inventario, compras, personal, proyectos, caja y cuentas.</small></div></div>
+<div class="step"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-file"/></svg></span><div><b>¿Qué es la gestión de recursos empresariales?</b><br><small>Gestionar en un solo lugar tus recursos reales: inventario y almacenes, dinero (caja, CxC y CxP), personal, clientes y proyectos. Hubie los reúne con 41 herramientas, en vez de tenerlos regados en hojas de cálculo.</small></div></div>
+<div class="step"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-file"/></svg></span><div><b>¿Cuánto cuesta Hubie?</b><br><small>$949 MXN/mes + IVA de plataforma, más un pago único de configuración según tu Suite y herramientas (desde $9,900 base sin IVA, anticipo del 50% y saldo hasta en 6 pagos).</small></div></div>
+<div class="step"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-box"/></svg></span><div><b>¿Maneja varios almacenes y lotes?</b><br><small>Sí. Inventario multialmacén, control de lotes y escáner, además de compras y proveedores, para saber qué tienes, dónde está y a quién le compraste.</small></div></div>
+<div class="step"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-shield"/></svg></span><div><b>¿Incluye nómina y CFDI?</b><br><small>Incluye nómina básica, sin timbrado CFDI ni cálculo de IMSS/ISR. La facturación CFDI timbrada está en desarrollo; hoy Hubie genera cotizaciones y facturas internas.</small></div></div>
+<div class="step"><span class="ic"><svg viewBox="0 0 24 24"><use href="#i-zap"/></svg></span><div><b>¿Cuánto tarda en arrancar?</b><br><small>Días: configuramos tu Suite, cargamos tus clientes, tu catálogo y tu inventario y te capacitamos. Un ERP industrial suele tomar meses.</small></div></div>
+</div></div></section>
+
+<section><div class="container">
+<div class="cta-banner">
+<span class="cta-banner__ic"><svg width="32" height="32" viewBox="0 0 24 24"><use href="#i-headset"/></svg></span>
+<div><h3>¿Tu PyME industrial necesita orden, no un MRP?</h3><p>Pide una demo y compara por ti mismo. Te mostramos Hubie con tus datos, no con un ejemplo genérico.</p></div>
+<div style="margin-left:auto;display:flex;gap:12px;flex-wrap:wrap">
+<a href="precios.html" class="btn btn--ghost">Cotizar mi Hubie</a>
+<a href="contacto.html" class="btn">Solicitar demo</a></div>
+</div>
+<p class="fineprint" style="text-align:center;margin-top:18px">Odoo es una marca registrada de Odoo S.A. Hubie no está afiliado a Odoo S.A. ni a sus partners. La comparación se basa en información pública de ambas plataformas.</p>
+</div></section>
+
+<footer class="site-footer"><div class="container">
+<div class="footer-grid">
+<div class="footer-brand">
+<a href="index.html" class="logo"><svg class="logo__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M10 7 L24 16 L10 25" fill="none" stroke="url(#lg)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="logo__type logo__i">Hubie</span></a>
+<p>Todo tu negocio en un solo lugar.</p>
+</div>
+<div class="footer-col"><h5>Suite Hubie</h5><ul><li><a href="suite.html">Ver todas las ramas</a></li><li><a href="suite.html">Herramientas</a></li><li><a href="precios.html">Precios</a></li></ul></div>
+<div class="footer-col"><h5>Comparativas</h5><ul><li><a href="odoo-saltillo.html">Hubie vs Odoo en Saltillo</a></li><li><a href="gestion-recursos-saltillo.html">Gestión de recursos en Saltillo</a></li><li><a href="odoo-multitenant.html">Multitenant de verdad</a></li><li><a href="ia-para-empresas.html">IA para empresas, sin humo</a></li></ul></div>
+<div class="footer-col"><h5>Contacto Hubie</h5><ul><li><a href="contacto.html">Solicitar demo</a></li></ul></div>
+</div>
+<div class="footer-bottom"><span>© 2026 Hubie. Todos los derechos reservados. Desarrollado por Tap Marketing &amp; Creators. Creado por Julio Contreras.</span>
+<span class="lang">Español</span></div>
+</div></footer>
+<script defer src="/assets/navigation.js"></script></body></html>

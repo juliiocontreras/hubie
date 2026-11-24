@@ -15,7 +15,8 @@ const OUT = join(ROOT, 'worker', 'public');
 // Archivos sueltos de la raíz (páginas públicas + robots/sitemap).
 export const ROOT_FILES = [
  'index.html', 'admin.html', 'contacto.html', 'cotizacion.html', 'marca.html',
- 'odoo-saltillo.html', 'portal.html', 'precios.html', 'productos.html',
+ 'odoo-saltillo.html', 'gestion-recursos-saltillo.html', 'odoo-multitenant.html',
+ 'ia-para-empresas.html', 'portal.html', 'precios.html', 'productos.html',
  'servicios.html', 'shop.html', 'suite.html', 'tools.html', 'invitacion.html',
  'robots.txt', 'sitemap.xml'
 ];
