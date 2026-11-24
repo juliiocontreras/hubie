@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://hubie-pwa-staging.onrender.com/sitemap.xml
