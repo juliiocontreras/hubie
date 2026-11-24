@@ -1,5 +1,8 @@
-import {readFileSync} from 'node:fs';
-const source=JSON.parse(readFileSync(new URL('../assets/catalog.json',import.meta.url),'utf8'));
+import catalogData from '../assets/catalog.json' with { type: 'json' };
+// Catálogo embebido como módulo JSON: en Workers (Cloudflare) no hay fs y
+// el bundler de Wrangler incluye el JSON en el bundle. En Node 22+ el
+// import con atributo type:'json' es nativo.
+const source=catalogData;
 // Catalog version 2 is the project's confirmed Hubie Tabla Datos Simple v5.
 // Do not derive prices from data/suites.json (an incompatible older catalogue).
 export const catalog=Object.freeze(source);

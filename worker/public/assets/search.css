@@ -1,0 +1,25 @@
+/* Búsqueda global + centro de notificaciones (frente BÚSQUEDA + NOTIFICACIONES).
+   Marca Hubie: Nunito, tinta #16123a, morado #7c5cfc, rosa #ec4899.
+   Sin barras de scroll visibles (el scroll sigue funcionando). */
+.topline-search{position:relative;flex:1;min-width:180px;max-width:460px}
+.topline-search .search{margin:0}
+.global-search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:80;background:#fff;border:1px solid #eceaf6;border-radius:14px;box-shadow:0 17px 40px rgba(22,18,58,.16);padding:10px;max-height:60vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}
+.global-search-results::-webkit-scrollbar{display:none}
+.global-search-results .search-group-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#5b5872;margin:10px 4px 4px}
+.global-search-results .search-group-label:first-child{margin-top:2px}
+.search-result{display:grid;gap:2px;width:100%;text-align:left;background:#fbf9ff;border:1px solid #eceaf6;border-radius:10px;padding:10px 12px;cursor:pointer;color:#16123a}
+.search-result:hover{border-color:#7c5cfc}
+.search-result strong{font-size:13px}
+.search-result small{color:#5b5872;font-size:11px}
+.bell-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1px solid #e3ddf9;border-radius:40px;padding:9px 13px;min-height:44px;color:#5b34f0;font-weight:800;font-size:13px;cursor:pointer;flex:none}
+.bell-btn:hover{border-color:#7c5cfc}
+.bell-badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ec4899;color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.nav-item{position:relative}
+.notification-list{display:grid;gap:12px}
+.notification-item{background:#fbf9ff;border:1px solid #eceaf6;border-left:4px solid #e3ddf9;border-radius:13px;padding:12px;display:grid;gap:6px}
+.notification-item.unread{border-left-color:#7c5cfc;background:#fff}
+.notification-item.unread strong{font-weight:800}
+.notification-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.notification-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.notification-meta small{color:#5b5872}
+.notification-meta .btn{min-height:32px;padding:6px 10px}

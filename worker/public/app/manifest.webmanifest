@@ -1,0 +1,19 @@
+{
+  "id": "/app/",
+  "name": "Hubie · Mi empresa",
+  "short_name": "Hubie App",
+  "description": "Suite de operación de empresa personalizable",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#16123a",
+  "icons": [
+    {
+      "src": "/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

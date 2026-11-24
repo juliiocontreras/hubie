@@ -1,0 +1,75 @@
+import {renderClients} from './operational-clients.js';
+import {renderCases} from './operational-cases.js';
+import {renderCrm} from './operational-crm.js';
+import {renderAgenda} from './operational-agenda.js';
+import {renderStock} from './operational-stock.js';
+import {renderSurveys} from './operational-surveys.js';
+import {renderTraining} from './operational-training.js';
+import {renderAccounting} from './operational-accounting.js';
+import {renderSalesOrders} from './operational-sales-orders.js';
+import {renderProjects} from './operational-projects.js';
+import {renderHelpdesk} from './operational-helpdesk.js';
+import {renderEmployees} from './operational-employees.js';
+import {renderAttendance} from './operational-attendance.js';
+import {renderPayroll} from './operational-payroll.js';
+import {renderMarketing} from './operational-marketing.js';
+import {renderPos} from './operational-pos.js';
+import {renderQuotes,renderCatalog,renderExpenses,renderPayments,renderInvoices,renderReports} from './operational-commerce.js';
+import {renderChecklists} from './operational-checklists.js';
+import {renderTasks} from './operational-tasks.js';
+import {renderForms} from './operational-forms.js';
+import {renderDashboard} from './operational-dashboard.js';
+import {renderSuppliers,renderPurchases,renderWarehouses,renderCashbox,renderReceivables,renderPayables} from './operational-p1b.js';
+import {renderPortal} from './portal-p2.js';
+import {renderLoyalty} from './loyalty-p2.js';
+import {renderKanban} from './kanban-p2.js';
+import {renderSignatures} from './signatures-p2.js';
+import {renderLots} from './lots-p2.js';
+import {renderScanner} from './scanner-p2.js';
+import {renderCommissions} from './commissions-p2.js';
+
+let activeController=null;
+export function closeOperationalModule(){
+ if(activeController){activeController.abort();activeController=null;}
+}
+export function field(name,label,type='text',options=[]){
+ const holder=document.createElement('div');holder.className='field';
+ const tag=document.createElement('label');tag.textContent=label;
+ const input=document.createElement(type==='textarea'?'textarea':type==='select'?'select':'input');
+ input.name=name;input.id='op-'+name;tag.htmlFor=input.id;
+ if(type==='select')for(const [value,text] of options)input.add(new Option(text,value));
+ else if(type!=='textarea')input.type=type;
+ holder.append(tag,input);return {holder,input};
+}
+export function line(text,kind='help'){const el=document.createElement('p');el.className=kind;el.textContent=text;return el;}
+export function money(cents){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(cents||0)/100);}
+export function date(iso){return iso?new Date(iso).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}):'Sin fecha';}
+export function localInput(iso){
+ if(!iso)return '';
+ const d=new Date(iso),offset=d.getTimezoneOffset()*60000;
+ return new Date(d.getTime()-offset).toISOString().slice(0,16);
+}
+export function toUTC(value){
+ const date=new Date(value);
+ if(!value||!Number.isFinite(date.getTime()))throw Error('La fecha y hora son obligatorias');
+ return date.toISOString();
+}
+export function button(label,kind='btn'){
+ const btn=document.createElement('button');btn.type='button';btn.className=kind;btn.textContent=label;return btn;
+}
+export function container(className){const el=document.createElement('div');el.className=className;return el;}
+export async function openOperationalModule(ctx){
+ closeOperationalModule();
+ activeController=new AbortController();
+ const signal=activeController.signal;
+ const search=document.getElementById('record-search');
+ search.value='';
+ document.getElementById('add-record').hidden=true;
+ const key=ctx.tool.id;
+ const runner=key==='C001'?renderClients:key==='C002'?renderCrm:key==='C003'?renderCases:key==='C004'?renderAgenda:key==='T021'?renderSurveys:key==='T022'?renderTraining:key==='T023'?renderAccounting:key==='T024'?renderSalesOrders:key==='T025'?renderProjects:key==='T026'?renderEmployees:key==='T027'?renderAttendance:key==='T028'?renderHelpdesk:key==='T029'?renderMarketing:key==='T030'?renderPos:key==='T031'?renderPayroll:
+  key==='C006'?renderCatalog:key==='C007'?renderExpenses:key==='T013'?renderQuotes:key==='T014'?renderPayments:key==='T015'?renderInvoices:key==='T020'?renderReports:
+  key==='C008'?renderDashboard:key==='T003'?renderChecklists:key==='T004'?renderTasks:key==='T007'?renderForms:
+  key==='T008'?renderPurchases:key==='T009'?renderSuppliers:key==='T010'?renderWarehouses:key==='T016'?renderCashbox:key==='T017'?renderReceivables:key==='T018'?renderPayables:
+  key==='T001'?renderPortal:key==='T002'?renderLoyalty:key==='T005'?renderKanban:key==='T006'?renderSignatures:key==='T011'?renderLots:key==='T012'?renderScanner:key==='T019'?renderCommissions:renderStock;
+ await runner({...ctx,signal,search});
+}

@@ -1,0 +1,28 @@
+name = "hubie-api"
+main = "src/index.js"
+compatibility_date = "2026-11-17"
+compatibility_flags = ["nodejs_compat"]
+
+# Solo variables NO secretas. Los secretos (TURSO_AUTH_TOKEN,
+# GOOGLE_CLIENT_SECRET) van con `wrangler secret put`, nunca aquí.
+# HUBIE_PUBLIC_ORIGIN: URL workers.dev real (primer deploy); el login con
+# Google exige darla de alta como redirect_uri en Google Cloud Console
+# (pendiente de Julio; los valores Google de staging son placeholders).
+[vars]
+TURSO_DATABASE_URL = "libsql://hubie-test-juliiocontreras.aws-us-east-2.turso.io"
+HUBIE_PUBLIC_ORIGIN = "https://hubie-api.juliiocontreras.workers.dev"
+HUBIE_AUTH_ENABLED = "true"
+HUBIE_INITIAL_ADMIN_EMAIL = "juliiocontreras@gmail.com"
+GOOGLE_CLIENT_ID = "test-staging-placeholder"
+
+# Sin [triggers]: la cuenta Free no tiene hueco de cron (5/5 ocupados).
+# Sin D1: la base Turso se queda; el Worker habla con ella por fetch.
+
+# Estático en el MISMO Worker (no Pages separada): Hubie autentica con
+# cookie __Host-hubie_session y exige Origin == HUBIE_PUBLIC_ORIGIN en
+# mutaciones; una Pages en otro host daría 403. run_worker_first: la API
+# y enhanceHtml van primero; el resto cae a Assets (ver src/index.js).
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true

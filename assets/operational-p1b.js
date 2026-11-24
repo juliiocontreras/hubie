@@ -300,7 +300,7 @@ export async function renderWarehouses(ctx){
  const tGrid=container('field-grid');for(const entry of Object.values(tFields))tGrid.append(entry.holder);
  tForm.append(tGrid);
  const tSave=button('Transferir','btn btn-primary');tSave.type='submit';
- tForm.append(container('toolbar')).lastChild.append(tSave);
+ tForm.append(container('toolbar')); tForm.lastChild.append(tSave);
  transferBox.append(line('Transferencia entre almacenes','group-label'),tForm,
   line('Se valida stock suficiente en el origen; el movimiento queda en el historial.','help'));
  host.replaceChildren(stats);if(canWrite(ctx)){host.append(editor);host.append(transferBox);}host.append(list);
@@ -397,7 +397,7 @@ export async function renderCashbox(ctx){
  const grid=container('field-grid');for(const entry of Object.values(fields))grid.append(entry.holder);
  form.append(grid);
  const save=button('Abrir caja','btn btn-primary');save.type='submit';
- form.append(container('toolbar')).lastChild.append(save);
+ form.append(container('toolbar')); form.lastChild.append(save);
  editor.append(line('Apertura de caja','group-label'),form,
   line('Solo puede haber una caja abierta por empresa. Los movimientos se ligan a cobros y gastos.','help'));
  host.replaceChildren(stats);if(canWrite(ctx))host.append(editor);host.append(list);
@@ -424,7 +424,7 @@ export async function renderCashbox(ctx){
    const mGrid=container('field-grid');for(const entry of Object.values(mFields))mGrid.append(entry.holder);
    mForm.append(mGrid);
    const mSave=button('Registrar movimiento','btn btn-primary');mSave.type='submit';
-   mForm.append(container('toolbar')).lastChild.append(mSave);
+   mForm.append(container('toolbar')); mForm.lastChild.append(mSave);
    const cForm=document.createElement('form');cForm.className='stack';
    const cField=field('cashbox-counted','Conteo físico MXN','number');
    cField.input.min='0';cField.input.step='0.01';cField.input.required=true;
@@ -497,7 +497,7 @@ export async function renderReceivables(ctx){
  const grid=container('field-grid');grid.append(quoteField.holder,dueField.holder);
  form.append(grid);
  const save=button('Abrir cuenta por cobrar','btn btn-primary');save.type='submit';
- form.append(container('toolbar')).lastChild.append(save);
+ form.append(container('toolbar')); form.lastChild.append(save);
  editor.append(line('Cuentas por cobrar ligadas a cotización','group-label'),form,
   line('El saldo es el total de la cotización aceptada menos los cobros registrados. Los abonos descuentan del saldo.','help'));
  host.replaceChildren(stats);if(canWrite(ctx))host.append(editor);host.append(list);
@@ -568,7 +568,7 @@ export async function renderPayables(ctx){
  const grid=container('field-grid');for(const entry of Object.values(fields))grid.append(entry.holder);
  form.append(grid);
  const save=button('Registrar cuenta por pagar','btn btn-primary');save.type='submit';
- form.append(container('toolbar')).lastChild.append(save);
+ form.append(container('toolbar')); form.lastChild.append(save);
  editor.append(line('Cuentas por pagar a proveedores','group-label'),form,
   line('Flujo: pendiente → aprobada → pagada. La aprobación registra quién y cuándo.','help'));
  host.replaceChildren(stats);if(canWrite(ctx))host.append(editor);host.append(list);
@@ -663,7 +663,7 @@ export async function renderExpenseBudgetsPanel(ctx,host){
  form.append(grid);
  const save=button('Guardar presupuesto','btn btn-primary');save.type='submit';
  const download=button('Descargar reporte CSV del mes');
- form.append(container('toolbar')).lastChild.append(save,download);
+ form.append(container('toolbar')); form.lastChild.append(save,download);
  const listEl=container('stack');
  host.append(line('Presupuestos por categoría y mes','group-label'),form,listEl);
  async function reload(){

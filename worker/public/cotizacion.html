@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Cotización · Hubie</title>
+<link rel="icon" href="/assets/favicon.svg">
+<link rel="stylesheet" href="/assets/satisfaction-public.css">
+<style>
+ *{scrollbar-width:none;-ms-overflow-style:none}
+ *::-webkit-scrollbar{display:none}
+ .quote-table{width:100%;border-collapse:collapse;margin:16px 0}
+ .quote-table th,.quote-table td{border-bottom:1px solid #e5e7eb;padding:8px 4px;text-align:left;font-size:14px}
+ .quote-table th{color:#6b7280;text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+ .quote-table td.num,.quote-table th.num{text-align:right}
+ .quote-totals{margin-left:auto;width:260px;max-width:100%}
+ .quote-totals div{display:flex;justify-content:space-between;padding:4px 0}
+ .quote-totals .grand{font-weight:800;border-top:2px solid #16123a}
+ .quote-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+ .quote-actions button{font:inherit;font-weight:700;border-radius:999px;padding:12px 20px;cursor:pointer;border:1.5px solid #7c5cfc}
+ .quote-accept{background:#7c5cfc;color:#fff}
+ .quote-reject{background:#fff;color:#16123a}
+ .quote-status{display:inline-block;border:1.5px solid #7c5cfc;color:#7c5cfc;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+</style></head>
+<body><main class="survey-viewport"><section class="survey-shell">
+<header class="brandline"><span class="mark" aria-hidden="true">H</span><div><b>Hubie</b><small>Cotizaciones</small></div></header>
+<div id="quote-message" role="status">Cargando cotización…</div>
+<div id="quote-public" hidden>
+<p class="eyebrow">COTIZACIÓN</p>
+<h1 id="quote-title"></h1>
+<p id="quote-company" class="subtitle"></p>
+<p><span id="quote-status" class="quote-status"></span></p>
+<p id="quote-notes"></p>
+<table class="quote-table"><thead><tr><th>Concepto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Importe</th></tr></thead><tbody id="quote-lines"></tbody></table>
+<div class="quote-totals">
+<div><span>Subtotal</span><span id="quote-subtotal"></span></div>
+<div><span id="quote-vat-label">IVA</span><span id="quote-vat"></span></div>
+<div class="grand"><span>Total</span><span id="quote-total"></span></div>
+</div>
+<p id="quote-validity" class="privacy"></p>
+<div class="quote-actions" id="quote-actions">
+<button id="quote-accept" type="button" class="quote-accept">Aceptar cotización</button>
+<button id="quote-reject" type="button" class="quote-reject">Rechazar cotización</button>
+</div>
+<p class="privacy">Este enlace es privado: solo quien lo recibió puede responder. No te pedimos contraseña ni acceso a Hubie.</p>
+</div>
+<footer>Powered by <strong>Hubie</strong></footer>
+</section></main>
+<script type="module">
+const $=id=>document.getElementById(id);
+const money=cents=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(cents||0)/100);
+const labels={draft:'Borrador',sent:'Enviada',accepted:'Aceptada',rejected:'Rechazada'};
+const token=new URLSearchParams(location.search).get('token')||'';
+async function load(){
+ if(!/^[A-Za-z0-9]{32}$/.test(token)){$('quote-message').textContent='Este enlace no es válido.';return;}
+ try{
+  const r=await fetch('/api/public/quotes/'+token,{cache:'no-store'});
+  const data=await r.json();
+  if(!r.ok)throw Error(data.error||'No disponible');
+  const q=data.quote;
+  $('quote-message').hidden=true;$('quote-public').hidden=false;
+  $('quote-title').textContent=q.title;
+  $('quote-company').textContent='De '+data.tenantName+' para '+q.clientName;
+  $('quote-status').textContent=labels[q.status]||q.status;
+  $('quote-notes').textContent=q.notes||'';
+  $('quote-lines').replaceChildren();
+  for(const l of q.lines){
+   const tr=document.createElement('tr');
+   for(const [text,num] of [[l.description,false],[String(l.quantity),true],[money(l.unitPriceCents),true],[money(l.lineTotalCents),true]]){
+    const td=document.createElement('td');td.textContent=text;if(num)td.className='num';tr.append(td);
+   }
+   $('quote-lines').append(tr);
+  }
+  $('quote-subtotal').textContent=money(q.subtotalCents);
+  $('quote-vat-label').textContent='IVA '+q.vatRate+'%';
+  $('quote-vat').textContent=money(q.vatCents);
+  $('quote-total').textContent=money(q.totalCents);
+  $('quote-validity').textContent=q.validUntil?'Vigente hasta '+new Date(q.validUntil+'T00:00:00').toLocaleDateString('es-MX',{dateStyle:'long'})+'.':'Sin fecha de vigencia indicada.';
+  const decidable=['draft','sent'].includes(q.status);
+  $('quote-actions').hidden=!decidable;
+  if(!decidable)$('quote-message').hidden=false,$('quote-message').textContent='Esta cotización ya fue '+(q.status==='accepted'?'aceptada.':'rechazada.');
+ }catch(e){$('quote-message').textContent='No se pudo cargar la cotización: '+e.message;}
+}
+async function decide(action){
+ const btn=$(action==='accept'?'quote-accept':'quote-reject');
+ btn.disabled=true;$('quote-message').hidden=false;
+ $('quote-message').textContent='Registrando tu respuesta…';
+ try{
+  const r=await fetch('/api/public/quotes/'+token,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action})});
+  const data=await r.json();
+  if(!r.ok)throw Error(data.error||'No disponible');
+  $('quote-status').textContent=labels[data.status]||data.status;
+  $('quote-actions').hidden=true;
+  $('quote-message').textContent=data.status==='accepted'?'Gracias: la cotización quedó aceptada. El negocio te contactará para los siguientes pasos.':'Quedó registrado el rechazo de la cotización. Gracias por responder.';
+ }catch(e){$('quote-message').textContent='No se registró: '+e.message;btn.disabled=false;}
+}
+$('quote-accept').addEventListener('click',()=>decide('accept'));
+$('quote-reject').addEventListener('click',()=>decide('reject'));
+load();
+</script>
+</body></html>
